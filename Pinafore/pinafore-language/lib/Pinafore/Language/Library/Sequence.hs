@@ -1,5 +1,5 @@
-module Pinafore.Language.Library.List
-    ( listLibSection
+module Pinafore.Language.Library.Sequence
+    ( sequenceLibSection
     )
 where
 
@@ -15,37 +15,29 @@ append (a :| aa) bb = a :| (aa <> bb)
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ concatmap toList lna
 
-listLibSection :: LibraryStuff
-listLibSection =
+sequenceLibSection :: LibraryStuff
+sequenceLibSection =
     headingBDS
-        "List"
+        "Sequence"
         ""
-        [ typeBDS
+        [ typeBDS_ @_ @Link
+            "Link"
+            "A pair, or nil."
+            []
+        , hasSubtypeRelationBDS @(Link Entity Entity) @Entity Verify "" $ functionToShim "linkEntityConvert" linkEntityConvert
+        , --        , hasSubtypeRelationBDS @(Link Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
+          hasSubtypeRelationBDS @() @(Link BottomType BottomType) Verify "" $ functionToShim "" $ \() -> NilLink
+        , hasSubtypeRelationBDS @(A, B) @(Link A B) Verify "" $ functionToShim "" $ \(a, b) -> ConsLink a b
+        , typeBDS_ @_ @LangList
             "List"
             "A list."
-            (MkSomeGroundType listGroundType)
-            [ addNameInRootBDS
-                $ typeBDS "List1" "A list with at least one element." (MkSomeGroundType list1GroundType) []
-            , hasSubtypeRelationBDS @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
-            , addNameInRootBDS
-                $ valPatBDS "[]" "Empty list" ([] @BottomType)
-                $ ImpureFunction
-                $ pure
-                $ \(v :: [A]) ->
-                    case v of
-                        [] -> Just ()
-                        _ -> Nothing
-            , addNameInRootBDS
-                $ valPatBDS "::" "Construct a list" ((:|) @A)
-                $ ImpureFunction
-                $ pure
-                $ \(v :: [A]) ->
-                    case v of
-                        a : b -> Just (a, (b, ()))
-                        _ -> Nothing
+            [ hasBiNeutralSubtypeRelationBDS @(LangList A) @(Link A (Rec0 (Link A)))
             ]
-        , hasSubtypeRelationBDS @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
-        , hasSubtypeRelationBDS @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
+        , typeBDS_ @_ @LangList1
+            "List1"
+            "A list with at least one element."
+            [ hasBiNeutralSubtypeRelationBDS @(LangList1 A) @(A, Link A (Rec0 (Link A)))
+            ]
         , namespaceBDS "List"
             $ mconcat
                 [ pickNamesInRootBDS ["<>"] $ monoidEntries @[A]

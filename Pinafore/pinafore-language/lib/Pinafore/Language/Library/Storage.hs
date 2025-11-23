@@ -121,7 +121,7 @@ storageLibSection =
                                     $ ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) NilCCRArguments
                             stype = qFunctionPosWitness qType typem
                             propertyexpr =
-                                fmap (\saa -> predicateProperty (asLiteralStoreAdapter @()) saa (MkPredicate anchor)) saaexpr
+                                fmap (\saa -> predicateProperty unitStoreAdapter saa (MkPredicate anchor)) saaexpr
                             sexpr =
                                 fmap
                                     ( \property ->
@@ -156,7 +156,7 @@ storageLibSection =
                             stype = qFunctionPosWitness qType typem
                             propertyexpr :: QOpenExpression (StorageLensProperty a a () () QStorageUpdate)
                             propertyexpr =
-                                fmap (\saa -> predicateProperty saa (asLiteralStoreAdapter @()) (MkPredicate anchor)) saaexpr
+                                fmap (\saa -> predicateProperty saa unitStoreAdapter (MkPredicate anchor)) saaexpr
                             sexpr =
                                 liftA2
                                     ( \property saa ->

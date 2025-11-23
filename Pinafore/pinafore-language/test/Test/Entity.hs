@@ -890,6 +890,7 @@ testEntity =
                         , "fgi = fn x => fi (gi x)"
                         , "gfi = fn x => gi (fi x)"
                         ]
+                        $ tModify (failTestBecause "??")
                         $ tGroup
                             "nested"
                             [ testExpectSuccess "pass"

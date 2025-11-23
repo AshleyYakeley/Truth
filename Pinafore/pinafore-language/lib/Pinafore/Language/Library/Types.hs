@@ -23,22 +23,26 @@ maybeShimWit ::
     forall polarity a.
     Is PolarityType polarity =>
     QShimWit polarity a ->
-    QShimWit polarity (Maybe a)
-maybeShimWit = coShimWit maybeGroundType
+    QShimWit polarity (LangMaybe a)
+maybeShimWit = coShimWit qGroundType
 
 listShimWit ::
     forall polarity a.
     Is PolarityType polarity =>
     QShimWit polarity a ->
-    QShimWit polarity [a]
-listShimWit = coShimWit listGroundType
+    QShimWit polarity (LangList a)
+listShimWit = coShimWit qGroundType
 
 list1ShimWit ::
     forall polarity a.
     Is PolarityType polarity =>
     QShimWit polarity a ->
-    QShimWit polarity (NonEmpty a)
-list1ShimWit = coShimWit list1GroundType
+    QShimWit
+        polarity
+        ( LangList1
+            a
+        )
+list1ShimWit = coShimWit qGroundType
 
 eitherShimWit ::
     forall polarity a b.
@@ -46,7 +50,7 @@ eitherShimWit ::
     QShimWit polarity a ->
     QShimWit polarity b ->
     QShimWit polarity (Either a b)
-eitherShimWit = cocoShimWit eitherGroundType
+eitherShimWit = cocoShimWit qGroundType
 
 resultShimWit ::
     forall polarity a b.
@@ -54,7 +58,7 @@ resultShimWit ::
     QShimWit polarity a ->
     QShimWit polarity b ->
     QShimWit polarity (Result a b)
-resultShimWit = cocoShimWit resultGroundType
+resultShimWit = cocoShimWit qGroundType
 
 pairShimWit ::
     forall polarity a b.
@@ -62,7 +66,7 @@ pairShimWit ::
     QShimWit polarity a ->
     QShimWit polarity b ->
     QShimWit polarity (a, b)
-pairShimWit = cocoShimWit pairGroundType
+pairShimWit = cocoShimWit qGroundType
 
 funcShimWit ::
     forall polarity (pshim :: PolyShimKind) a b.
@@ -87,7 +91,7 @@ funcShimWit (MkShimWit ta conva) (MkShimWit tb convb) = let
                         MkPolarShim $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
     in mapPolarShimWit fshim
         $ typeToDolan
-        $ MkDolanGroundedType funcGroundType
+        $ MkDolanGroundedType (qGroundType :: _ (->))
         $ ConsCCRArguments (ContraCCRPolarArgument ta)
         $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
@@ -96,5 +100,5 @@ actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva)
             $ typeToDolan
-            $ MkDolanGroundedType actionGroundType
+            $ MkDolanGroundedType qGroundType
             $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments

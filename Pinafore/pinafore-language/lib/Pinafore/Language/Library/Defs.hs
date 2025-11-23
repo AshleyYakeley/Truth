@@ -13,7 +13,10 @@ module Pinafore.Language.Library.Defs
     , typeBDS
     , typeBDS_
     , subtypeRelationBDS
+    , neutralSubtypeRelationBDS
     , hasSubtypeRelationBDS
+    , hasNeutralSubtypeRelationBDS
+    , hasBiNeutralSubtypeRelationBDS
     , valPatBDS
     , QDocSignature (..)
     , mkValueDocSignature
@@ -230,6 +233,21 @@ subtypeRelationBDS trustme docDescription ta tb conv = let
     bdDoc = MkDefDoc{..}
     in singleBindDoc MkBindDoc{..} []
 
+neutralSubtypeRelationBDS ::
+    forall a b.
+    Coercible a b =>
+    RawMarkdown ->
+    QNonpolarGroundedType a ->
+    QNonpolarGroundedType b ->
+    LibraryStuff
+neutralSubtypeRelationBDS docDescription ta tb = let
+    diSubtype = exprShow ta
+    diSupertype = exprShow tb
+    bdScopeEntry = pure $ SubtypeScopeEntry $ neutralSubtypeConversionEntry ta tb
+    docItem = SubtypeRelationDocItem{..}
+    bdDoc = MkDefDoc{..}
+    in singleBindDoc MkBindDoc{..} []
+
 hasSubtypeRelationBDS ::
     forall a b.
     (HasQType QPolyShim 'Negative a, HasQType QPolyShim 'Positive b) =>
@@ -241,6 +259,24 @@ hasSubtypeRelationBDS trustme doc conv = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
     in subtypeRelationBDS trustme doc ta tb conv
+
+hasNeutralSubtypeRelationBDS ::
+    forall (a :: Type) (b :: Type).
+    (HasQNonpolarPartialGroundedType a, HasQNonpolarPartialGroundedType b, Coercible a b) =>
+    RawMarkdown ->
+    LibraryStuff
+hasNeutralSubtypeRelationBDS doc =
+    case qNonpolarGroundedType @a of
+        MkShimWit ta MkCoercion ->
+            case qNonpolarGroundedType @b of
+                MkShimWit tb MkCoercion ->
+                    neutralSubtypeRelationBDS doc ta tb
+
+hasBiNeutralSubtypeRelationBDS ::
+    forall (a :: Type) (b :: Type).
+    (HasQNonpolarPartialGroundedType a, HasQNonpolarPartialGroundedType b, Coercible a b) =>
+    LibraryStuff
+hasBiNeutralSubtypeRelationBDS = hasNeutralSubtypeRelationBDS @a @b "" <> hasNeutralSubtypeRelationBDS @b @a ""
 
 valPatBDS ::
     forall t v lt.
@@ -321,7 +357,7 @@ recordValueBDS name docDescription docsigs f = let
 
 recordConsBDS ::
     forall (t :: Type) (tt :: [Type]).
-    (HasQGroundedType QPolyShim 'Positive t, HasQGroundedType QPolyShim 'Negative t) =>
+    (HasQPartialGroundedType QPolyShim 'Positive t, HasQPartialGroundedType QPolyShim 'Negative t) =>
     FullNameRef ->
     RawMarkdown ->
     ListType QDocSignature tt ->

@@ -36,3 +36,11 @@ mapQIsoShimWit ::
     PShimWit (pshim Type) QType polarity b ->
     PShimWit (pshim Type) QType polarity a
 mapQIsoShimWit ab ba = mapShimWit $ fromQShimsPolar ab ba
+
+isoMapQIsoShimWit ::
+    forall (pshim :: PolyShimKind) polarity a b.
+    (FromQIsoShim pshim, Is PolarityType polarity) =>
+    Isomorphism QShim a b ->
+    PShimWit (pshim Type) QType polarity b ->
+    PShimWit (pshim Type) QType polarity a
+isoMapQIsoShimWit (MkIsomorphism ab ba) = mapQIsoShimWit ab ba

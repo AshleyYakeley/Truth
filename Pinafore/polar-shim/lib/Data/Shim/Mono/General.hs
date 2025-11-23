@@ -151,7 +151,7 @@ isoFunctionToShim ::
     String ->
     Isomorphism KindFunction a b ->
     Isomorphism shim a b
-isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim s ab) (functionToShim s ba)
+isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim (s <> ".>") ab) (functionToShim (s <> ".<") ba)
 
 isoShimToFunction ::
     forall k (shim :: ShimKind k) (a :: k) (b :: k).

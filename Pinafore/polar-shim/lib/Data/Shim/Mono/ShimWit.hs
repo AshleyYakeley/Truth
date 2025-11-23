@@ -65,3 +65,10 @@ chainShimWit ::
     ShimWit shim wita t' ->
     ShimWit shim witb t'
 chainShimWit f (MkShimWit t conv) = mapShimWit conv $ f t
+
+reShimWit ::
+    forall (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).
+    (forall (t :: k). wita t -> witb t) ->
+    ShimWit shim wita t' ->
+    ShimWit shim witb t'
+reShimWit f (MkShimWit t conv) = MkShimWit (f t) conv

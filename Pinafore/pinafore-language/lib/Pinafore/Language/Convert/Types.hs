@@ -50,12 +50,6 @@ voidGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily 
 instance HasQGroundType '[] Void where
     qGroundType = voidGroundType
 
-unitGroundType :: QGroundType '[] ()
-unitGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
-
-instance HasQGroundType '[] () where
-    qGroundType = unitGroundType
-
 textGroundType :: QGroundType '[] Text
 textGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text"
 

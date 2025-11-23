@@ -14,13 +14,16 @@ productLibSection =
     headingBDS
         "Type Product"
         ""
-        [ typeBDS "*:" "" (MkSomeGroundType pairGroundType) []
-        , hasSubtypeRelationBDS @(Entity, Entity) @Entity Verify ""
-            $ functionToShim "pairEntityConvert" pairEntityConvert
+        [ typeBDS_ @_ @(,) "*:" "" []
         , hasSubtypeRelationBDS @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
         , namespaceBDS
             "Product"
-            [ addNameInRootBDS $ valBDS "fst" "Get the first member of a pair." $ fst @A @B
+            [ addNameInRootBDS
+                $ valPatBDS "::" "Construct a pair" ((,) @A @B)
+                $ PureFunction
+                $ pure
+                $ \((a, b) :: (A, B)) -> (a, (b, ()))
+            , addNameInRootBDS $ valBDS "fst" "Get the first member of a pair." $ fst @A @B
             , addNameInRootBDS $ valBDS "snd" "Get the second member of a pair." $ snd @A @B
             , valBDS "to" "Construct a pair." $ (,) @A @B
             , addNameInRootBDS $ valBDS "both" "Construct a pair." $ \(a :: A) -> (a, a)

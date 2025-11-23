@@ -2,7 +2,6 @@ module Pinafore.Base.Literal.Type
     ( LiteralType
     , runLiteralType
     , generalLiteralType
-    , unitLiteralType
     , blobLiteralType
     , textLiteralType
     , booleanLiteralType
@@ -31,9 +30,6 @@ generalLiteralType t = MkLiteralType $ sLiteralBytes [0x6D] ***> sExact t stoppi
 
 tagLiteralType :: [Word8] -> LiteralType
 tagLiteralType tag = MkLiteralType $ sLiteralBytes tag
-
-unitLiteralType :: LiteralType
-unitLiteralType = tagLiteralType [0x75] -- [u]
 
 blobLiteralType :: LiteralType
 blobLiteralType = tagLiteralType [0x61] -- [a]

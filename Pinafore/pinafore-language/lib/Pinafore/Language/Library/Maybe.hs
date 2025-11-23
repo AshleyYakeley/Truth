@@ -14,7 +14,7 @@ maybeLibSection =
     headingBDS
         "Maybe"
         ""
-        [ typeBDS "Maybe" "" (MkSomeGroundType maybeGroundType)
+        [ typeBDS_ @_ @LangMaybe "Maybe" ""
             $ fmap
                 addNameInRootBDS
                 [ valPatBDS "Just" "Construct a Maybe from a value." (Just @A)
@@ -32,9 +32,7 @@ maybeLibSection =
                             Nothing -> Just ()
                             _ -> Nothing
                 ]
-        , hasSubtypeRelationBDS @(Maybe Entity) @Entity Verify ""
-            $ functionToShim "maybeEntityConvert" maybeEntityConvert
-        , hasSubtypeRelationBDS @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
+        , hasBiNeutralSubtypeRelationBDS @(LangMaybe A) @(Link A ())
         , namespaceBDS "Maybe"
             $ monadEntries @Maybe
             <> [ valBDS "from" "" (fromMaybe :: A -> Maybe A -> A)

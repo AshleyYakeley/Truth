@@ -91,7 +91,7 @@ instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Result where
     qGroundType = resultGroundType
 
 mapStoreAdapter :: StoreAdapter t -> StoreAdapter (EntityMap t)
-mapStoreAdapter t = invmap entityMapFromList entityMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
+mapStoreAdapter t = biIsoMap (entityMapListIso . invert listLangIso) $ langListStoreAdapter $ pairStoreAdapter plainStoreAdapter t
 
 entityMapGroundType :: QGroundType '[CoCCRVariance] EntityMap
 entityMapGroundType = let

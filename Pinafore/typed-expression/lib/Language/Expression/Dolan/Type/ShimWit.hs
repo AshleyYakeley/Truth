@@ -78,7 +78,7 @@ instance
     typeToDolan pgt = typeToDolan $ partialToGroundedType pgt NilCCRArguments
     dolanToMaybeType t = do
         gt <- dolanToMaybeType t
-        pure $ chainShimWit (mkShimWit . groundedToPartialType) gt
+        pure $ reShimWit groundedToPartialType gt
 
 instance
     forall (ground :: GroundTypeKind) polarity.

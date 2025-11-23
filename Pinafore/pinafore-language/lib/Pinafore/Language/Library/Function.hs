@@ -24,7 +24,7 @@ langCheck (MkLangType npt) = do
         MkShimWit dtw (MkPolarShim (MkPolyComposeShim expr)) ->
             let
                 stype = funcShimWit (mkShimWit dtw) $ maybeShimWit tp
-                sexpr = fmap shimToFunction expr
+                sexpr = fmap (fmap maybeToLang . shimToFunction) expr
                 in MkLangExpression $ MkSealedExpression stype sexpr
 
 langCoerce :: LangType -> QInterpreter LangExpression

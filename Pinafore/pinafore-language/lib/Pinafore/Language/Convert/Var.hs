@@ -25,6 +25,10 @@ instance
                 PositiveType -> MkPolarShim $ coerceShim "var"
                 NegativeType -> MkPolarShim $ coerceShim "var"
 
+-- Var Type
+instance forall name. KnownSymbol name => HasQNonpolarType (Var name) where
+    qNonpolarType = MkShimWit (VarNonpolarType $ MkTypeVar $ MkSymbolType @name) MkCoercion
+
 type A = Var "a"
 
 type B = Var "b"

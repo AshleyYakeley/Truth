@@ -74,6 +74,9 @@ library:
       - Pinafore.Language.Type
       - Pinafore.Language.Convert.Var
       - Pinafore.Language.Convert.FromQIsoShim
+      - Pinafore.Language.Convert.HasType.Ground
+      - Pinafore.Language.Convert.HasType.Polar
+      - Pinafore.Language.Convert.HasType.Nonpolar
       - Pinafore.Language.Convert.HasType
       - Pinafore.Language.Convert.JoinMeet
       - Pinafore.Language.Convert.Recursive
@@ -124,7 +127,7 @@ library:
       - Pinafore.Language.Library.Maybe
       - Pinafore.Language.Library.Product
       - Pinafore.Language.Library.Sum
-      - Pinafore.Language.Library.List
+      - Pinafore.Language.Library.Sequence
       - Pinafore.Language.Library.EntityMap
       - Pinafore.Language.Library.Result
       - Pinafore.Language.Library.Action

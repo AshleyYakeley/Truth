@@ -58,3 +58,30 @@ instance
                 $ applyDolanPartialGroundedShimWit
                     fPGT
                     (coCCRArgument $ varDolanShimWit tv)
+
+instance
+    forall (f :: Type -> Type).
+    ( VarianceOf f ~ 'Covariance
+    , RepresentationalRole f
+    , HasQNonpolarPartialGroundedType f
+    ) =>
+    HasQNonpolarType (Rec0 f)
+    where
+    qNonpolarType = let
+        fPGT :: ShimWit Coercion (QNonpolarPartialGroundedType '[CoCCRVariance]) f
+        fPGT = qNonpolarPartialGroundedType @'[CoCCRVariance] @f
+        in case fPGT of
+            MkShimWit (gt :: _ f') MkCoercion ->
+                let
+                    rollConv :: Coercion (Rec0 f') (f' (Rec0 f'))
+                    rollConv = MkCoercion
+                    in newUnusedTypeVar fPGT $ \tv ->
+                        assignTypeVarT @(Rec0 f') tv
+                            $ mapShimWit (rollConv . rec0Representational MkCoercion)
+                            $ mkShimWit
+                            $ RecursiveNonpolarType (coerceTypeVarT tv)
+                            $ GroundedNonpolarType
+                            $ nonpolarPartialToGroundedType
+                            $ ApplyNonpolarPartialGroundedType gt
+                            $ CoNonpolarArgument
+                            $ VarNonpolarType tv

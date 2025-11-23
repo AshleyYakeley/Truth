@@ -84,11 +84,6 @@ instance AsTypedLiteral Text where
 instance AsLiteral String where
     literalCodec = bijectionCodec unpackBijection . literalCodec @Text
 
-instance AsLiteral ()
-
-instance AsTypedLiteral () where
-    literalType = unitLiteralType
-
 instance AsLiteral Bool
 
 instance AsTypedLiteral Bool where

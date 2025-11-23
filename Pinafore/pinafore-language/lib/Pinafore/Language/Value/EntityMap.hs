@@ -19,6 +19,9 @@ entityMapToList = mapToList . unEntityMap
 entityMapFromList :: [(Entity, v)] -> EntityMap v
 entityMapFromList = MkEntityMap . mapFromList
 
+entityMapListIso :: Bijection [(Entity, t)] (EntityMap t)
+entityMapListIso = MkIsomorphism entityMapFromList entityMapToList
+
 entityMapLookup :: Entity -> EntityMap v -> Maybe v
 entityMapLookup k (MkEntityMap m) = lookup k m
 

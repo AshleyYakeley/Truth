@@ -14,6 +14,7 @@ module Language.Expression.TypeSystem.TypeVariable
     , assignSameTypeVarT
     , assignTypeVarWit
     , newAssignTypeVar
+    , coerceTypeVarT
     , SomeTypeVarT (..)
     , someTypeVarTName
     , mkSomeTypeVarT
@@ -93,6 +94,10 @@ assignTypeVarWit (MkTypeVar vsym) w call = assignUVarWit vsym w call
 
 newAssignTypeVar :: forall (k :: Type) (tv :: k). String -> TypeVar tv
 newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeVar vsym
+
+coerceTypeVarT :: forall (a :: Type) (b :: Type). Coercible a b => TypeVar a -> TypeVar b
+coerceTypeVarT tv = case MkCoercion @Type @a @b of
+    _ -> assignTypeVarT @b tv tv
 
 data SomeTypeVarT
     = forall tv. MkSomeTypeVarT (TypeVarT tv)

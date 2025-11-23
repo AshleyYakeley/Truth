@@ -8,6 +8,9 @@ module Language.Expression.Dolan.Nonpolar
     , NonpolarTypeShimWit
     , groundedNonpolarToDolanType
     , pattern ToGroundedNonpolarType
+    , NonpolarPartialGroundedType (..)
+    , applyPartialToGroundedType
+    , nonpolarPartialToGroundedType
     )
 where
 
@@ -339,3 +342,97 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Nonpolar
     nonpolarToNegative = nonpolarToDolanType
     positiveToNonpolar = dolanTypeToNonpolar
     negativeToNonpolar = dolanTypeToNonpolar
+
+data NonpolarPartialGroundedType :: GroundTypeKind -> forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type where
+    GroundNonpolarPartialGroundedType ::
+        forall (ground :: GroundTypeKind) dv (t :: CCRVariancesKind dv).
+        ground dv t -> NonpolarPartialGroundedType ground dv t
+    ApplyNonpolarPartialGroundedType ::
+        forall (ground :: GroundTypeKind) dv sv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
+        NonpolarPartialGroundedType ground (sv ': dv) f ->
+        NonpolarArgument (NonpolarType ground) sv a ->
+        NonpolarPartialGroundedType ground dv (f a)
+
+applyPartialToGroundedType ::
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    NonpolarPartialGroundedType ground dv gt ->
+    NonpolarTypeArguments ground dv gt t ->
+    NonpolarGroundedType ground t
+applyPartialToGroundedType (GroundNonpolarPartialGroundedType gt) args = MkNonpolarGroundedType gt args
+applyPartialToGroundedType (ApplyNonpolarPartialGroundedType pgt arg) args =
+    applyPartialToGroundedType pgt $ ConsCCRArguments arg args
+
+nonpolarPartialToGroundedType ::
+    forall (ground :: GroundTypeKind) (t :: Type).
+    NonpolarPartialGroundedType ground '[] t ->
+    NonpolarGroundedType ground t
+nonpolarPartialToGroundedType pgt = applyPartialToGroundedType pgt NilCCRArguments
+
+pureMapNonpolarArgumentM ::
+    forall m ft sv.
+    Applicative m =>
+    EndoM' m ft ->
+    EndoM' m (NonpolarArgument ft sv)
+pureMapNonpolarArgumentM f =
+    MkEndoM $ \case
+        CoNonpolarArgument q -> fmap CoNonpolarArgument $ unEndoM f q
+        ContraNonpolarArgument p -> fmap ContraNonpolarArgument $ unEndoM f p
+        RangeNonpolarArgument p q -> liftA2 RangeNonpolarArgument (unEndoM f p) (unEndoM f q)
+
+pureMapNonpolarArgumentsM ::
+    forall m ft dv gt.
+    Applicative m =>
+    EndoM' m ft ->
+    EndoM' m (NonpolarArguments ft dv gt)
+pureMapNonpolarArgumentsM f =
+    MkEndoM $ \case
+        NilCCRArguments -> pure NilCCRArguments
+        ConsCCRArguments arg args ->
+            liftA2 ConsCCRArguments (unEndoM (pureMapNonpolarArgumentM f) arg) (unEndoM (pureMapNonpolarArgumentsM f) args)
+
+nonpolarArgumentsVarRename ::
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) m.
+    (IsDolanGroundType ground, Monad m) =>
+    RenameSource m ->
+    EndoM' m (NonpolarTypeArguments ground dv gt)
+nonpolarArgumentsVarRename ev = pureMapNonpolarArgumentsM $ varRename ev
+
+instance
+    forall (ground :: GroundTypeKind) t.
+    IsDolanGroundType ground =>
+    VarRenameable (NonpolarGroundedType ground t)
+    where
+    varRename ev =
+        MkEndoM $ \(MkNonpolarGroundedType gt args) -> do
+            args' <- unEndoM (nonpolarArgumentsVarRename ev) args
+            return $ MkNonpolarGroundedType gt args'
+
+instance
+    forall (ground :: GroundTypeKind) t.
+    IsDolanGroundType ground =>
+    VarRenameable (NonpolarType ground t)
+    where
+    varRename ev =
+        MkEndoM $ \case
+            GroundedNonpolarType t -> do
+                t' <- unEndoM (varRename ev) t
+                return $ GroundedNonpolarType t'
+            VarNonpolarType oldvar -> do
+                newvar <- unEndoM (varRename ev) oldvar
+                return $ VarNonpolarType newvar
+            RecursiveNonpolarType var st -> do
+                var' <- unEndoM (rsNewVar ev) var
+                st' <- unEndoM (varRename $ addToRenameSource var var' ev) st
+                return $ RecursiveNonpolarType var' st'
+
+instance
+    forall (ground :: GroundTypeKind) dv t.
+    IsDolanGroundType ground =>
+    VarRenameable (NonpolarPartialGroundedType ground dv t)
+    where
+    varRename rs = MkEndoM $ \case
+        GroundNonpolarPartialGroundedType gt -> return $ GroundNonpolarPartialGroundedType gt
+        ApplyNonpolarPartialGroundedType pgt arg -> do
+            pgt' <- unEndoM (varRename rs) pgt
+            arg' <- unEndoM (pureMapNonpolarArgumentM $ varRename rs) arg
+            return $ ApplyNonpolarPartialGroundedType pgt' arg'
