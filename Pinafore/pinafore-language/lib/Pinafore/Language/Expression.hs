@@ -171,10 +171,10 @@ qApplyAllExpr e (a : aa) = do
     qApplyAllExpr e' aa
 
 qEmptyList :: QExpression
-qEmptyList = qConst $ [] @BottomType
+qEmptyList = qConst ()
 
 qConsList :: QExpression
-qConsList = qConst $ (:|) @A
+qConsList = qConst $ (,) @A @B
 
 qSequenceExpr :: [QExpression] -> QInterpreter QExpression
 qSequenceExpr [] = return $ qEmptyList

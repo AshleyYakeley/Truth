@@ -26,7 +26,7 @@ sequenceLibSection =
         "Sequence"
         ""
         [ typeBDS_ @_ @Link
-            "Link"
+            "*?"
             "A pair, or nil."
             []
         , hasSubtypeRelationBDS @(Link Entity Entity) @Entity Verify "" $ functionToShim "linkEntityConvert" linkEntityConvert

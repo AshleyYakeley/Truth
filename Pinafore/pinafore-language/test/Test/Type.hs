@@ -233,15 +233,16 @@ testType =
             "read"
             [ textTypeTest "v" "{v : a} -> a"
             , textTypeTest "if t then v1 else v2" "{t : Boolean., v1 : a, v2 : a} -> a"
-            , textTypeTest "[]" "{} -> List. None"
+            , textTypeTest "[]" "{} -> Unit."
+            , textTypeTest "3::4" "{} -> Natural. *: Natural."
             , textTypeTest "fn v => 1" "{} -> Any -> Natural."
-            , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1.List. a"
-            , textTypeTest "[v,v,v]" "{v : a} -> List1.List. a"
-            , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1.List. a"
+            , textTypeTest "[v1,v2]" "{v1 : a, v2 : b} -> a *: b *: Unit."
+            , textTypeTest "[v,v,v]" "{v : a} -> a *: a *: a *: Unit."
+            , textTypeTest "[x,y,x,y]" "{x : a, y : b} -> a *: b *: a *: b *: Unit."
             , textTypeTest "(v 3,v \"text\")" "{v : (Text. | Natural.) -> a} -> a *: a"
             , textTypeTest "(v,v)" "{v : a} -> a *: a"
             , textTypeTest "(v 3,v 3)" "{v : Natural. -> a} -> a *: a"
-            , textTypeTest "[v 3]" "{v : Natural. -> a} -> List1.List. a"
+            , textTypeTest "[v 3]" "{v : Natural. -> a} -> a *: Unit."
             , textTypeTest "(v 3,v False)" "{v : (Boolean. | Natural.) -> a} -> a *: a"
             , textTypeTest "((v 3,v False),v 3)" "{v : (Natural. | Boolean.) -> a} -> (a *: a) *: a"
             , testTree
@@ -253,14 +254,14 @@ testType =
                 , textTypeTest "let {i : tvar -> tvar = fn x => x} i" "{} -> a -> a"
                 , textTypeTest "let {i : a -> a = fn x => x} i 3" "{} -> Natural."
                 ]
-            , textTypeTest "fn x => let {v = x} [v,v,v]" "{} -> a -> List1.List. a"
-            , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1.List. a"
+            , textTypeTest "fn x => let {v = x} [v,v,v]" "{} -> a -> a *: a *: a *: Unit."
+            , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> b -> a *: b *: Unit."
             , textTypeTest
                 "fn v1, v2, v3 => ([v1,v2],[v2,v3])"
-                "{} -> a -> (a & b) -> b -> List1.List. a *: List1.List. b"
+                "{} -> a -> b -> c -> (a *: b *: Unit.) *: b *: c *: Unit."
             , textTypeTest
                 "fn v1, v2, v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                "{} -> (a & b) -> (a & c) -> (c & b) -> (List1.List. a *: List1.List. c) *: List1.List. b"
+                "{} -> a -> b -> c -> ((a *: b *: Unit.) *: b *: c *: Unit.) *: c *: a *: Unit."
             , testTree
                 "inversion"
                 [ textTypeTest "fn x => let {y : Integer = x} y" "{} -> Integer. -> Integer."
@@ -334,10 +335,10 @@ testType =
                 , textTypeTest "(1,False,(3,True))" "{} -> Natural. *: Boolean. *: Natural. *: Boolean."
                 , textTypeTest "(1,(False,3,True))" "{} -> Natural. *: Boolean. *: Natural. *: Boolean."
                 , textTypeTest "(1,False,3,True)" "{} -> Natural. *: Boolean. *: Natural. *: Boolean."
-                , textTypeTest "fn {(1,False) => ()}" "{} -> Literal. *: Literal. -> Unit."
+                , textTypeTest "fn {(1,False) => ()}" "{} -> Literal. *? Literal. -> Unit."
                 , textTypeTest
                     "fn {(1,False,3,True) => ()}"
-                    "{} -> Literal. *: Literal. *: Literal. *: Literal. -> Unit."
+                    "{} -> Literal. *? Literal. *? Literal. *? Literal. -> Unit."
                 ]
             , testTree
                 "let-binding"

@@ -216,6 +216,7 @@ typeOperatorFixity :: Name -> Fixity
 typeOperatorFixity "->" = MkFixity AssocRight 0
 typeOperatorFixity "+:" = MkFixity AssocRight 2
 typeOperatorFixity "*:" = MkFixity AssocRight 3
+typeOperatorFixity "*?" = MkFixity AssocRight 3
 typeOperatorFixity _ = MkFixity AssocLeft 3
 
 instance ExprShow SyntaxType' where

@@ -152,8 +152,10 @@ instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Link where
             stbAdapterExprKnot = pureStorabilityAdapter @Link $ \(ConsArguments sa (ConsArguments sb NilArguments)) ->
                 linkStoreAdapter sa sb
             in MkStorability{..}
+        showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
+        showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *? " <> precNamedText 3 tb
         props = singleGroundProperty storabilityProperty storability
-        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Link)|]) "Link"){qgtProperties = props}
+        in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Link)|]) showtype){qgtProperties = props}
 
 ---
 
