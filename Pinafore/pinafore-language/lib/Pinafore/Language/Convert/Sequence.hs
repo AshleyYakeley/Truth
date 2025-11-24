@@ -58,7 +58,7 @@ instance HasQGroundType '[] () where
             MkPolyGreatestDynamicSupertype
                 NilCCRArguments
                 $ mapNegShimWit (functionToShim "fromNilLink" $ decode unitTypeCodec) (qGroundedType :: _ (Link TopType TopType))
-        in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
             { qgtProperties = props
             , qgtGreatestDynamicSupertype = gds
             }

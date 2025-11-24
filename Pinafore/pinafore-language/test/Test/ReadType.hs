@@ -17,21 +17,30 @@ testReadType text =
             _ <- testerLiftInterpreter $ parseType @'Positive text
             return ()
 
+testShowType :: Text -> Text -> TestTree
+testShowType expected text =
+    testTree @Assertion (unpack text)
+        $ runTester defaultTester
+        $ do
+            t <- testerLiftInterpreter $ parseType @'Positive text
+            liftIO $ assertEqual "" expected $ showText t
+            return ()
+
 testReadTypes :: TestTree
 testReadTypes =
     testTree
         "read-type"
-        [ testReadType "Unit"
-        , testReadType "Entity"
-        , testReadType "Entity."
-        , testReadType "Literal"
-        , testReadType "Literal."
-        , testReadType "Text"
-        , testReadType "Text."
-        , testReadType "Boolean"
-        , testReadType "Boolean."
-        , testReadType "Duration"
-        , testReadType "Duration."
+        [ testShowType "Unit." "Unit"
+        , testShowType "Entity." "Entity"
+        , testShowType "Entity." "Entity."
+        , testShowType "Literal." "Literal"
+        , testShowType "Literal."  "Literal."
+        , testShowType "Text." "Text"
+        , testShowType "Text." "Text."
+        , testShowType "Boolean." "Boolean"
+        , testShowType "Boolean." "Boolean."
+        , testShowType "Duration." "Duration"
+        , testShowType "Duration." "Duration."
         , testReadType "Time"
         , testReadType "Time."
         , testReadType "Date"
