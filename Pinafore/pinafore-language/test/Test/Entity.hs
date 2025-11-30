@@ -889,20 +889,28 @@ testEntity =
                         , "fgi = fn x => fi (gi x)"
                         , "gfi = fn x => gi (fi x)"
                         ]
-                        $ tModify (failTestBecause "??")
                         $ tGroup
                             "nested"
                             [ testExpectSuccess "pass"
+                            , subtypeTest False SRSingle "ML Integer" "Maybe (List Integer)"
+                            , subtypeTest False SRSingle "ML Integer" "ML Integer"
+                            , subtypeTest False SRSingle "(Integer *: Unit) *: Unit" "Maybe (List Integer)"
+                            , subtypeTest False SRSingle "(Integer *: Unit) *: Unit" "ML Integer"
+                            , testExpectSuccess "testeq (Just [12]) (Just [12])"
                             , testExpectSuccess "testeq (Just [12]: Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
-                            , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: ML Integer)"
+                            , testExpectSuccess "testeq \"[[12]]\" (show ([[12]]: Maybe (List Integer)))"
+                            , testExpectSuccess "testeq \"[[12]]\" (show ([[12]]: ML Integer))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq \"[[12]]\" (show (Just [12]: ML Integer))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: ML Integer)"
                             , testExpectSuccess "testeq (Just [55]) (gfa (Just [55]))"
                             , testExpectSuccess "testeq (Just [57]) (gfi (Just [57]))"
                             , testExpectSuccess "(Just [74]: ML Integer) >- fn {Nothing => fail \"Nothing\"; Just a => testeq [74] a;}"
-                            , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
                             , testExpectSuccess "testeq ((Just [12]: ML Integer): Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
                             , testExpectSuccess "testeq (((Just [12]: Maybe (List Integer)): ML Integer): Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
-                            , testExpectSuccess "testeq ((Just [92]: ML Integer): ML Rational) (Just [92]: Maybe (List Integer))"
-                            , testExpectSuccess "testeq ((Just [61]: ML Integer): ML Rational) (Just [61]: Maybe (List Rational))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq ((Just [92]: ML Integer): ML Rational) (Just [92]: Maybe (List Integer))"
+                            , tModify (failTestBecause "??") $ testExpectSuccess "testeq ((Just [61]: ML Integer): ML Rational) (Just [61]: Maybe (List Rational))"
                             ]
                     ]
                 , tDecls

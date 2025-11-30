@@ -34,7 +34,7 @@ testReadTypes =
         , testShowType "Entity." "Entity"
         , testShowType "Entity." "Entity."
         , testShowType "Literal." "Literal"
-        , testShowType "Literal."  "Literal."
+        , testShowType "Literal." "Literal."
         , testShowType "Text." "Text"
         , testShowType "Text." "Text."
         , testShowType "Boolean." "Boolean"
