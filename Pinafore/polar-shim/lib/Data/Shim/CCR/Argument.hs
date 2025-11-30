@@ -58,6 +58,32 @@ instance
                 Refl <- testEquality q1 q2
                 return Refl
 
+instance
+    (AllConstraint Show (ft polarity), AllConstraint Show (ft (InvertPolarity polarity))) =>
+    Show (CCRPolarArgument ft polarity sv t)
+    where
+    show (CoCCRPolarArgument tq) = "+" <> allShow tq
+    show (ContraCCRPolarArgument tp) = "-" <> allShow tp
+    show (RangeCCRPolarArgument tp tq) = "(-" <> allShow tp <> ",+" <> allShow tq <> ")"
+
+instance
+    (AllConstraint Show (ft polarity), AllConstraint Show (ft (InvertPolarity polarity))) =>
+    AllConstraint Show (CCRPolarArgument ft polarity CoCCRVariance)
+    where
+    allConstraint = Dict
+
+instance
+    (AllConstraint Show (ft polarity), AllConstraint Show (ft (InvertPolarity polarity))) =>
+    AllConstraint Show (CCRPolarArgument ft polarity ContraCCRVariance)
+    where
+    allConstraint = Dict
+
+instance
+    (AllConstraint Show (ft polarity), AllConstraint Show (ft (InvertPolarity polarity))) =>
+    AllConstraint Show (CCRPolarArgument ft polarity 'RangeCCRVariance)
+    where
+    allConstraint = Dict
+
 forCCRPolarArgument ::
     forall polarity sv ft t r.
     (Is PolarityType polarity, Monoid r) =>

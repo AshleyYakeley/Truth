@@ -65,7 +65,7 @@ bestM asGoodAs (a : aa) = do
 data TrustOrVerify
     = TrustMe
     | Verify
-    deriving stock Eq
+    deriving stock (Eq, Show)
 
 type SubtypeConversionEntry :: GroundTypeKind -> Type
 data SubtypeConversionEntry ground
@@ -75,8 +75,8 @@ data SubtypeConversionEntry ground
         (ground dvb gtb)
         (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SubtypeConversionEntry ground) where
-    show (MkSubtypeConversionEntry _ ta tb _) = show ta <> " <: " <> show tb
+instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, ShowGroundType ground, Show (DolanSubtypeHint ground)) => Show (SubtypeConversionEntry ground) where
+    show (MkSubtypeConversionEntry trustme ta tb sc) = show ta <> " <: " <> show tb <> " [" <> show trustme <> "] = " <> show sc
 
 subtypeConversionEntry_ ::
     forall (ground :: GroundTypeKind) a b.

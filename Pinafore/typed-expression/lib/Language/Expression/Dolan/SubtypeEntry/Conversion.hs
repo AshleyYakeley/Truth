@@ -51,6 +51,7 @@ instance
 instance
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
     ( IsDolanGroundType ground
+    , ShowGroundType ground
     , Show (DolanSubtypeHint ground)
     ) =>
     Show (SubtypeConversion ground dva gta dvb gtb)

@@ -35,10 +35,10 @@ instance
 
 instance
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
-    IsDolanGroundType ground =>
+    (IsDolanGroundType ground, ShowGroundType ground) =>
     Show (SubtypeLink ground dva gta dvb gtb)
     where
-    show (MkSubtypeLink _ _ _ _) = "link"
+    show (MkSubtypeLink _ argsa argsb _) = show argsa <> "=" <> show argsb
 
 type SubtypeChain ::
     GroundTypeKind ->
@@ -56,7 +56,7 @@ data SubtypeChain ground dva gta dvb gtb where
 
 instance
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
-    IsDolanGroundType ground =>
+    (IsDolanGroundType ground, ShowGroundType ground) =>
     Show (SubtypeChain ground dva gta dvb gtb)
     where
     show NilSubtypeChain = ""
