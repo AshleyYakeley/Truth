@@ -736,16 +736,16 @@ testQueries =
                     , testSameType True "List Integer" "List (rec a, Integer)" ["[0]"]
                     , testSameType True "rec a, List a" "rec a, List a" atree
                     , testSameType True "rec a, List a" "rec a, List (List a)" atree
-                    , testSubtype True "rec a, Maybe a" "rec a, (Maybe a | List a)" ["[]", "[[]]"]
-                    , testSubtype False "Maybe None" "rec a, (Maybe a | List a)" ["[]"]
-                    , testSubtype False "List None" "rec a, (Maybe a | List a)" ["[]"]
-                    , testSubtype False "Maybe None | List None" "rec a, (Maybe a | List a)" ["[]", "[]"]
-                    , testSubtype False "Maybe None" "(rec a, Maybe a) | (rec b, List b)" ["[]"]
-                    , testSubtype False "List None" "(rec a, Maybe a) | (rec b, List b)" ["[]"]
+                    , testSubtype True "rec a, (Unit +: a)" "rec a, (Unit +: a | List a)" ["Left []", "Right (Left [])"]
+                    , testSubtype False "Unit +: None" "rec a, (Unit +: a | List a)" ["Left []"]
+                    , testSubtype False "List None" "rec a, (Unit +: a | List a)" ["[]"]
+                    , testSubtype False "Unit +: None | List None" "rec a, (Unit +: a | List a)" ["[]", "Left []"]
+                    , testSubtype False "Unit +: None" "(rec a, Unit +: a) | (rec b, List b)" ["Left []"]
+                    , testSubtype False "List None" "(rec a, Unit +: a) | (rec b, List b)" ["[]"]
                     , testSubtype
                         False
-                        "(rec a, Maybe a) | (rec b, List b)"
-                        "rec a, (Maybe a | List a)"
+                        "(rec a, Unit +: a) | (rec b, List b)"
+                        "rec a, (Unit +: a | List a)"
                         ["[]", "[]", "[[]]", "[[]]"]
                     , testSubtype True "rec a, List a" "Showable" []
                     , testSubtype True "List (rec a, List a)" "Showable" []
@@ -807,8 +807,8 @@ testQueries =
                 ]
             , testTree
                 "subsume"
-                [ testQuery "let rec {rval: rec a, Maybe a = rval} ()" $ LRSuccess "()"
-                , testQuery "let rec {rval: rec a, Maybe a = Just rval} ()" $ LRSuccess "()"
+                [ testQuery "let rec {rval: rec a, Maybe a = rval} []" $ LRSuccess "[]"
+                , testQuery "let rec {rval: rec a, Maybe a = Just rval} []" $ LRSuccess "[]"
                 , testQuery
                     "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount"
                     $ LRSuccess "<?>"
@@ -838,7 +838,7 @@ testQueries =
                     $ LRSuccess "1"
                 , testQuery
                     "with Function, Integer let rec {rcount: (rec x, Maybe x) -> Integer = rcount1; rcount1: (rec x, Maybe x) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} ()"
-                    $ LRSuccess "()"
+                    $ LRSuccess "[]"
                 , testQuery
                     "with Function, Integer let rec {rcount = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing"
                     $ LRSuccess "1"
@@ -976,7 +976,7 @@ testQueries =
                 , testQuery
                     "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just Nothing} rcount rval"
                     $ LRSuccess "2"
-                , testQuery "with Function let {} Just $ Just $ Just Nothing" $ LRSuccess "Just Just Just Nothing"
+                , testQuery "with Function let {} Just $ Just $ Just Nothing" $ LRSuccess "[[[[]]]]"
                 , testQuery
                     "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval = Just $ Just $ Just Nothing} rcount rval"
                     $ LRSuccess "3"
@@ -1096,7 +1096,6 @@ testQueries =
                 , testLiteral 21 True "\"12345678901234567890\""
                 , testLiteral 31 True "\"123456789012345678901234567890\""
                 , testLiteral 32 False "\"1234567890123456789012345678901\""
-                , testLiteral 1 True "()"
                 , testLiteral 2 True "True"
                 , testLiteral 2 True "False"
                 , testLiteral 3 True "34"
@@ -1143,10 +1142,10 @@ testQueries =
                 "ap{let {m = %ap{Just}} (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
                 "{} -> WholeModel. +(Maybe. (Natural. | Text.) *: Maybe. (Natural. | Text.))"
             , testQuery "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}"
-                $ LRSuccess "(Just 3,Just \"text\")"
+                $ LRSuccess "[[3],\"text\"]"
             , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf {}"
-                $ LRSuccess "(Just 3,Just \"text\")"
-            , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "(Just 3,Just \"text\")"
+                $ LRSuccess "[[3],\"text\"]"
+            , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "[[3],\"text\"]"
             ]
         , testTree
             "splice"

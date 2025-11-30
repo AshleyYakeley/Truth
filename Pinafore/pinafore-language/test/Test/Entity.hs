@@ -285,8 +285,7 @@ testEntity =
                                 <> "); _ => stop}"
                         testPairs :: [(Text, Text)]
                         testPairs =
-                            [ ("Unit", "()")
-                            , ("Boolean", "True")
+                            [ ("Boolean", "True")
                             , ("Ordering", "LT")
                             , ("Integer", "0")
                             , ("Integer", "1")
@@ -972,12 +971,10 @@ testEntity =
                     [ testExpectSuccess "testeq 1 $ 34.0 >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
                     , testExpectSuccess "testeq 2 $ True >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
                     , testExpectSuccess "testeq 3 $ \"hello\" >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
-                    , testExpectSuccess "testeq 4 $ () >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
                     , testExpectSuccess "testeq 1 $ 34.0 >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess "testeq 2 $ True >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
                         "testeq 3 $ \"hello\" >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
-                    , testExpectSuccess "testeq 4 $ () >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
                         "testeq 1 $ 34.0 >- fn {_:?Integer => 1; _:?Rational => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
