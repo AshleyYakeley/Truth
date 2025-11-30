@@ -29,6 +29,7 @@ import Pinafore.Storage
 
 import Import
 import Pinafore.Language
+import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
@@ -120,6 +121,15 @@ overrideLibraryModule mname f =
             | n == mname -> MkLibraryModule n $ f c
         lm -> lm
 
+idA :: A -> A
+idA = id
+
+dumpSubtypes :: QInterpreter LangExpression
+dumpSubtypes = do
+    scs <- getSubtypeConversions
+    liftIO $ for_ scs $ \sc -> hPutStrLn stderr $ show sc
+    pure $ MkLangExpression $ qConst idA
+
 runTester :: TesterOptions -> Tester () -> IO ()
 runTester MkTesterOptions{..} (MkTester ta) =
     runWithOptions tstExecutionOptions
@@ -133,9 +143,15 @@ runTester MkTesterOptions{..} (MkTester ta) =
                 testOutputLn = sinkWriteLn outputSink
                 myLibStuff :: LibraryStuff
                 myLibStuff =
-                    namespaceBDS
-                        "Env"
-                        [valBDS "stdout" "OVERRIDDEN" $ MkLangSink outputSink, valBDS "outputLn" "OVERRIDDEN" testOutputLn]
+                    mconcat
+                        [ namespaceBDS
+                            "Env"
+                            [valBDS "stdout" "OVERRIDDEN" $ MkLangSink outputSink, valBDS "outputLn" "OVERRIDDEN" testOutputLn]
+                        , namespaceBDS
+                            "Debug"
+                            [ valBDS "dumpSubtypes" "" dumpSubtypes
+                            ]
+                        ]
                 tcLibrary =
                     mkLibraryContext
                         $ libraryLoadModule
