@@ -53,4 +53,4 @@ getSubtypeChainRenamed ::
     CrumbleM ground (SubtypeChain ground dva gta dvb gtb)
 getSubtypeChainRenamed gsc ga gb = do
     chain <- liftResultToCrumbleM $ unGetSubtypeChain gsc ga gb
-    liftToCrumbleM $ unEndoM (renameType @(DolanTypeSystem ground) [] FreeName) chain
+    liftToCrumbleM $ renameSubtypeChain chain

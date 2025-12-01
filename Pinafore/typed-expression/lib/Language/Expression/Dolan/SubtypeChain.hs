@@ -74,16 +74,24 @@ getChainArguments (MkSubtypeLink _ argsa argsc _) NilSubtypeChain call = call ar
 getChainArguments (MkSubtypeLink _ _ argsc _) (ConsSubtypeChain link chain) call =
     getChainArguments link chain $ \argsa _ -> call argsa argsc
 
-instance
-    forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
-    IsDolanGroundType ground =>
-    VarRenameable (SubtypeChain ground dva gta dvb gtb)
-    where
-    varRename rs =
-        MkEndoM $ \case
-            NilSubtypeChain -> pure NilSubtypeChain
-            ConsSubtypeChain link chain ->
-                liftA2 ConsSubtypeChain (unEndoM (varRename rs) link) (unEndoM (varRename rs) chain)
+-- not VarRenameable, because each link is in a different namespace
+renameSubtypeChain ::
+    forall
+        (ground :: GroundTypeKind)
+        (dva :: CCRVariances)
+        (gta :: CCRVariancesKind dva)
+        (dvb :: CCRVariances)
+        (gtb :: CCRVariancesKind dvb)
+        m.
+    (IsDolanGroundType ground, Monad m) =>
+    SubtypeChain ground dva gta dvb gtb -> VarRenamerT (DolanTypeSystem ground) m (SubtypeChain ground dva gta dvb gtb)
+renameSubtypeChain = \case
+    NilSubtypeChain -> pure NilSubtypeChain
+    ConsSubtypeChain link chain ->
+        liftA2
+            ConsSubtypeChain
+            (unEndoM (renameType @(DolanTypeSystem ground) [] FreeName) link)
+            (renameSubtypeChain chain)
 
 identitySubtypeChain ::
     forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
