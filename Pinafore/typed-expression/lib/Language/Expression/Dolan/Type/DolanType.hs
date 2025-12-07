@@ -70,6 +70,7 @@ type ShowGroundType :: GroundTypeKind -> Constraint
 class
     ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
     , Show (DolanVarID ground)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanGroundedType ground polarity)
     , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
     , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
     ) =>
@@ -79,6 +80,7 @@ instance
     forall (ground :: GroundTypeKind).
     ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
     , Show (DolanVarID ground)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanGroundedType ground polarity)
     , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
     , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
     ) =>

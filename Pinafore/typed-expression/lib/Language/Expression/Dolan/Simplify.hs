@@ -61,7 +61,7 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 -- automateRecursion: simplify complex recursive types using automata
 -- e.g. "rec a, Maybe. (rec b, a | Maybe. b)" => "rec a, Maybe a"
 --
--- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
+-- eliminateUnusedRecursion: remove unused recursion
 -- e.g. "rec a, Integer" => "Integer"
 -- This is usually switched off since automateRecursion does this.
 --

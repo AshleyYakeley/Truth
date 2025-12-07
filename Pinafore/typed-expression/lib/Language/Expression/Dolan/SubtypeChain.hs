@@ -38,7 +38,7 @@ instance
     (IsDolanGroundType ground, ShowGroundType ground) =>
     Show (SubtypeLink ground dva gta dvb gtb)
     where
-    show (MkSubtypeLink _ argsa argsb _) = show argsa <> "=" <> show argsb
+    show (MkSubtypeLink _ argsa argsb expr) = show argsa <> "=" <> show argsb <> " " <> show expr
 
 type SubtypeChain ::
     GroundTypeKind ->

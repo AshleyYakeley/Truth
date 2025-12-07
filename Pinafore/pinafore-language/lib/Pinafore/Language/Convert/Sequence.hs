@@ -321,7 +321,7 @@ instance HasQGroundType '[CoCCRVariance] LangList1 where
             stbAdapterExprKnot = pureStorabilityAdapter @LangList1 $ \(ConsArguments t NilArguments) -> langList1StoreAdapter t
             in MkStorability{..}
         props = singleGroundProperty storabilityProperty storability
-        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangList1)|]) "List1.List."){qgtProperties = props}
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangList1)|]) "List1."){qgtProperties = props}
 
 -- NonEmpty
 instance
