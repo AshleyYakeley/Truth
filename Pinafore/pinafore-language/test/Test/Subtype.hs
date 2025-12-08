@@ -11,6 +11,19 @@ import Shapes
 import Pinafore.Test.Internal
 import Test.RunScript
 
+testLists :: TestTree
+testLists =
+    testTree "lists"
+        $ runTester defaultTester
+        $ testerLiftInterpreter
+        $ do
+            stl1 <- parseType @'Positive "List1 Integer"
+            stl <- parseType @'Positive "List Integer"
+            case (stl1, stl) of
+                (MkSome tl1, MkSome tl) -> do
+                    _ <- qSubsume (mkShimWit tl1) tl
+                    pure ()
+
 emptyDefDoc :: DefDoc
 emptyDefDoc = MkDefDoc (HeadingDocItem mempty) mempty
 
@@ -258,7 +271,8 @@ testSubtype :: TestTree
 testSubtype =
     testTree
         "subtype"
-        [ testSimple
+        [ testLists
+        , testSimple
         , testDependentLet
         , testDependentFunction
         , testPolyDependentFunction

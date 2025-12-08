@@ -18,4 +18,12 @@ pinafore> :simplify+ a -> (a | a)
 a -> a
 pinafore> :simplify- a -> (a & Any)
 a -> a
+pinafore> :simplify+ (List a & List1 a) -> List1 a
+List1 a -> List1 a
+pinafore> :simplify- List a & List1 a
+List1 Any
+pinafore> :simplify+ List a | List1 a
+List None
+pinafore> :simplify- List Integer & List1 Integer
+List1 Integer
 pinafore> <END>

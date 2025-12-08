@@ -8,3 +8,7 @@
 :simplify- a
 :simplify+ a -> (a | a)
 :simplify- a -> (a & Any)
+:simplify+ (List a & List1 a) -> List1 a
+:simplify- List a & List1 a
+:simplify+ List a | List1 a
+:simplify- List Integer & List1 Integer
