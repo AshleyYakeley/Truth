@@ -3,7 +3,6 @@ module Language.Expression.Dolan.Subtype where
 import Data.Shim
 import Shapes
 
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
@@ -25,22 +24,13 @@ liftTypeResult ::
         --> DolanTypeM ground
 liftTypeResult = lift
 
-liftCrumbleM ::
-    forall (ground :: GroundTypeKind).
-    CrumbleM ground
-        --> DolanRenameTypeM ground
-liftCrumbleM cra =
-    tunnel $ \tun -> do
-        gsc <- getSubtypeChain
-        liftTypeResult $ runReaderT (tun $ runCrumbleM () cra) gsc
-
 getSubtypeChainRenamed ::
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
     IsDolanGroundType ground =>
     GetSubtypeChain ground ->
     ground dva gta ->
     ground dvb gtb ->
-    CrumbleM ground (SubtypeChain ground dva gta dvb gtb)
+    DolanRenameTypeM ground (SubtypeChain ground dva gta dvb gtb)
 getSubtypeChainRenamed gsc ga gb = do
-    chain <- liftResultToCrumbleM $ unGetSubtypeChain gsc ga gb
-    liftToCrumbleM $ renameSubtypeChain chain
+    chain <- lift $ lift $ unGetSubtypeChain gsc ga gb
+    renameSubtypeChain chain

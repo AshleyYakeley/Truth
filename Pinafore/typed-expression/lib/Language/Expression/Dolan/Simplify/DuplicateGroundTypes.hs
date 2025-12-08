@@ -8,7 +8,6 @@ import Shapes
 
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Solver
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
@@ -28,19 +27,17 @@ mergeTypeType ::
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanType ground polarity ta ->
     DolanType ground polarity tb ->
-    CrumbleM ground (DolanShimWit ground polarity (JoinMeetType polarity ta tb))
-mergeTypeType ta tb =
-    liftToCrumbleM
-        $ case polarityType @polarity of
-            PositiveType -> chainPolarShimWitM mergeInType $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
-            NegativeType -> chainPolarShimWitM mergeInType $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    DolanRenameTypeM ground (DolanShimWit ground polarity (JoinMeetType polarity ta tb))
+mergeTypeType ta tb = case polarityType @polarity of
+    PositiveType -> chainPolarShimWitM mergeInType $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    NegativeType -> chainPolarShimWitM mergeInType $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
 
 mergeSSSubtype ::
     forall (ground :: GroundTypeKind) polarity ta tb.
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity ta ->
     DolanSingularType ground polarity tb ->
-    CrumbleM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
+    DolanRenameTypeM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeSSSubtype ta tb = do
     conv <- subtypeSingularType ta tb
     return $ MkShimWit tb $ polarF conv id
@@ -50,22 +47,22 @@ mergeSSEquality ::
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity ta ->
     DolanSingularType ground polarity tb ->
-    CrumbleM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
+    DolanRenameTypeM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeSSEquality (GroundedDolanSingularType (MkDolanGroundedType gt1 args1)) (GroundedDolanSingularType (MkDolanGroundedType gt2 args2))
     | Just (Refl, HRefl) <- groundTypeTestEquality gt1 gt2 = do
         MkShimWit args' convargs <- mergeDolanArgumentsM mergeTypeType (groundTypeVarianceMap gt1) args1 args2
         return $ MkShimWit (GroundedDolanSingularType (MkDolanGroundedType gt1 args')) convargs
-mergeSSEquality ta tb = throw $ ConvertTypeError (toFlipType $ singleDolanType ta) (toFlipType $ singleDolanType tb)
+mergeSSEquality ta tb = throwExc $ ConvertTypeError (toFlipType $ singleDolanType ta) (toFlipType $ singleDolanType tb)
 
 mergeSingularSingularType ::
     forall (ground :: GroundTypeKind) polarity ta tb.
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity ta ->
     DolanSingularType ground polarity tb ->
-    CrumbleM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
+    DolanRenameTypeM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeSingularSingularType ta tb =
-    catch @(TypeError ground) (mergeSSSubtype ta tb) $ \_ ->
-        catch @(TypeError ground) (fmap (mapPolarShimWit iPolarSwap) (mergeSSSubtype tb ta)) $ \_ ->
+    catchExc (mergeSSSubtype ta tb) $ \_ ->
+        catchExc (fmap (mapPolarShimWit iPolarSwap) (mergeSSSubtype tb ta)) $ \_ ->
             mergeSSEquality ta tb
 
 mergeSingularType ::
@@ -76,7 +73,7 @@ mergeSingularType ::
     DolanRenameTypeM ground (DolanShimWit ground polarity (JoinMeetType polarity t1 tr))
 mergeSingularType ts NilDolanType = return $ mkPolarShimWit $ ConsDolanType ts NilDolanType
 mergeSingularType ts (ConsDolanType t1 tr) = do
-    mts1 <- runCrumbleMCheck (ts, t1) $ mergeSingularSingularType ts t1
+    mts1 <- checkDolanRenameTypeM (ts, t1) $ mergeSingularSingularType ts t1
     case mts1 of
         Nothing -> do
             MkShimWit tsr conv <- mergeSingularType ts tr

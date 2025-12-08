@@ -135,6 +135,16 @@ type DolanRenameTypeM ground = DolanRenamerT ground (DolanTypeM ground)
 joinTypeCheckResult :: forall (ground :: GroundTypeKind) a. DolanRenameTypeM ground a -> DolanRenameTypeM ground a -> DolanRenameTypeM ground a
 joinTypeCheckResult tma tmb = tunnel $ \tun1 -> tunnel $ \tun2 -> joinFirstResult (tun2 $ tun1 tma) (tun2 $ tun1 tmb)
 
+checkDolanRenameTypeM ::
+    forall (ground :: GroundTypeKind) t a.
+    VarRenameable t =>
+    t ->
+    DolanRenameTypeM ground a ->
+    DolanRenameTypeM ground (Maybe a)
+checkDolanRenameTypeM e ca = do
+    ta <- lift $ runVarRenamerT (renameableVars e) [] $ tryExc ca
+    return $ resultToMaybe ta
+
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSystem (DolanTypeSystem ground) where
     type TSOuter (DolanTypeSystem ground) = DolanRenameTypeM ground
     type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative

@@ -15,12 +15,10 @@ import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Presubstitution
 import Language.Expression.Dolan.Solver.Crumble.Type
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
-import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
 
@@ -174,14 +172,14 @@ type VarPuzzle (ground :: GroundTypeKind) = Expression (UnifyVariableConstraint 
 type VarPuzzleExpression (ground :: GroundTypeKind) = TSOpenSolverExpression (DolanTypeSystem ground) (VarPuzzle ground)
 
 type UnifyCrumbler (ground :: GroundTypeKind) =
-    Crumbler (WholeConstraint ground) (CrumbleM ground) (VarPuzzleExpression ground)
+    Crumbler (WholeConstraint ground) (DolanRenameTypeM ground) (VarPuzzleExpression ground)
 
 pieceToUnify ::
     forall (ground :: GroundTypeKind) a.
     IsDolanGroundType ground =>
     Piece ground a ->
-    CrumbleM ground (UnifyPuzzle ground a)
-pieceToUnify (WholePiece (MkWholeConstraint fta ftb)) = liftToCrumbleM $ unifyFlipTypes fta ftb
+    DolanRenameTypeM ground (UnifyPuzzle ground a)
+pieceToUnify (WholePiece (MkWholeConstraint fta ftb)) = unifyFlipTypes fta ftb
 pieceToUnify (AtomicPiece (MkAtomicConstraint var PositiveType ft)) =
     return $ fmap fst $ unifyAtomic var (flipMixedType ft) nilMixedType
 pieceToUnify (AtomicPiece (MkAtomicConstraint var NegativeType ft)) =
@@ -191,7 +189,7 @@ solveWholeConstraint ::
     forall (ground :: GroundTypeKind) a.
     IsDolanGroundType ground =>
     WholeConstraint ground a ->
-    CrumbleM ground (NonEmpty (UnifyPuzzleExpression ground a))
+    DolanRenameTypeM ground (NonEmpty (UnifyPuzzleExpression ground a))
 solveWholeConstraint wc = do
     exprs <- crumbleConstraint wc
     for exprs $ \(MkSolverExpression puzzle dexpr) -> do
@@ -275,13 +273,13 @@ toPureVariablePuzzle =
         _ -> Nothing
 
 firstSuccess ::
-    forall e m a b.
-    MonadCatch e m =>
+    forall m a b.
+    MonadException m =>
     NonEmpty a ->
     (a -> m b) ->
     m b
 firstSuccess (a0 :| []) amb = amb a0
-firstSuccess (a0 :| (a1 : aa)) amb = catch (amb a0) (\(_ :: e) -> firstSuccess @e (a1 :| aa) amb)
+firstSuccess (a0 :| (a1 : aa)) amb = catchExc (amb a0) (\_ -> firstSuccess (a1 :| aa) amb)
 
 processWholeConstraint ::
     forall (ground :: GroundTypeKind) a b.
@@ -294,7 +292,7 @@ processWholeConstraint wconstr@MkWholeConstraint{} puzzlerest =
         $ MkCrumbler
         $ do
             upexprs <- lift $ solveWholeConstraint wconstr
-            firstSuccess @(TypeError ground) upexprs $ \(MkSolverExpression puzzle1 dexpr1) -> do
+            firstSuccess upexprs $ \(MkSolverExpression puzzle1 dexpr1) -> do
                 MkSolverExpression puzzle2 dexpr2 <- unCrumbler $ processPuzzle $ liftA2 (,) puzzle1 puzzlerest
                 return
                     $ MkSolverExpression puzzle2
@@ -318,7 +316,7 @@ processPuzzle puzzle =
         Just r -> r
         Nothing ->
             wbind
-                ( liftToCrumbleM $ do
+                ( do
                     apuzzle <- mergeAtomicPuzzle puzzle
                     atomicToVariablePuzzle apuzzle
                 )
@@ -365,9 +363,9 @@ solveUnifyPuzzle ::
     forall (ground :: GroundTypeKind) a.
     IsDolanGroundType ground =>
     UnifyPuzzle ground a ->
-    CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
+    DolanRenameTypeM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
 solveUnifyPuzzle (ClosedExpression a) = return (pure a, [])
 solveUnifyPuzzle puzzle = do
     MkSolverExpression vpuzzle expr <- runCrumbler $ processPuzzle puzzle
-    (t, bisubs) <- liftToCrumbleM $ solveVPuzzle vpuzzle
+    (t, bisubs) <- solveVPuzzle vpuzzle
     return $ (fmap (\ta -> ta t) expr, bisubs)

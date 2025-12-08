@@ -5,7 +5,7 @@
 module Language.Expression.Dolan.Solver
     ( subtypeSingularType
     , invertedPolarSubtype
-    , CrumbleM
+    , DolanRenameTypeM
     )
 where
 
@@ -14,7 +14,6 @@ import Shapes
 
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.Solve
 import Language.Expression.Dolan.Solver.Substitute
@@ -34,7 +33,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
     unifyPosWitnesses ta tb =
         return $ uuLiftPosShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
     unifyPosNegWitnesses ta tb = fmap MkComposeShim $ puzzleExpressionUnify ta tb
-    solveUnifier puzzle = liftCrumbleM $ solvePuzzle puzzle
+    solveUnifier = solvePuzzle
     unifierPosSubstitute bisubs t = lift $ liftTypeResult $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = lift $ liftTypeResult $ bisubstitutesType bisubs t
 
@@ -46,9 +45,9 @@ instance
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
-        subsumer' <- liftCrumbleM $ applyBisubsToPuzzle ss subsumer
+        subsumer' <- applyBisubsToPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'
-    solveSubsumer puzzle = liftCrumbleM $ solvePuzzle puzzle
+    solveSubsumer = solvePuzzle
     subsumerPosSubstitute subs t = lift $ liftTypeResult $ bisubstitutesType subs t
     subsumerNegSubstitute subs t = lift $ liftTypeResult $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = puzzleExpressionUnify tinf tdecl
@@ -57,7 +56,7 @@ instance
 checkSameVar ::
     forall (ground :: GroundTypeKind) wit t.
     wit t ->
-    CrumbleM ground t
+    DolanRenameTypeM ground t
 {-
 checkSameVar (MkAtomicConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) )
     | Just Refl <- testEquality va vb =
@@ -98,9 +97,9 @@ subtypeSingularType ::
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity a ->
     DolanSingularType ground polarity b ->
-    CrumbleM ground (DolanPolarShim ground polarity a b)
+    DolanRenameTypeM ground (DolanPolarShim ground polarity a b)
 subtypeSingularType ta tb = do
-    puzzle <- liftToCrumbleM $ puzzleSubsumeSingular ta tb
+    puzzle <- puzzleSubsumeSingular ta tb
     (oexpr, _) <- solvePuzzle puzzle
     runExpression checkSameVar oexpr
 

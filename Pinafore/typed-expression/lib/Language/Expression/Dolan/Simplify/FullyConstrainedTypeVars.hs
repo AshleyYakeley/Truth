@@ -11,7 +11,6 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUsage
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Solver
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Solve
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.SubtypeChain
@@ -185,7 +184,7 @@ testInvertedSubtype negtype postype = do
     mexpr <-
         runRenamer @(DolanTypeSystem ground) [] [] $ do
             puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
-            runCrumbleMCheck (negtype, postype) $ fmap fst $ solvePuzzle puzzle
+            checkDolanRenameTypeM (negtype, postype) $ fmap fst $ solvePuzzle puzzle
     return $ do
         expr <- mexpr
         resultToMaybe $ evalExpressionResult expr

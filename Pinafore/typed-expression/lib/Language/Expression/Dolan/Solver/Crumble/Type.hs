@@ -10,7 +10,6 @@ import Data.Shim
 import Shapes
 
 import Language.Expression.Dolan.Invert
-import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
@@ -22,7 +21,7 @@ import Language.Expression.Dolan.Unroll
 import Language.Expression.TypeSystem
 
 newtype TypeCrumbler (ground :: GroundTypeKind) a = MkTypeCrumbler
-    { unTypeCrumbler :: ReaderT (Bool, TypeError ground) (CrumbleM ground) (NonEmpty (PuzzleExpression ground a))
+    { unTypeCrumbler :: ReaderT (Bool, TypeError ground) (DolanRenameTypeM ground) (NonEmpty (PuzzleExpression ground a))
     }
 
 concatResults :: (a -> a -> a) -> Result err a -> Result err a -> Result err a
@@ -50,21 +49,20 @@ instance
     IsDolanGroundType ground =>
     Alternative (TypeCrumbler ground)
     where
-    empty = MkTypeCrumbler $ ReaderT $ \(_, err) -> throw err
+    empty = MkTypeCrumbler $ ReaderT $ \(_, err) -> throwExc err
     MkTypeCrumbler (ReaderT p) <|> MkTypeCrumbler (ReaderT q) =
         MkTypeCrumbler
             $ ReaderT
-            $ \r -> liftFullToCrumbleMWithUnlift $ \unlift ->
-                tunnel $ \tun1 ->
-                    tunnel $ \tun2 ->
-                        concatResults (liftA2 $ liftA2 (<>)) (tun2 $ tun1 $ unlift $ p r) (tun2 $ tun1 $ unlift $ q r)
+            $ \r -> tunnel $ \tun1 ->
+                tunnel $ \tun2 ->
+                    concatResults (liftA2 $ liftA2 (<>)) (tun2 $ tun1 $ p r) (tun2 $ tun1 $ q r)
 
 instance
     forall (ground :: GroundTypeKind).
     IsDolanGroundType ground =>
     WrappedApplicative (TypeCrumbler ground)
     where
-    type WAInnerM (TypeCrumbler ground) = ReaderT (Bool, TypeError ground) (CrumbleM ground)
+    type WAInnerM (TypeCrumbler ground) = ReaderT (Bool, TypeError ground) (DolanRenameTypeM ground)
     wexec msa =
         MkTypeCrumbler $ do
             MkTypeCrumbler sa <- msa
@@ -95,7 +93,7 @@ crumbleBreak ::
     DolanType ground pola ta ->
     DolanType ground polb tb ->
     TypeCrumbler ground (DolanShim ground ta tb)
-crumbleBreak ta tb = MkTypeCrumbler $ lift $ liftToCrumbleM $ fmap (pure . puzzleExpression) $ puzzleUnify ta tb
+crumbleBreak ta tb = MkTypeCrumbler $ lift $ fmap (pure . puzzleExpression) $ puzzleUnify ta tb
 
 crumbleTTWit ::
     forall (ground :: GroundTypeKind) pola polb ta tb.
@@ -120,7 +118,7 @@ crumbleAtomicLE ::
 crumbleAtomicLE var t =
     case polarityType @polarity of
         PositiveType ->
-            wbind (lift crumbleMRigidity) $ \rigidity ->
+            wbind (lift renamerGetNameRigidity) $ \rigidity ->
                 crumblerLiftPuzzle
                     $ case invertTypeM rigidity t of
                         SuccessResult (MkShimWit invt (MkPolarShim conv)) ->
@@ -138,7 +136,7 @@ crumbleAtomicGE var t =
     case polarityType @polarity of
         PositiveType -> crumblerLiftPuzzle $ atomicPuzzle var $ NormalFlipType t
         NegativeType ->
-            wbind (lift crumbleMRigidity) $ \rigidity ->
+            wbind (lift renamerGetNameRigidity) $ \rigidity ->
                 crumblerLiftPuzzle
                     $ case invertTypeM rigidity t of
                         SuccessResult (MkShimWit invt (MkPolarShim conv)) ->
@@ -234,7 +232,7 @@ crumbleGroundedTypes ::
 crumbleGroundedTypes (MkDolanGroundedType ga argsa) (MkDolanGroundedType gb argsb) =
     wbind
         ( do
-            gsc <- lift crumbleMGetSubtypeChain
+            gsc <- lift $ lift ask
             lift $ getSubtypeChainRenamed gsc ga gb
         )
         $ \chain ->
@@ -277,20 +275,20 @@ toJoinMeetLimit =
 
 newtype IsFreeVar = MkIsFreeVar (forall tv. TypeVarT tv -> Bool)
 
-crumbleMIsFreeVar ::
+getIsFreeVar ::
     forall (ground :: GroundTypeKind).
-    CrumbleM ground IsFreeVar
-crumbleMIsFreeVar = do
-    rigidity <- liftToCrumbleM renamerGetNameRigidity
+    DolanRenameTypeM ground IsFreeVar
+getIsFreeVar = do
+    rigidity <- renamerGetNameRigidity
     return $ MkIsFreeVar $ \n -> case rigidity $ typeVarName n of
         FreeName -> True
         RigidName -> False
 
-getIsFreeVar ::
+withIsFreeVar ::
     forall (ground :: GroundTypeKind) a.
     IsDolanGroundType ground =>
     ((forall tv. TypeVarT tv -> Bool) -> TypeCrumbler ground a) -> TypeCrumbler ground a
-getIsFreeVar call = wbind (lift crumbleMIsFreeVar) $ \(MkIsFreeVar isFreeVar) -> call isFreeVar
+withIsFreeVar call = wbind (lift getIsFreeVar) $ \(MkIsFreeVar isFreeVar) -> call isFreeVar
 
 crumbleSS' ::
     forall (ground :: GroundTypeKind) pola polb ta tb.
@@ -322,7 +320,7 @@ crumbleSS ::
     DolanSingularType ground pola ta ->
     DolanSingularType ground polb tb ->
     TypeCrumbler ground (DolanShim ground ta tb)
-crumbleSS ta tb = getIsFreeVar $ crumbleSS' ta tb
+crumbleSS ta tb = withIsFreeVar $ crumbleSS' ta tb
 
 crumbleSTN ::
     forall (ground :: GroundTypeKind) pola ta tb.
@@ -390,7 +388,7 @@ crumbleST ::
     DolanSingularType ground pola ta ->
     DolanType ground polb tb ->
     TypeCrumbler ground (DolanShim ground ta tb)
-crumbleST ta tb = getIsFreeVar $ crumbleST' ta tb
+crumbleST ta tb = withIsFreeVar $ crumbleST' ta tb
 
 crumbleTNS1 ::
     forall (ground :: GroundTypeKind) polb ta tb.
@@ -426,7 +424,7 @@ crumbleTNS ::
     DolanType ground 'Negative ta ->
     DolanSingularType ground polb tb ->
     TypeCrumbler ground (DolanShim ground ta tb)
-crumbleTNS ta tb = getIsFreeVar $ crumbleTNS' ta tb
+crumbleTNS ta tb = withIsFreeVar $ crumbleTNS' ta tb
 
 crumbleTPT ::
     forall (ground :: GroundTypeKind) polb ta tb.
@@ -499,7 +497,7 @@ crumbleConstraint ::
     forall (ground :: GroundTypeKind) a.
     IsDolanGroundType ground =>
     WholeConstraint ground a ->
-    CrumbleM ground (NonEmpty (PuzzleExpression ground a))
+    DolanRenameTypeM ground (NonEmpty (PuzzleExpression ground a))
 crumbleConstraint constr@(MkWholeConstraint fta ftb) =
     runReaderT (unTypeCrumbler $ crumbleWholeConstraint constr) $ (True, ConvertTypeError fta ftb)
 
@@ -512,7 +510,7 @@ checkCrumbleArguments ::
     DolanRenameTypeM ground Bool
 checkCrumbleArguments dvm argsa argsb = do
     rpexprs <-
-        runCrumbleMResult ()
+        tryExc
             $ runReaderT (unTypeCrumbler $ crumbleDolanArguments dvm argsa argsb)
             $ (True, InternalTypeError "bad type crumble")
     return
