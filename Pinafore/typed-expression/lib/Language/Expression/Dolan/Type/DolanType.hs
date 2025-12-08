@@ -44,6 +44,7 @@ class
     , Eq (DolanVarID ground)
     , Ord (DolanVarID ground)
     -- , DebugGroundType ground
+    -- , ShowGroundType ground
     ) =>
     IsDolanGroundType (ground :: GroundTypeKind)
     where
