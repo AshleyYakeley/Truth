@@ -19,8 +19,8 @@ let {
     namespace EventTime {
         subtype EventTime <: Showable =
             fn {
-                MkDate d => Mk.Showable $ encode (unixAsText.Date "%F") d;
-                MkTime t => Mk.Showable $ encode (unixAsText.LocalTime "%F %R") t;
+                MkDate d => Text.Showable $ encode (unixAsText.Date "%F") d;
+                MkTime t => Text.Showable $ encode (unixAsText.LocalTime "%F %R") t;
             };
 
         dateOf: Lens EventTime Date =

@@ -24,10 +24,10 @@ pinafore> f = fn x => x <> x
 pinafore> :t f
 : List a -> List a
 pinafore> :t fn x => x <>.List1 x
-: List1.List a -> List1.List a
+: List1 a -> List1 a
 pinafore> g = fn x => x <>.List1 x
 pinafore> :t g
-: List1.List a -> List1.List a
+: List1 a -> List1 a
 pinafore> :t uu
 : uu: a, a
 pinafore> :t uu + 1
