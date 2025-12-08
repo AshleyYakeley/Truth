@@ -49,6 +49,9 @@ instance VarRenameable (TypeVarT t) where
 instance VarRenameable (a :~: b) where
     varRename _ = mempty
 
+instance (VarRenameable a, VarRenameable b) => VarRenameable (a, b) where
+    varRename rs = varRename rs <***> varRename rs
+
 -- hack to work around odd QualfifiedConstraints restriction
 class (forall t. VarRenameable (w t)) => VarRenameable1 (w :: Type -> Type)
 

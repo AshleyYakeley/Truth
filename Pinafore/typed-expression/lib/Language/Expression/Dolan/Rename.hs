@@ -97,3 +97,17 @@ instance
                 ta' <- unEndoM (varRename ev) ta
                 tb' <- unEndoM (varRename ev) tb
                 return $ ConsDolanType ta' tb'
+
+instance
+    forall (ground :: GroundTypeKind) polarity t.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    VarRenameable (InvertedType ground polarity t)
+    where
+    varRename ev = withInvertPolarity @polarity
+        $ MkEndoM
+        $ \case
+            NilInvertedType -> pure NilInvertedType
+            ConsInvertedType ta tb -> do
+                ta' <- unEndoM (varRename ev) ta
+                tb' <- unEndoM (varRename ev) tb
+                return $ ConsInvertedType ta' tb'

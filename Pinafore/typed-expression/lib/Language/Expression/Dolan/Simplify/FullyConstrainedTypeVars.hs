@@ -185,7 +185,7 @@ testInvertedSubtype negtype postype = do
     mexpr <-
         runRenamer @(DolanTypeSystem ground) [] [] $ do
             puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
-            runCrumbleMCheck $ fmap fst $ solvePuzzle puzzle
+            runCrumbleMCheck (negtype, postype) $ fmap fst $ solvePuzzle puzzle
     return $ do
         expr <- mexpr
         resultToMaybe $ evalExpressionResult expr

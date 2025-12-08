@@ -8,7 +8,7 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
 
 newtype CrumbleM (ground :: GroundTypeKind) a = MkCrumbleM
-    { unCrumbleM :: ReaderT (String -> NameRigidity) (DolanRenameTypeM ground) a
+    { unCrumbleM :: ReaderT () (DolanRenameTypeM ground) a
     }
     deriving newtype (Functor, Applicative, Monad, MonadException)
 
@@ -39,24 +39,26 @@ liftResultToCrumbleM rea = liftToCrumbleM $ lift $ lift rea
 
 runCrumbleM ::
     forall (ground :: GroundTypeKind) a.
-    (String -> NameRigidity) ->
+    () ->
     CrumbleM ground a ->
     DolanRenameTypeM ground a
 runCrumbleM ccRigidity ca = runReaderT (unCrumbleM ca) ccRigidity
 
 runCrumbleMResult ::
     forall (ground :: GroundTypeKind) a.
-    (String -> NameRigidity) ->
+    () ->
     CrumbleM ground a ->
     DolanRenameTypeM ground (TypeResult ground a)
 runCrumbleMResult ccRigidity ca = tryExc $ runCrumbleM ccRigidity ca
 
 runCrumbleMCheck ::
-    forall (ground :: GroundTypeKind) a.
+    forall (ground :: GroundTypeKind) t a.
+    VarRenameable t =>
+    t ->
     CrumbleM ground a ->
     DolanRenameTypeM ground (Maybe a)
-runCrumbleMCheck ca = do
-    ta <- runCrumbleMResult (\_ -> RigidName) ca
+runCrumbleMCheck e ca = do
+    ta <- lift $ runVarRenamerT (renameableVars e) [] $ runCrumbleMResult () ca
     return $ resultToMaybe ta
 
 joinFirstCrumbleM ::
@@ -86,7 +88,7 @@ forFirstCrumbleM l f = firstCrumbleM $ fmap f l
 crumbleMRigidity ::
     forall (ground :: GroundTypeKind).
     CrumbleM ground (String -> NameRigidity)
-crumbleMRigidity = MkCrumbleM ask
+crumbleMRigidity = MkCrumbleM $ lift renamerGetNameRigidity
 
 crumbleMGetSubtypeChain ::
     forall (ground :: GroundTypeKind).

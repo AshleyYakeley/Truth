@@ -76,7 +76,7 @@ mergeSingularType ::
     DolanRenameTypeM ground (DolanShimWit ground polarity (JoinMeetType polarity t1 tr))
 mergeSingularType ts NilDolanType = return $ mkPolarShimWit $ ConsDolanType ts NilDolanType
 mergeSingularType ts (ConsDolanType t1 tr) = do
-    mts1 <- runCrumbleMCheck $ mergeSingularSingularType ts t1
+    mts1 <- runCrumbleMCheck (ts, t1) $ mergeSingularSingularType ts t1
     case mts1 of
         Nothing -> do
             MkShimWit tsr conv <- mergeSingularType ts tr

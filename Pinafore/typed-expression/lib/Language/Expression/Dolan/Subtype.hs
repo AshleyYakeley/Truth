@@ -8,7 +8,6 @@ import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.TypeSystem
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
 class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
@@ -26,23 +25,14 @@ liftTypeResult ::
         --> DolanTypeM ground
 liftTypeResult = lift
 
-liftCrumbleMRigidity ::
-    forall (ground :: GroundTypeKind).
-    (String -> NameRigidity) ->
-    CrumbleM ground
-        --> DolanRenameTypeM ground
-liftCrumbleMRigidity rigidity cra =
-    tunnel $ \tun -> do
-        gsc <- getSubtypeChain
-        liftTypeResult $ runReaderT (tun $ runCrumbleM rigidity cra) gsc
-
 liftCrumbleM ::
     forall (ground :: GroundTypeKind).
     CrumbleM ground
         --> DolanRenameTypeM ground
-liftCrumbleM cra = do
-    rigidity <- renamerGetNameRigidity
-    liftCrumbleMRigidity rigidity cra
+liftCrumbleM cra =
+    tunnel $ \tun -> do
+        gsc <- getSubtypeChain
+        liftTypeResult $ runReaderT (tun $ runCrumbleM () cra) gsc
 
 getSubtypeChainRenamed ::
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
