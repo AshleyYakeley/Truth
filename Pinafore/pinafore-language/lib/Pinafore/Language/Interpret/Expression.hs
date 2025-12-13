@@ -116,10 +116,9 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
         mtn <- interpretType @'Negative stype
         case mtn of
             MkSome tn -> do
-                mdtn <- getOptGreatestDynamicSupertype tn
+                mdtn <- getGreatestDynamicSupertype tn
                 case mdtn of
-                    Nothing -> return pat
-                    Just (MkShimWit dtn (MkPolarShim (MkPolyComposeShim dtconvexpr))) -> do
+                    MkShimWit dtn (MkPolarShim (MkPolyComposeShim dtconvexpr)) -> do
                         tpw <- qRunTypeResult $ invertType tn
                         let
                             pc :: QPatternConstructor

@@ -316,7 +316,7 @@ testType =
                 , textTypeTest "let rec {x : Maybe Entity = Just x} x" "{} -> Maybe. Entity."
                 , textTypeTest
                     "with Function let rec {rcount = fn {Nothing => 0; Just y => succ.Integer $ rcount y}} rcount"
-                    "{} -> (rec a, Maybe. a) -> Integer."
+                    "{} -> (rec a, a *? Any *? Any) -> Integer."
                 , textTypeTest
                     "Just $.Function Just $.Function Just Nothing"
                     "{} -> Maybe. (Maybe. (Maybe. (Maybe. None)))"
@@ -325,7 +325,7 @@ testType =
                     "{} -> Integer."
                 , textTypeTest
                     "with Function let rec {rcount = fn {Nothing => 0; Just y => succ.Integer $ rcount y}; rval = Just rval} (rcount,(rval,rcount rval))"
-                    "{} -> ((rec a, Maybe. a) -> Integer.) *: (rec b, Maybe. b) *: Integer."
+                    "{} -> ((rec a, a *? Any *? Any) -> Integer.) *: (rec b, Maybe. b) *: Integer."
                 ]
             , testTree
                 "tuple"

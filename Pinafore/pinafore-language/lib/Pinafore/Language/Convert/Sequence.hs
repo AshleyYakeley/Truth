@@ -176,6 +176,12 @@ instance HasVariance LangMaybe where
 maybeStoreAdapter :: forall a. StoreAdapter a -> StoreAdapter (LangMaybe a)
 maybeStoreAdapter sa = coerce $ linkStoreAdapter sa unitStoreAdapter
 
+decodeToMaybe :: Link a (Link TopType TopType) -> Maybe (LangMaybe a)
+decodeToMaybe = \case
+    NilLink -> Just $ MkLangMaybe NilLink
+    ConsLink a NilLink -> Just $ MkLangMaybe $ ConsLink a ()
+    ConsLink _ (ConsLink _ _) -> Nothing
+
 instance HasQGroundType '[CoCCRVariance] LangMaybe where
     qGroundType = let
         storability :: Storability '[CoCCRVariance] LangMaybe
@@ -185,7 +191,15 @@ instance HasQGroundType '[CoCCRVariance] LangMaybe where
             stbAdapterExprKnot = pureStorabilityAdapter @LangMaybe $ \(ConsArguments t NilArguments) -> maybeStoreAdapter t
             in MkStorability{..}
         props = singleGroundProperty storabilityProperty storability
-        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMaybe)|]) "Maybe"){qgtProperties = props}
+        gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance] LangMaybe
+        gds =
+            MkPolyGreatestDynamicSupertype
+                (ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"a") NilCCRArguments)
+                $ mapNegShimWit (functionToShim "decodeToMaybe" $ decodeToMaybe . coerce) (qGroundedType :: _ (Link A (Link TopType TopType)))
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMaybe)|]) "Maybe")
+            { qgtProperties = props
+            , qgtGreatestDynamicSupertype = gds
+            }
 
 maybeToLang :: Maybe a -> LangMaybe a
 maybeToLang = \case
@@ -311,6 +325,11 @@ nonEmptyToLang (a :| aa) = MkLangList1 (a, listToLang aa)
 langToNonEmpty :: LangList1 a -> NonEmpty a
 langToNonEmpty (MkLangList1 (a, aa)) = a :| langToList aa
 
+decodeToLangList1 :: LangList a -> Maybe (LangList1 a)
+decodeToLangList1 (MkLangList (MkRec0 l)) = case l of
+    ConsLink a b -> Just $ MkLangList1 $ (a, MkLangList b)
+    NilLink -> Nothing
+
 -- LangList1
 instance HasQGroundType '[CoCCRVariance] LangList1 where
     qGroundType = let
@@ -321,7 +340,15 @@ instance HasQGroundType '[CoCCRVariance] LangList1 where
             stbAdapterExprKnot = pureStorabilityAdapter @LangList1 $ \(ConsArguments t NilArguments) -> langList1StoreAdapter t
             in MkStorability{..}
         props = singleGroundProperty storabilityProperty storability
-        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangList1)|]) "List1."){qgtProperties = props}
+        gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance] LangList1
+        gds =
+            MkPolyGreatestDynamicSupertype
+                (ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"a") NilCCRArguments)
+                $ mapNegShimWit (functionToShim "decodeToLangList1" $ decodeToLangList1 . coercionToFunction (applyCoercion1 id MkCoercion)) (qGroundedType :: _ (LangList A))
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangList1)|]) "List1.")
+            { qgtProperties = props
+            , qgtGreatestDynamicSupertype = gds
+            }
 
 -- NonEmpty
 instance

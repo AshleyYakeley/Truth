@@ -84,6 +84,7 @@ testEntity =
             [ "pass = pure ()"
             , "undefined = error \"undefined\""
             , "testeq = fn expected, found => if expected == found then pass else fail \"not equal\""
+            , "testeqshow = fn expected, found => if expected == found then pass else fail $ with Text \"not equal: expected \" <> show expected <> \", found \" <> show found"
             , "testneq = fn expected, found => if expected /= found then pass else fail \"equal\""
             , "runWholeModel = fn r => do {a <- get r; a}"
             , "runreforfail = fn r => runWholeModel (r ?? ap{fail \"unknown model\"})"
@@ -989,13 +990,19 @@ testEntity =
                         "testeq 2 $ 34.0 >- fn {_:?Rational => 2; _:?Integer => 1; _:?Text => 3; _ => 4}"
                     ]
                 , tGroup
-                    "List"
-                    [ testExpectSuccess "testeq 2 $ [] >- fn {_ :: _ => 1; [] => 2}"
-                    , testExpectSuccess "testeq 2 $ [] >- fn {_ :: _ => 1; _ => 2}"
-                    , testExpectSuccess "testeq 2 $ [] >- fn {_:? List1 Integer => 1; _ => 2}"
-                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_ :: _ => 1; [] => 2}"
-                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_ :: _ => 1; _ => 2}"
-                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_:? List1 Integer => 1; _ => 2}"
+                    "Sequence"
+                    [ testExpectSuccess "testeqshow 2 $ [] >- fn {_ :: _ => 1; [] => 2}"
+                    , testExpectSuccess "testeqshow 2 $ [] >- fn {_ :: _ => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow 2 $ [] >- fn {_:? List1 Integer => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow 2 $ [] >- fn {a:? List1 Integer => a : List1 Integer; _ => 2}"
+                    , testExpectSuccess "testeqshow 1 $ (3,4) >- fn {_ :: _ => 1; [] => 2}"
+                    , testExpectSuccess "testeqshow 1 $ (3,4) >- fn {_ :: _ => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow 1 $ (3,4) >- fn {_:? Integer *? Integer => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow (3,4) $ (3,4) >- fn {a:? Integer *? Integer => a : Integer *? Integer; _ => 2}"
+                    , testExpectSuccess "testeqshow 1 $ [3,4] >- fn {_ :: _ => 1; [] => 2}"
+                    , testExpectSuccess "testeqshow 1 $ [3,4] >- fn {_ :: _ => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow 1 $ [3,4] >- fn {_:? List1 Integer => 1; _ => 2}"
+                    , testExpectSuccess "testeqshow [3,4] $ [3,4] >- fn {a:? List1 Integer => a : List1 Integer; _ => 2}"
                     ]
                 ]
             , tDecls

@@ -34,7 +34,7 @@
 
 > doc:Pred
 > 
-<code>type storable </code>**<code>PredS</code>** (from <code>Maybe Integer</code>)
+<code>type storable </code>**<code>PredS</code>** (from <code>Integer \*? Any \*? Any</code>)
 
 > doc:PredS
 > 
