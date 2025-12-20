@@ -31,6 +31,9 @@ langOrder langcode =
 rootOrder :: Order Text
 rootOrder = collatorOrder Text.Collate.rootCollator
 
+langQuote :: Text -> Text
+langQuote = pack . show . unpack
+
 textEntityLibSection :: LibraryStuff
 textEntityLibSection =
     headingBDS
@@ -50,6 +53,7 @@ textEntityLibSection =
                     [ valBDS "toUpperCase" "" Data.Text.toUpper
                     , valBDS "toLowerCase" "" Data.Text.toLower
                     , valBDS "toTitleCase" "" Data.Text.toTitle
+                    , valBDS "quote" "Quote with `\"` and escaping with `\\`" langQuote
                     , valBDS "langOrder" "Order for BCP 47 language tag" langOrder
                     , valBDS "caselessOrder" "Case-insensitive order" $ contramap Data.Text.toLower rootOrder
                     , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism
