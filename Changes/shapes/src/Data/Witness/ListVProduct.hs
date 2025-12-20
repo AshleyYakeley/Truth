@@ -77,6 +77,9 @@ instance Finite (ListVProduct '[]) where
     allValues = [single]
     assemble afb = liftA (\v _ -> v) (afb single)
 
+instance Subsingular (ListVProduct '[]) where
+    subsingle = Just single
+
 instance Singular (ListVProduct '[]) where
     single = MkListVProduct mempty
 

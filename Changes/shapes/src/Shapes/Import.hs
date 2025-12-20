@@ -143,6 +143,7 @@ import Data.Countable as I
 import Data.Empty as I
 import Data.Searchable as I
 import Data.Singular as I
+import Data.Subsingular as I
 
 -- witness
 import Data.Type.Witness as I

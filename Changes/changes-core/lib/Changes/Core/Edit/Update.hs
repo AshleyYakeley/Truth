@@ -24,6 +24,8 @@ newtype EditUpdate edit
 instance Finite edit => Finite (EditUpdate edit) where
     allValues = fmap MkEditUpdate allValues
 
+deriving newtype instance Empty edit => Subsingular (EditUpdate edit)
+
 deriving newtype instance Empty edit => Empty (EditUpdate edit)
 
 instance Show edit => Show (EditUpdate edit) where

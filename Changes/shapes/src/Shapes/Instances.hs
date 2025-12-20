@@ -18,6 +18,9 @@ instance Empty a => Searchable (NonEmpty a) where
 instance Empty a => Finite (NonEmpty a) where
     allValues = []
 
+instance Empty a => Subsingular (NonEmpty a) where
+    subsingle = Nothing
+
 instance Empty a => Empty (NonEmpty a) where
     never (a :| _) = never a
 

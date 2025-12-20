@@ -14,6 +14,8 @@ instance TestEquality (NoReader a) where
 instance Finite (NoReader a t) where
     allValues = []
 
+deriving newtype instance Subsingular (NoReader a t)
+
 deriving newtype instance Empty (NoReader a t)
 
 instance SubjectReader (NoReader a) where
@@ -31,6 +33,8 @@ newtype ConstEdit (reader :: Type -> Type)
 
 instance forall reader. Finite (ConstEdit reader) where
     allValues = []
+
+deriving newtype instance forall reader. Subsingular (ConstEdit reader)
 
 deriving newtype instance forall reader. Empty (ConstEdit reader)
 

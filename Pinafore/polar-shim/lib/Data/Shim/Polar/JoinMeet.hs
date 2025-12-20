@@ -11,7 +11,7 @@ instance Show TopType where
 
 newtype BottomType
     = MkBottomType Void
-    deriving newtype (Eq, Show, Searchable, Countable, Empty)
+    deriving newtype (Eq, Show, Searchable, Countable, Subsingular, Empty)
 
 instance Finite BottomType where
     allValues = []

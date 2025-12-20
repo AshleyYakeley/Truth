@@ -128,13 +128,6 @@ packages:
   original:
     url: https://github.com/AshleyYakeley/fourmolu/archive/8f7bfbaebfc7337e3301f87ba602fea65ad12323.tar.gz
 - completed:
-    hackage: witness-0.7@sha256:845d0c2ac74785824d035d38e3580fd30964eabdc6103ada08f195de3ad23a24,3520
-    pantry-tree:
-      sha256: cd7c413275006b8b78ec726824c3ece7ba568163f5a9d2dd2a7c4962bb6f156d
-      size: 2985
-  original:
-    hackage: witness-0.7
-- completed:
     hackage: open-witness-0.7@sha256:5eb33f9ec31d170b972811cc904398eae8188a9153d7c0d529345056987ad722,3704
     pantry-tree:
       sha256: c96d854bde89a1cbdd79735110ed4868ef8e5fc8fbf01d63744daf8ef73f3911

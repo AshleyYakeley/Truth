@@ -4,8 +4,8 @@ packages:
 #- examine/gnome-bindings
 
 # separate (submodule) dependencies
-#- external/countable
-#- external/witness
+- external/countable
+- external/witness
 #- external/open-witness
 #- external/type-rig
 - external/monadology
@@ -67,7 +67,7 @@ extra-deps:
   commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
 
 # my stuff
-- witness-0.7
+#- witness-0.8
 - open-witness-0.7
 
 flags:
