@@ -4,10 +4,10 @@ module Test.Storage
 where
 
 import Changes.Core
+import Pinafore.Base
 import Shapes
 import Shapes.Test
 
-import Pinafore.Base
 import Pinafore.Storage
 
 data TestContext = MkTestContext

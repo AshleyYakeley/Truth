@@ -24,6 +24,7 @@ packages:
 - Pinafore/polar-shim
 - Pinafore/typed-expression
 - Pinafore/pinafore-base
+- Pinafore/pinafore-storage
 - Pinafore/pinafore-syntax
 - Pinafore/pinafore-language
 - Pinafore/pinafore-lib-media

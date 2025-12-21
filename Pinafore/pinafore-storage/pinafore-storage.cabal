@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           pinafore-base
+name:           pinafore-storage
 version:        0.6
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
@@ -15,32 +15,12 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Pinafore.Base
+      Pinafore.Storage
   other-modules:
-      Pinafore.Base.Know
-      Pinafore.Base.Showable
-      Pinafore.Base.SafeRational
-      Pinafore.Base.Number
-      Pinafore.Base.Literal.Type
-      Pinafore.Base.Literal.Literal
-      Pinafore.Base.Literal.Data
-      Pinafore.Base.Model.FunctionAttribute
-      Pinafore.Base.Model.LensAttribute
-      Pinafore.Base.Model.LensProperty
-      Pinafore.Base.Model.ModelBased
-      Pinafore.Base.Model.ModelProperty
-      Pinafore.Base.Model.ModelOrder
-      Pinafore.Base.Model.Model
-      Pinafore.Base.Anchor
-      Pinafore.Base.Entity
-      Pinafore.Base.KnowShim
-      Pinafore.Base.Storable.EntityStorer
-      Pinafore.Base.Edit
-      Pinafore.Base.Storable.StoreAdapter
-      Pinafore.Base.Model.PredicateProperty
-      Pinafore.Base.Action
-      Pinafore.Base.Model.ImmutableWholeModel
-      Pinafore.Base.File
+      Pinafore.Storage.Table
+      Pinafore.Storage.Database
+      Pinafore.Storage.Database.SQLite
+      Pinafore.Storage.File
   hs-source-dirs:
       lib
   default-extensions:
@@ -73,6 +53,7 @@ library
     , changes-world
     , deepseq
     , memory
+    , pinafore-base
     , shapes
     , thread-trace
     , time
@@ -82,9 +63,7 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Test.Numeric
-      Test.Anchor
-      Test.ReadShow
+      Test.Storage
   hs-source-dirs:
       test
   default-extensions:
@@ -113,5 +92,6 @@ test-suite test
   build-depends:
       changes-core
     , pinafore-base
+    , pinafore-storage
     , shapes
   default-language: GHC2024

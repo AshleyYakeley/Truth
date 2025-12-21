@@ -9,9 +9,9 @@ where
 import Changes.Core
 import Changes.World.SQLite
 import Changes.World.SQLite.Schema
+import Pinafore.Base
 import Shapes
 
-import Pinafore.Base
 import Pinafore.Storage.Database
 import Pinafore.Storage.Table
 

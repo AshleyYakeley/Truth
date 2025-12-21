@@ -19,7 +19,6 @@ library:
       - changes-world
     exposed-modules:
       - Pinafore.Base
-      - Pinafore.Storage
     other-modules:
       - Pinafore.Base.Know
       - Pinafore.Base.Showable
@@ -45,10 +44,6 @@ library:
       - Pinafore.Base.Action
       - Pinafore.Base.Model.ImmutableWholeModel
       - Pinafore.Base.File
-      - Pinafore.Storage.Table
-      - Pinafore.Storage.Database
-      - Pinafore.Storage.Database.SQLite
-      - Pinafore.Storage.File
 
 tests:
     test:
@@ -61,6 +56,5 @@ tests:
         other-modules:
           - Test.Numeric
           - Test.Anchor
-          - Test.Storage
           - Test.ReadShow
         ghc-options: -threaded

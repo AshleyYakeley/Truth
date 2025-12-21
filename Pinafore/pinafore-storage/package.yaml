@@ -1,0 +1,40 @@
+_common: !include "../../common.yaml"
+name: pinafore-storage
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - thread-trace
+      - shapes
+      - deepseq
+      - time
+      - memory
+      - blake3
+      - changes-core
+      - changes-world
+      - pinafore-base
+    exposed-modules:
+      - Pinafore.Storage
+    other-modules:
+      - Pinafore.Storage.Table
+      - Pinafore.Storage.Database
+      - Pinafore.Storage.Database.SQLite
+      - Pinafore.Storage.File
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - shapes
+          - changes-core
+          - pinafore-base
+          - pinafore-storage
+        main: Main.hs
+        other-modules:
+          - Test.Storage
+        ghc-options: -threaded

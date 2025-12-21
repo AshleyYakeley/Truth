@@ -169,6 +169,7 @@ library
     , filepath
     , parsec
     , pinafore-base
+    , pinafore-storage
     , pinafore-syntax
     , polar-shim
     , shapes

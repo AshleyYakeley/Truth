@@ -24,6 +24,7 @@ library:
       - changes-core
       - changes-world
       - pinafore-base
+      - pinafore-storage
       - pinafore-syntax
     exposed-modules:
       - Pinafore.API

@@ -12,9 +12,8 @@ module Pinafore.Storage.Table
 where
 
 import Changes.Core
-import Shapes
-
 import Pinafore.Base
+import Shapes
 
 type RefCount = Int
 

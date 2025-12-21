@@ -9,10 +9,9 @@ import Shapes.Test
 import Test.Anchor
 import Test.Numeric
 import Test.ReadShow
-import Test.Storage
 
 tests :: TestTree
-tests = testTree "pinafore-base" [testNumeric, testAnchor, testStorage, testReadShow]
+tests = testTree "pinafore-base" [testNumeric, testAnchor, testReadShow]
 
 main :: IO ()
 main = testMain tests

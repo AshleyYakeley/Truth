@@ -1,8 +1,8 @@
 module Pinafore.Storage.Database where
 
+import Pinafore.Base
 import Shapes
 
-import Pinafore.Base
 import Pinafore.Storage.Table
 
 data TripleTable t where
