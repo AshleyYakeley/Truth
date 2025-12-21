@@ -5,3 +5,4 @@ where
 
 import Pinafore.Base.Text.Markdown as I
 import Pinafore.Base.Text.ToText as I
+import Pinafore.Base.Text.PrecText as I

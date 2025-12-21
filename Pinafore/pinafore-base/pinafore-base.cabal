@@ -42,6 +42,7 @@ library
       Pinafore.Base.Model.ImmutableWholeModel
       Pinafore.Base.File
       Pinafore.Base.Text.ToText
+      Pinafore.Base.Text.PrecText
       Pinafore.Base.Text.Markdown
       Pinafore.Base.Text
   hs-source-dirs:
