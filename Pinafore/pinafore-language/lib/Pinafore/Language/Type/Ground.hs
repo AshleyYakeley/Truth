@@ -124,7 +124,7 @@ standardListTypeExprShow ::
     ListTypeExprShow dv
 standardListTypeExprShow = let
     sh :: forall (dv' :: [CCRVariance]). Int -> CCRVariancesType dv' -> NamedText -> ListTypeExprShow dv'
-    sh i NilListType (MkNamedText nt) = MkPrecNamedText $ \fnt -> (nt fnt, i)
+    sh i NilListType t = namedTextPrec i t
     sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precNamedText 0 ta)
     in sh 0 $ representative @_ @_ @dv
 

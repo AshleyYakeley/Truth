@@ -1,4 +1,10 @@
-module Pinafore.Base.Text.PrecText where
+module Pinafore.Base.Text.PrecText
+    ( PrecText
+    , textPrec
+    , textToPrec
+    , precText
+    )
+where
 
 import Shapes
 
