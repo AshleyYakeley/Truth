@@ -41,6 +41,9 @@ library
       Pinafore.Base.Action
       Pinafore.Base.Model.ImmutableWholeModel
       Pinafore.Base.File
+      Pinafore.Base.Text.ToText
+      Pinafore.Base.Text.Markdown
+      Pinafore.Base.Text
   hs-source-dirs:
       lib
   default-extensions:

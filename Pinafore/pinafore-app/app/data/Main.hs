@@ -7,6 +7,7 @@ import Data.Aeson qualified as JSON
 import Data.Aeson.Key qualified as JSON
 import Data.Aeson.KeyMap qualified as JSON
 import Data.Aeson.Text qualified as JSON
+import Pinafore.Base
 import Pinafore.Documentation
 import Shapes
 

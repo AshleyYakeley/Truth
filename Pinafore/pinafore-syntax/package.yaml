@@ -14,15 +14,12 @@ library:
       - typed-expression
       - pinafore-base
     exposed-modules:
-      - Pinafore.Syntax.Text
       - Pinafore.Syntax.Name
       - Pinafore.Syntax.Syntax
       - Pinafore.Syntax.Parse
       - Pinafore.Syntax.Doc
       - Pinafore.Syntax
     other-modules:
-      - Pinafore.Syntax.Text.ToText
-      - Pinafore.Syntax.Text.Markdown
       - Pinafore.Syntax.Name.Name
       - Pinafore.Syntax.Name.ImplicitName
       - Pinafore.Syntax.Name.Namespace

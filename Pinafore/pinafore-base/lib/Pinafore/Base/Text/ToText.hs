@@ -1,4 +1,4 @@
-module Pinafore.Syntax.Text.ToText where
+module Pinafore.Base.Text.ToText where
 
 import Shapes
 

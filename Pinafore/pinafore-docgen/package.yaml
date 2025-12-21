@@ -10,6 +10,7 @@ library:
     dependencies:
       - base >= 4.16
       - shapes
+      - pinafore-base
       - pinafore-language
     exposed-modules:
       - Pinafore.DocGen

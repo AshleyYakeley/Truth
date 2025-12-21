@@ -1,6 +1,5 @@
 module Pinafore.API
     ( module Pinafore.Base
-    , module Pinafore.Syntax.Text
     , module Pinafore.Syntax.Name
     , module Pinafore.Context
     , module Pinafore.Language.Convert.Var
@@ -48,7 +47,6 @@ where
 import Pinafore.Base
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse
-import Pinafore.Syntax.Text
 
 import Import
 import Pinafore.Context

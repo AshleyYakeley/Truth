@@ -6,7 +6,6 @@ import Shapes
 import Text.Parsec (SourcePos)
 
 import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 
 data WithSourcePos t
     = MkWithSourcePos

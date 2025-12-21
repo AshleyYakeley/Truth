@@ -3,6 +3,7 @@ module Pinafore.DocGen
     )
 where
 
+import Pinafore.Base
 import Pinafore.Documentation
 import Shapes
 

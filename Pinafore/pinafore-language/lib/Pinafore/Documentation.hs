@@ -1,6 +1,5 @@
 module Pinafore.Documentation
-    ( module Pinafore.Syntax.Text
-    , ShowText (..)
+    ( ShowText (..)
     , module Pinafore.Syntax.Name
     , module Pinafore.Syntax.Doc
     , module Pinafore.Main
@@ -17,7 +16,6 @@ where
 
 import Pinafore.Syntax.Doc
 import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 
 import Import
 import Pinafore.Context

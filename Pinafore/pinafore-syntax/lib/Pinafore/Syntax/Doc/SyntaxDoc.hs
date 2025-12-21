@@ -7,13 +7,13 @@ module Pinafore.Syntax.Doc.SyntaxDoc
     )
 where
 
+import Pinafore.Base
 import Shapes
 
 import Pinafore.Syntax.Doc.DefDoc
 import Pinafore.Syntax.Doc.Docs
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Syntax
-import Pinafore.Syntax.Text
 
 funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
 funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb

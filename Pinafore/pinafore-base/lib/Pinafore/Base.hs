@@ -27,3 +27,4 @@ import Pinafore.Base.SafeRational as I
 import Pinafore.Base.Showable as I
 import Pinafore.Base.Storable.EntityStorer as I
 import Pinafore.Base.Storable.StoreAdapter as I
+import Pinafore.Base.Text as I

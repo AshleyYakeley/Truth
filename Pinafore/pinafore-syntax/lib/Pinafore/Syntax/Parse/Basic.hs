@@ -33,13 +33,13 @@ module Pinafore.Syntax.Parse.Basic
     )
 where
 
+import Pinafore.Base
 import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
-import Pinafore.Syntax.Text
 
 readAskNamespace :: Parser Namespace
 readAskNamespace = paramAsk namespaceParam

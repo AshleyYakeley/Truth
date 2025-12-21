@@ -15,6 +15,7 @@ module Pinafore.Syntax.Parse.Parser
     )
 where
 
+import Pinafore.Base
 import Shapes hiding (try)
 import Text.Parsec qualified as P
 import Text.Parsec.Pos (SourcePos, initialPos)
@@ -22,7 +23,6 @@ import Text.Parsec.Pos (SourcePos, initialPos)
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Token
-import Pinafore.Syntax.Text
 
 runTokens :: Text -> StateT SourcePos ParseResult [(SourcePos, SomeOf Token)]
 runTokens text = hoist (mapResultFailure $ fmap LexicalErrorType . parseErrorMessage) $ parseTokens text

@@ -58,6 +58,7 @@ executables:
           - shapes
           - optparse-applicative
           - aeson
+          - pinafore-base
           - pinafore-language
           - pinafore-app
         main: Main.hs

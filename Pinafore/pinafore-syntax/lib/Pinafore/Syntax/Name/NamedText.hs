@@ -7,7 +7,6 @@ import Pinafore.Syntax.Name.FullName
 import Pinafore.Syntax.Name.FullNameRef
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
-import Pinafore.Syntax.Text
 
 data NamedTextItem
     = FullNameNTI FullName

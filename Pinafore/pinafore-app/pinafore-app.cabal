@@ -111,6 +111,7 @@ executable pinadata
       aeson
     , optparse-applicative
     , pinafore-app
+    , pinafore-base
     , pinafore-language
     , shapes
   default-language: GHC2024

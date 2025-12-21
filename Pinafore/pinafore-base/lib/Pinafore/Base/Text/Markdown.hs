@@ -1,4 +1,4 @@
-module Pinafore.Syntax.Text.Markdown
+module Pinafore.Base.Text.Markdown
     ( PlainText (..)
     , RawMarkdown (..)
     , asRawMarkdown
@@ -18,7 +18,7 @@ where
 
 import Shapes
 
-import Pinafore.Syntax.Text.ToText
+import Pinafore.Base.Text.ToText
 
 class PlainText t where
     plainText :: Text -> t

@@ -3,6 +3,7 @@ module Pinafore.Syntax.Name.ExprShow where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.TypeSystem
+import Pinafore.Base
 import Shapes
 
 import Pinafore.Syntax.Name.FullName
@@ -13,7 +14,6 @@ import Pinafore.Syntax.Name.NamedText
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
 import Pinafore.Syntax.Name.PrecNamedText
-import Pinafore.Syntax.Text
 
 class ExprShow t where
     exprShowPrec :: t -> PrecNamedText

@@ -7,10 +7,10 @@ module Pinafore.Syntax.Doc.DefDoc
     )
 where
 
+import Pinafore.Base
 import Shapes
 
 import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 
 data DocTypeParameter
     = CoDocTypeParameter NamedText

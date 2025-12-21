@@ -14,7 +14,6 @@ import Text.Parsec qualified as P
 import Text.Parsec.Error qualified as P
 
 import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 
 showLocated :: P.SourcePos -> Text -> Text
 showLocated spos s =
