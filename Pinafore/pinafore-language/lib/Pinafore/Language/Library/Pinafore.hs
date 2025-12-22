@@ -148,6 +148,15 @@ langImply n (MkLangExpression b) (MkLangExpression expr) = do
     expr1 <- qImply [(MkImplicitName $ MkName n, b)] expr
     return $ MkLangExpression expr1
 
+instance HasQGroundType '[] PrecText where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PrecText)|]) "PrecText."
+
+newtype ToSource = MkToSource {toSource :: PrecText}
+    deriving newtype ToText
+
+instance HasQGroundType '[] ToSource where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ToSource)|]) "ToSource.Pinafore."
+
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
     headingBDS
@@ -175,9 +184,41 @@ pinaforeLibSection =
                 $ functionToShim "locatedShow"
                 $ \(MkLocated spos _ s) -> PlainShowable $ showLocated spos $ showText s
             ]
+        , headingBDS
+            "PrecText"
+            ""
+            [ typeBDS
+                "PrecText"
+                "Text that puts parentheses in the right place."
+                (qSomeGroundType @_ @PrecText)
+                []
+            , namespaceBDS
+                "PrecText"
+                $ monoidEntries @PrecText
+                <> [ valBDS "fromTextPrec" "" textPrec
+                   , valBDS "fromText" "" textToPrec
+                   , valBDS "toTextPrec" "" precText
+                   , valBDS "toText" "" (toText @PrecText)
+                   ]
+            ]
         , namespaceBDS
             "Pinafore"
             [ headingBDS
+                "ToSource"
+                ""
+                [ typeBDS
+                    "ToSource"
+                    "Things that can be written as Pinafore expressions."
+                    (qSomeGroundType @_ @ToSource)
+                    [ valPatBDS "Mk" "" MkToSource
+                        $ PureFunction
+                        $ pure
+                        $ \(MkToSource v) -> (v, ())
+                    ]
+                , valBDS "toSource" "" toSource
+                , valBDS "toText" "" (toText @ToSource)
+                ]
+            , headingBDS
                 "Context"
                 ""
                 [ typeBDS
