@@ -196,9 +196,13 @@ pinaforeLibSection =
                 "PrecText"
                 $ monoidEntries @PrecText
                 <> [ valBDS "fromTextPrec" "" textPrec
-                   , valBDS "fromText" "" textToPrec
+                   , valBDS "fromName" "" nameTextToPrec
                    , valBDS "toTextPrec" "" precText
                    , valBDS "toText" "" (toText @PrecText)
+                   , valBDS "name" "" nameTextToPrec
+                   , valBDS "apply" "" applyPrecText
+                   , valBDS "applyOpL" "" applyOpLPrecText
+                   , valBDS "applyOpR" "" applyOpRPrecText
                    ]
             ]
         , namespaceBDS

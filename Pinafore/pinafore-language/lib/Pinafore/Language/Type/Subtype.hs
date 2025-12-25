@@ -16,7 +16,7 @@ import Pinafore.Language.VarID
 funcGroundType :: QGroundType '[ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
-        namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
+        applyOpLPrecNamedText ta ("->", 5) tb
 
 type instance DolanSubtypeHint QGroundType = QSubtypeHint
 

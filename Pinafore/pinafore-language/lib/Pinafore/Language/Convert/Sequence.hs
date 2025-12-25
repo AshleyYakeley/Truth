@@ -84,7 +84,7 @@ instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where
             in MkStorability{..}
         props = singleGroundProperty storabilityProperty storability
         showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
-        showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
+        showtype ta tb = applyOpLPrecNamedText ta ("*:", 2) tb
         gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance, CoCCRVariance] (,)
         gds =
             MkPolyGreatestDynamicSupertype
@@ -153,7 +153,7 @@ instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Link where
                 linkStoreAdapter sa sb
             in MkStorability{..}
         showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
-        showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *? " <> precNamedText 3 tb
+        showtype ta tb = applyOpLPrecNamedText ta ("*?", 2) tb
         props = singleGroundProperty storabilityProperty storability
         in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Link)|]) showtype){qgtProperties = props}
 

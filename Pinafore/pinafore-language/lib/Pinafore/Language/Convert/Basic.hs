@@ -51,7 +51,7 @@ eitherGroundType = let
         in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
     showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
-    showtype ta tb = namedTextPrec 4 $ precNamedText 3 ta <> " +: " <> precNamedText 4 tb
+    showtype ta tb = applyOpLPrecNamedText ta ("+:", 3) tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) showtype){qgtProperties = props}
 
 -- Either
