@@ -40,7 +40,9 @@ library
       Data.Isomorphism
       Data.Lens
       Data.Store
-      Data.ConstFunction
+      Data.SpecialCase.SpecialCase
+      Data.SpecialCase.Applicative
+      Data.SpecialCase.Arrow
       Data.Coerce.Function
       Data.PurityFunction
       Data.Codec
