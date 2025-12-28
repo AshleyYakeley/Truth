@@ -26,27 +26,26 @@ instance Applicative (cat a) => HasSpecialCase "const" (ArrowOrConst cat a b) wh
     mkSpecial = MkArrowOrConst . Special @"const"
     checkSpecial = checkSpecial @"const" . unArrowOrConst
 
-instance (forall a. Applicative (cat a), Category cat) => Category (ArrowOrConst cat) where
+type FunctionOrConst = ArrowOrConst (->)
+
+instance Category FunctionOrConst where
     id = MkArrowOrConst $ General id
     cbc . cab = case cbc of
         Special @"const" c -> Special @"const" c
-        General bc -> General $ bc . unGeneral cab
+        General bc -> case cab of
+            Special @"const" b -> Special @"const" $ bc b
+            General ab -> General $ bc . ab
 
-instance (forall a. Applicative (cat a), Arrow cat) => Arrow (ArrowOrConst cat) where
+instance (forall x. Applicative (cat x), Category (ArrowOrConst cat), Arrow cat) => Arrow (ArrowOrConst cat) where
     arr f = General $ arr f
-    first abc = General $ first (unGeneral abc)
-
-type FunctionOrConst = ArrowOrConst (->)
+    first (General abc) = General $ first abc
 
 class Functor f => FunctorGetPure f where
     getPure :: forall a b. FunctionOrConst (f a) (b -> f b)
     getPure = General $ \fa b -> fmap (const b) fa
 
-applicativeGetPure :: Applicative f => FunctionOrConst (f a) (b -> f b)
-applicativeGetPure = mkSpecial @"const" pure
-
 instance FunctorGetPure ((->) p) where
-    getPure = applicativeGetPure
+    getPure = Special @"const" pure
 
 instance FunctorGetPure f => CatFunctor FunctionOrConst FunctionOrConst f where
     cfmap = \case
@@ -54,18 +53,18 @@ instance FunctorGetPure f => CatFunctor FunctionOrConst FunctionOrConst f where
         General ab -> General $ fmap ab
 
 instance FunctorGetPure Identity where
-    getPure = applicativeGetPure
+    getPure = Special @"const" pure
 
 instance FunctorGetPure Maybe where
-    getPure = applicativeGetPure
+    getPure = Special @"const" pure
 
 instance FunctorGetPure (Either p) where
-    getPure = applicativeGetPure
+    getPure = Special @"const" pure
 
 instance FunctorGetPure ((,) p)
 
 instance FunctorGetPure (Result e) where
-    getPure = applicativeGetPure
+    getPure = Special @"const" pure
 
 constFunctionAp :: (MonadInner f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
 constFunctionAp fcab =
