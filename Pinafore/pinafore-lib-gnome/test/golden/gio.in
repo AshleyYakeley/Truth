@@ -5,7 +5,7 @@ do {
   mref <- makeRef.File $ Path.File "test/somefile";
   mf <- get mref;
   decode asMedia.Text mf >- fn {
-    Just t => write.Sink stdout.Env t;
-    Nothing => writeLn.Sink stdout.Env "not text";
+    Just t => push.Sink stdout.Env t;
+    Nothing => pushLn.Sink stdout.Env "not text";
   };
 }

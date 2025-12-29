@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Stream
     ( streamLibSection
     , LangSink (..)
     , LangSource (..)
-    , langSinkWriteLn
+    , langSinkPushLn
     )
 where
 
@@ -54,14 +54,14 @@ instance HasQGroundType '[ContraCCRVariance] LangSink where
 liftSink :: Sink IO a -> LangSink a
 liftSink sink = MkLangSink $ hoistSink liftIO sink
 
-langSinkWrite :: forall a. LangSink a -> a -> Action ()
-langSinkWrite (MkLangSink sink) = sinkWrite sink
+langSinkPush :: forall a. LangSink a -> a -> Action ()
+langSinkPush (MkLangSink sink) = sinkWrite sink
 
-langSinkWriteEnd :: forall a. LangSink a -> Action ()
-langSinkWriteEnd (MkLangSink sink) = sinkWriteEnd sink
+langSinkPushEnd :: forall a. LangSink a -> Action ()
+langSinkPushEnd (MkLangSink sink) = sinkWriteEnd sink
 
-langSinkWriteLn :: LangSink Text -> Text -> Action ()
-langSinkWriteLn (MkLangSink sink) = sinkWriteLn sink
+langSinkPushLn :: LangSink Text -> Text -> Action ()
+langSinkPushLn (MkLangSink sink) = sinkWriteLn sink
 
 -- LangSource
 newtype LangSource a
@@ -86,14 +86,14 @@ liftSource source = MkLangSource $ hoistSource liftIO source
 langSourceReady :: forall a. LangSource a -> Action Bool
 langSourceReady (MkLangSource source) = sourceHasData source
 
-langSourceRead :: forall a. LangSource a -> Action (ItemOrEnd a)
-langSourceRead (MkLangSource source) = sourceTake source
+langSourcePull :: forall a. LangSource a -> Action (ItemOrEnd a)
+langSourcePull (MkLangSource source) = sourceTake source
 
-langSourceReadAvailable :: forall a. LangSource a -> Action (Maybe (ItemOrEnd a))
-langSourceReadAvailable (MkLangSource source) = sourceTakeAvailable source
+langSourcePullAvailable :: forall a. LangSource a -> Action (Maybe (ItemOrEnd a))
+langSourcePullAvailable (MkLangSource source) = sourceTakeAvailable source
 
-langSourceReadAllAvailable :: forall a. LangSource a -> Action ([a], Bool)
-langSourceReadAllAvailable (MkLangSource source) = sourceTakeAllAvailable source
+langSourcePullAllAvailable :: forall a. LangSource a -> Action ([a], Bool)
+langSourcePullAllAvailable (MkLangSource source) = sourceTakeAllAvailable source
 
 langSourceGather :: forall a. LangSource a -> Action [a]
 langSourceGather (MkLangSource source) = sourceGather source
@@ -147,7 +147,7 @@ streamLibSection =
             ""
             [ typeBDS
                 "Sink"
-                "A sink is something you can write data (and \"end\") to."
+                "A sink is something you can push data (and \"end\") to."
                 (MkSomeGroundType sinkGroundType)
                 [ valPatBDS "Mk" "Construct a `Sink` from a function." (toLangSink @A)
                     $ PureFunction
@@ -157,36 +157,36 @@ streamLibSection =
             , namespaceBDS
                 "Sink"
                 [ valBDS "map" "" $ contramap @LangSink @A @B
-                , valBDS "write" "Write an item to a sink." $ langSinkWrite @A
-                , valBDS "writeEnd" "Write end to a sink. You should not write to the sink after this."
-                    $ langSinkWriteEnd @BottomType
-                , valBDS "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
+                , valBDS "push" "Push an item to a sink." $ langSinkPush @A
+                , valBDS "pushEnd" "Push end to a sink. You should not push to the sink after this."
+                    $ langSinkPushEnd @BottomType
+                , valBDS "pushLn" "Push text followed by a newline to a text sink." langSinkPushLn
                 ]
             ]
         , headingBDS
             "Source"
             ""
-            [ typeBDS "Source" "A source is something you can read data from." (MkSomeGroundType sourceGroundType) []
+            [ typeBDS "Source" "A source is something you can pull data from." (MkSomeGroundType sourceGroundType) []
             , namespaceBDS "Source"
                 $ functorEntries @LangSource
                 <> [ valBDS "isReady" "Does this source have data available now?" $ langSourceReady @TopType
-                   , valBDS "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
-                   , valBDS "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
-                   , valBDS "readAllAvailable" "Read all data now available. Second value is set if end was read."
-                        $ langSourceReadAllAvailable @A
+                   , valBDS "pull" "Pull data (or end), waiting if necessary." $ langSourcePull @A
+                   , valBDS "pullAvailable" "Pull data (or end), if it is now available." $ langSourcePullAvailable @A
+                   , valBDS "pullAllAvailable" "Pull all data now available. Second value is set if end was pulled."
+                        $ langSourcePullAllAvailable @A
                    , valBDS "gather" "Gather all data (until end) from a source." $ langSourceGather @A
                    , valBDS "listSource" "Create a source for a list of items." $ langListSource @A
                    , valBDS
                         "connect"
-                        "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink."
+                        "Pull all data (until end) from a source and push it to a sink, as it becomes available. Does not push end to the sink."
                         $ langConnectSourceSink @A
                    , valBDS
                         "createPipe"
-                        "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks."
+                        "Create a pipe. Data written to the sink will be added to a buffer, which can be pulled from with the source. Can be used to transfer data between asynchronous tasks."
                         $ langCreatePipe @A
                    , valBDS
                         "lineBuffer"
-                        "Get a line-buffering source from a text source. Each read will be exactly one line."
+                        "Get a line-buffering source from a text source. Each pull will be exactly one line."
                         lineBufferSource
                    ]
             ]

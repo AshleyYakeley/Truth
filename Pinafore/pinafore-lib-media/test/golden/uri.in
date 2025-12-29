@@ -2,7 +2,7 @@
 import "media"
 let {
     writeEntry: Text -> Showable -> Action Unit =
-        fn name, val => writeLn.Sink stdout.Env $ name <>.Text ": " <>.Text (show val);
+        fn name, val => pushLn.Sink stdout.Env $ name <>.Text ": " <>.Text (show val);
 
     testURI: Text -> Action Unit =
         fn text => do {
@@ -11,7 +11,7 @@ let {
                 Data.URI =>
                     media >- fn Mk.Media mediaType _ =>
                         do {
-                            writeLn.Sink stdout.Env "data URI";
+                            pushLn.Sink stdout.Env "data URI";
                             writeEntry "base64" base64;
                             writeEntry "type" mediaType;
                             for_ (toList.Maybe $ decode asMedia.Text media) $ writeEntry "as text";
@@ -21,7 +21,7 @@ let {
                             pure Data.URI;
                         };
                 uri :? URI => uri >- fn Mk.URI => do {
-                    writeLn.Sink stdout.Env "non-data URI";
+                    pushLn.Sink stdout.Env "non-data URI";
                     for_ (toList.Maybe scheme) $ writeEntry "scheme";
                     for_ (toList.Maybe authority) $ fn Mk.Authority.URI => do {
                         for_ (toList.Maybe userinfo) $ writeEntry "userinfo";
@@ -31,17 +31,17 @@ let {
                     writeEntry "path" path;
                     for_ (toList.Maybe query) $ writeEntry "query";
                     for_ (toList.Maybe fragment) $ writeEntry "fragment";
-                    writeLn.Sink stdout.Env $ if isAbsolute.URI uri then "absolute" else "relative";
+                    pushLn.Sink stdout.Env $ if isAbsolute.URI uri then "absolute" else "relative";
                     pure Mk.URI;
                 };
                 _ => do {
-                    writeLn.Sink stdout.Env "not URI";
+                    pushLn.Sink stdout.Env "not URI";
                     pure ()
                 };
             };
             writeEntry "result" result;
             writeEntry "same" $ result == text;
-            writeLn.Sink stdout.Env "";
+            pushLn.Sink stdout.Env "";
         };
 
     uris: List Text =
@@ -60,5 +60,5 @@ let {
         ];
 } do {
     for_ uris testURI;
-    writeLn.Sink stdout.Env "Done.";
+    pushLn.Sink stdout.Env "Done.";
 }

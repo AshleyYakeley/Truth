@@ -68,6 +68,6 @@ envLibSection =
             , valBDS "stdin" "Standard input source." langStdIn
             , valBDS "stdout" "Standard output sink." langStdOut
             , valBDS "stderr" "Standard error/diagnostics sink." langStdErr
-            , valBDS "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`."
-                $ langSinkWriteLn langStdOut
+            , valBDS "outputLn" "Push text and a newline to standard output. Same as `pushLn stdout`."
+                $ langSinkPushLn langStdOut
             ]
