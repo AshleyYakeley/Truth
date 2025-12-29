@@ -20,7 +20,7 @@ class ExprShow t where
     default exprShowPrec :: ShowNamedText t => t -> PrecNamedText
     exprShowPrec x = namedTextToPrec $ showNamedText x
 
-exprPrecShow :: ExprShow t => Int -> t -> NamedText
+exprPrecShow :: ExprShow t => Word -> t -> NamedText
 exprPrecShow c t = precNamedText c $ exprShowPrec t
 
 exprShow :: ExprShow t => t -> NamedText

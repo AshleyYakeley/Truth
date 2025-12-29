@@ -2,12 +2,14 @@ module Pinafore.Syntax.Parse.Expression
     ( readExpression
     , readModule
     , operatorFixity
+    , applyOperatorPrecText
     , DoLine (..)
     , readDoLine
     )
 where
 
 import Language.Expression.Dolan
+import Pinafore.Base
 import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
@@ -312,54 +314,57 @@ readMkVar nref = do
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
 operatorFixity :: Name -> Fixity
-operatorFixity "." = MkFixity AssocRight 10
-operatorFixity "^" = MkFixity AssocRight 9
-operatorFixity "**" = MkFixity AssocLeft 9
-operatorFixity "++" = MkFixity AssocLeft 9
-operatorFixity "*" = MkFixity AssocLeft 8
-operatorFixity "/" = MkFixity AssocLeft 8
-operatorFixity "<*>" = MkFixity AssocLeft 8
-operatorFixity "<:*:>" = MkFixity AssocLeft 8
-operatorFixity "!$" = MkFixity AssocRight 8
-operatorFixity "!$%" = MkFixity AssocRight 8
-operatorFixity "!$$" = MkFixity AssocRight 8
-operatorFixity "!$$%" = MkFixity AssocRight 8
-operatorFixity "!@" = MkFixity AssocRight 8
-operatorFixity "!@%" = MkFixity AssocRight 8
-operatorFixity "!@@" = MkFixity AssocRight 8
-operatorFixity "+" = MkFixity AssocLeft 7
-operatorFixity "-" = MkFixity AssocLeft 7
-operatorFixity "??" = MkFixity AssocLeft 7
-operatorFixity "<+>" = MkFixity AssocLeft 7
-operatorFixity "<:+:>" = MkFixity AssocLeft 7
-operatorFixity "::" = MkFixity AssocRight 6
-operatorFixity "<>" = MkFixity AssocRight 6
-operatorFixity "==" = MkFixity AssocNone 5
-operatorFixity "/=" = MkFixity AssocNone 5
-operatorFixity "~==" = MkFixity AssocNone 5
-operatorFixity "~/=" = MkFixity AssocNone 5
-operatorFixity "<=" = MkFixity AssocNone 5
-operatorFixity "<" = MkFixity AssocNone 5
-operatorFixity ">=" = MkFixity AssocNone 5
-operatorFixity ">" = MkFixity AssocNone 5
-operatorFixity "<&>" = MkFixity AssocLeft 4
-operatorFixity "<:&:>" = MkFixity AssocLeft 4
-operatorFixity "<:&>" = MkFixity AssocLeft 4
-operatorFixity "<\\>" = MkFixity AssocLeft 4
-operatorFixity "<:\\>" = MkFixity AssocLeft 4
-operatorFixity "<^>" = MkFixity AssocLeft 4
-operatorFixity "&&" = MkFixity AssocRight 4
-operatorFixity "<|>" = MkFixity AssocLeft 3
-operatorFixity "<:|:>" = MkFixity AssocLeft 3
-operatorFixity "||" = MkFixity AssocRight 3
-operatorFixity ":=" = MkFixity AssocNone 2
-operatorFixity "+=" = MkFixity AssocNone 2
-operatorFixity "-=" = MkFixity AssocNone 2
-operatorFixity ">>=" = MkFixity AssocLeft 1
-operatorFixity ">>" = MkFixity AssocLeft 1
-operatorFixity ">-" = MkFixity AssocRight 1
-operatorFixity "$" = MkFixity AssocRight 0
-operatorFixity _ = MkFixity AssocLeft 10
+operatorFixity "." = MkFixity AssocRight 1
+operatorFixity "^" = MkFixity AssocRight 2
+operatorFixity "**" = MkFixity AssocLeft 2
+operatorFixity "++" = MkFixity AssocLeft 2
+operatorFixity "*" = MkFixity AssocLeft 3
+operatorFixity "/" = MkFixity AssocLeft 3
+operatorFixity "<*>" = MkFixity AssocLeft 3
+operatorFixity "<:*:>" = MkFixity AssocLeft 3
+operatorFixity "!$" = MkFixity AssocRight 3
+operatorFixity "!$%" = MkFixity AssocRight 3
+operatorFixity "!$$" = MkFixity AssocRight 3
+operatorFixity "!$$%" = MkFixity AssocRight 3
+operatorFixity "!@" = MkFixity AssocRight 3
+operatorFixity "!@%" = MkFixity AssocRight 3
+operatorFixity "!@@" = MkFixity AssocRight 3
+operatorFixity "+" = MkFixity AssocLeft 4
+operatorFixity "-" = MkFixity AssocLeft 4
+operatorFixity "??" = MkFixity AssocLeft 4
+operatorFixity "<+>" = MkFixity AssocLeft 4
+operatorFixity "<:+:>" = MkFixity AssocLeft 4
+operatorFixity "::" = MkFixity AssocRight 5
+operatorFixity "<>" = MkFixity AssocRight 5
+operatorFixity "==" = MkFixity AssocNone 6
+operatorFixity "/=" = MkFixity AssocNone 6
+operatorFixity "~==" = MkFixity AssocNone 6
+operatorFixity "~/=" = MkFixity AssocNone 6
+operatorFixity "<=" = MkFixity AssocNone 6
+operatorFixity "<" = MkFixity AssocNone 6
+operatorFixity ">=" = MkFixity AssocNone 6
+operatorFixity ">" = MkFixity AssocNone 6
+operatorFixity "<&>" = MkFixity AssocLeft 7
+operatorFixity "<:&:>" = MkFixity AssocLeft 7
+operatorFixity "<:&>" = MkFixity AssocLeft 7
+operatorFixity "<\\>" = MkFixity AssocLeft 7
+operatorFixity "<:\\>" = MkFixity AssocLeft 7
+operatorFixity "<^>" = MkFixity AssocLeft 7
+operatorFixity "&&" = MkFixity AssocRight 7
+operatorFixity "<|>" = MkFixity AssocLeft 8
+operatorFixity "<:|:>" = MkFixity AssocLeft 8
+operatorFixity "||" = MkFixity AssocRight 8
+operatorFixity ":=" = MkFixity AssocNone 9
+operatorFixity "+=" = MkFixity AssocNone 9
+operatorFixity "-=" = MkFixity AssocNone 9
+operatorFixity ">>=" = MkFixity AssocLeft 10
+operatorFixity ">>" = MkFixity AssocLeft 10
+operatorFixity ">-" = MkFixity AssocRight 10
+operatorFixity "$" = MkFixity AssocRight 11
+operatorFixity _ = MkFixity AssocLeft 1
+
+applyOperatorPrecText :: PrecText -> Name -> PrecText -> PrecText
+applyOperatorPrecText ta n tb = applyOpPrecText ta (toText $ exprShow n, operatorFixity n) tb
 
 expressionFixityReader :: FixityReader SyntaxExpression
 expressionFixityReader =
@@ -375,7 +380,7 @@ expressionFixityReader =
                     , operatorFixity $ tnName tnames
                     , \e1 e2 -> seApplys spos (MkWithSourcePos spos var) [e1, e2]
                     )
-        , efrMaxPrecedence = 10
+        , efrMaxPrecedence = 11
         }
 
 readExpression :: Parser SyntaxExpression

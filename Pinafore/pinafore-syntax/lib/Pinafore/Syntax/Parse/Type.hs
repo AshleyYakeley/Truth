@@ -7,6 +7,7 @@ module Pinafore.Syntax.Parse.Type
     )
 where
 
+import Pinafore.Base
 import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
@@ -70,7 +71,7 @@ readInfix = do
         )
 
 typeFixityReader :: FixityReader SyntaxTypeArgument
-typeFixityReader = MkFixityReader{efrReadInfix = readInfix, efrMaxPrecedence = 3}
+typeFixityReader = MkFixityReader{efrReadInfix = readInfix, efrMaxPrecedence = 6}
 
 readType1 :: Parser SyntaxType
 readType1 = do

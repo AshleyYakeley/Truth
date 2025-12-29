@@ -9,7 +9,7 @@ module Pinafore.Language.Interpret
     , interpretImportDeclaration
     , runPinaforeScoped
     , runInteract
-    , showPinaforeModel
+    , showQValue
     )
 where
 

@@ -16,6 +16,7 @@ module Pinafore.Syntax.Parse
     , readModule
     , readType
     , operatorFixity
+    , applyOperatorPrecText
     , allKeywords
     )
 where

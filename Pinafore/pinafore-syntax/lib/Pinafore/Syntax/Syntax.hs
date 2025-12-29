@@ -199,41 +199,27 @@ data SyntaxType'
         SyntaxType
     deriving stock Eq
 
-data FixAssoc
-    = AssocNone
-    | AssocLeft
-    | AssocRight
-    deriving stock Eq
-
-data Fixity = MkFixity
-    { fixityAssoc :: FixAssoc
-    , fixityPrec :: Int
-    }
-    deriving stock Eq
-
 typeOperatorFixity :: Name -> Fixity
-typeOperatorFixity "->" = MkFixity AssocRight 0
-typeOperatorFixity "+:" = MkFixity AssocRight 2
-typeOperatorFixity "*:" = MkFixity AssocRight 3
-typeOperatorFixity "*?" = MkFixity AssocRight 3
-typeOperatorFixity _ = MkFixity AssocLeft 3
+typeOperatorFixity "->" = MkFixity AssocRight 5
+typeOperatorFixity "+:" = MkFixity AssocRight 3
+typeOperatorFixity "*:" = MkFixity AssocRight 2
+typeOperatorFixity "*?" = MkFixity AssocRight 2
+typeOperatorFixity "|" = MkFixity AssocNone 6
+typeOperatorFixity "&" = MkFixity AssocNone 6
+typeOperatorFixity _ = MkFixity AssocLeft 2
+
+applyTypeOperatorPrecNamedText :: PrecNamedText -> Name -> PrecNamedText -> PrecNamedText
+applyTypeOperatorPrecNamedText ta n tb = applyOpPrecNamedText ta (toText $ exprShow n, typeOperatorFixity n) tb
 
 instance ExprShow SyntaxType' where
     exprShowPrec (VarSyntaxType v) = exprShowPrec v
-    exprShowPrec (OrSyntaxType ta tb) = namedTextPrec 7 $ exprPrecShow 6 ta <> " | " <> exprPrecShow 6 tb
-    exprShowPrec (AndSyntaxType ta tb) = namedTextPrec 7 $ exprPrecShow 6 ta <> " & " <> exprPrecShow 6 tb
+    exprShowPrec (OrSyntaxType ta tb) = applyTypeOperatorPrecNamedText (exprShowPrec ta) "|" (exprShowPrec tb)
+    exprShowPrec (AndSyntaxType ta tb) = applyTypeOperatorPrecNamedText (exprShowPrec ta) "&" (exprShowPrec tb)
     exprShowPrec TopSyntaxType = "None"
     exprShowPrec BottomSyntaxType = "Any"
     exprShowPrec (RecursiveSyntaxType n pt) = namedTextPrec 7 $ "rec " <> exprShow n <> ". " <> exprPrecShow 7 pt
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef n _)) [ta, tb])
-        | nameIsInfix n = let
-            MkFixity assc level = typeOperatorFixity n
-            prec = 6 - level
-            in namedTextPrec prec
-                $ case assc of
-                    AssocRight -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb
-                    AssocLeft -> exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
-                    AssocNone -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
+        | nameIsInfix n = applyTypeOperatorPrecNamedText (exprShowPrec ta) n (exprShowPrec tb)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = namedTextPrec 0 $ exprShow n
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
         namedTextPrec 2 $ exprShow n <> concatmap (\arg -> " " <> exprPrecShow 0 arg) args

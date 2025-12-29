@@ -4,15 +4,15 @@ module Pinafore.Syntax.Parse.Infix
     )
 where
 
+import Pinafore.Base
 import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Syntax
 
 data FixityReader e = MkFixityReader
     { efrReadInfix :: Parser (FullNameRef, Fixity, e -> e -> e)
-    , efrMaxPrecedence :: Int
+    , efrMaxPrecedence :: Word
     }
 
 leftApply :: e -> [(e -> e -> e, e)] -> e
@@ -23,20 +23,19 @@ rightApply :: e -> [(e -> e -> e, e)] -> e
 rightApply e1 [] = e1
 rightApply e1 ((f, e2) : rest) = f e1 $ rightApply e2 rest
 
-readInfixedPrec :: Int -> FixityReader e -> Parser e -> Parser e
-readInfixedPrec prec fr pe
-    | prec == succ (efrMaxPrecedence fr) = pe
-readInfixedPrec prec fr pe = do
-    se1 <- readInfixedPrec (succ prec) fr pe
+readInfixedPrec :: Word -> Parser (FullNameRef, Fixity, e -> e -> e) -> Parser e -> Parser e
+readInfixedPrec 0 _ pe = pe
+readInfixedPrec prec pi pe = do
+    se1 <- readInfixedPrec (pred prec) pi pe
     rest <-
         many $ do
             (name, op, assoc) <-
                 try $ do
-                    (name, MkFixity assoc fprec, op) <- efrReadInfix fr
+                    (name, MkFixity assoc fprec, op) <- pi
                     if prec == fprec
                         then return (name, op, assoc)
                         else empty
-            se2 <- readInfixedPrec (succ prec) fr pe
+            se2 <- readInfixedPrec (pred prec) pi pe
             return (name, op, assoc, se2)
     case rest of
         [] -> return se1
@@ -50,4 +49,4 @@ readInfixedPrec prec fr pe = do
         _ -> fail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(name, _, _, _) -> show name) rest)
 
 readInfixed :: FixityReader e -> Parser e -> Parser e
-readInfixed = readInfixedPrec 0
+readInfixed fr = readInfixedPrec (efrMaxPrecedence fr) (efrReadInfix fr)

@@ -16,7 +16,7 @@ import Pinafore.Syntax.Name
 import Pinafore.Syntax.Syntax
 
 funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
-funcPNT ta tb = applyOpLPrecNamedText ta ("->", 5) tb
+funcPNT ta tb = applyTypeOperatorPrecNamedText ta "->" tb
 
 funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
 funcPNTList [] t = t

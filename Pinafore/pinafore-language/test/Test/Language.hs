@@ -25,7 +25,7 @@ testOp n =
             '(' : _ -> assertFailure "parenthesis"
             _ -> return ()
         case operatorFixity n of
-            MkFixity AssocLeft 10 -> assertFailure "unassigned fixity"
+            MkFixity AssocLeft 1 -> assertFailure "unassigned fixity"
             _ -> return ()
 
 testInfix :: TestTree
@@ -131,7 +131,7 @@ testNumbers = testTree "numbers" [testNumbersArithemetic, testNumbersShowRead]
 data LangResult
     = LRCheckFail
     | LRRunError
-    | LRSuccess String
+    | LRSuccess Text
 
 goodLangResult :: Bool -> LangResult -> LangResult
 goodLangResult True lr = lr
@@ -147,7 +147,7 @@ testNamedQuery name query expected =
                     $ tryExc
                     $ do
                         v <- parseToValue query []
-                        showPinaforeModel v
+                        toTextQValue v
             liftIO
                 $ case result of
                     FailureResult (Left pe) ->
@@ -157,11 +157,11 @@ testNamedQuery name query expected =
                     FailureResult (Right se) ->
                         case expected of
                             _ -> assertFailure $ "check: found exception: " ++ show se
-                    SuccessResult r -> do
+                    SuccessResult (r :: Text) -> do
                         me <- catchPureError r
                         case (expected, me) of
                             (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
-                            (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
+                            (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ unpack r
                             (LRRunError, Just _) -> return ()
                             (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
                             (LRSuccess s, Nothing) -> assertEqual "result" s r
@@ -174,14 +174,13 @@ testSubsumeSubtype good t1 t2 vs =
     testTree "subsume"
         $ [ testNamedQuery "plain" ("let {x : " <> t1 <> " = undefined; y : " <> t2 <> " = x} ()")
                 $ goodLangResult good
-                $ LRSuccess "[]"
+                $ LRSuccess "()"
           , testTree "let-1"
                 $ fmap
                     ( \v ->
                         testNamedQuery (show v) ("let {x : " <> t1 <> " = " <> v <> "} x : " <> t2)
                             $ goodLangResult good
-                            $ LRSuccess
-                            $ unpack v
+                            $ LRSuccess v
                     )
                     vs
           , testTree "let-2"
@@ -189,8 +188,7 @@ testSubsumeSubtype good t1 t2 vs =
                     ( \v ->
                         testNamedQuery (show v) ("let {x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x} y")
                             $ goodLangResult good
-                            $ LRSuccess
-                            $ unpack v
+                            $ LRSuccess v
                     )
                     vs
           ]
@@ -207,8 +205,7 @@ testFunctionSubtype good t1 t2 vs =
                     ( \v ->
                         testNamedQuery (show v) ("let {f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x} f (" <> v <> ")")
                             $ goodLangResult good
-                            $ LRSuccess
-                            $ unpack v
+                            $ LRSuccess v
                     )
                     vs
           ]
@@ -281,15 +278,15 @@ testQueries =
             ]
         , testTree
             "construction"
-            [ testQuery "[]" $ LRSuccess $ show @[Text] []
-            , testQuery "[1]" $ LRSuccess $ "[1]"
-            , testQuery "1::2" $ LRSuccess $ "1::2"
-            , testQuery "(1,2)" $ LRSuccess $ "1::2"
-            , testQuery "(1,2,3)" $ LRSuccess $ "1::2::3"
-            , testQuery "Left 4" $ LRSuccess $ "Left 4"
-            , testQuery "Right 5" $ LRSuccess $ "Right 5"
-            , testQuery "[1,2]" $ LRSuccess $ "[1,2]"
-            , testQuery "[1,2,3]" $ LRSuccess "[1,2,3]"
+            [ testQuery "[]" $ LRSuccess "()"
+            , testQuery "[1]" $ LRSuccess "1 :: ()"
+            , testQuery "1::2" $ LRSuccess "1 :: 2"
+            , testQuery "(1,2)" $ LRSuccess "1 :: 2"
+            , testQuery "(1,2,3)" $ LRSuccess "1 :: 2 :: 3"
+            , testQuery "Left 4" $ LRSuccess "Left 4"
+            , testQuery "Right 5" $ LRSuccess "Right 5"
+            , testQuery "[1,2]" $ LRSuccess "1 :: 2 :: ()"
+            , testQuery "[1,2,3]" $ LRSuccess "1 :: 2 :: 3 :: ()"
             ]
         , testTree
             "functions"
@@ -354,33 +351,33 @@ testQueries =
                 , testTree
                     "polymorphism"
                     [ testQuery "let rec {i = fn x => x} (succ.Integer $.Function i 1, i False)"
-                        $ LRSuccess "2::False"
+                        $ LRSuccess "2 :: False"
                     , testQuery "let rec {i = fn x => x; r = (succ.Integer $.Function i 1, i False)} r"
-                        $ LRSuccess "2::False"
+                        $ LRSuccess "2 :: False"
                     , testQuery "let rec {r = (succ.Integer $.Function i 1, i False); i = fn x => x} r"
-                        $ LRSuccess "2::False"
+                        $ LRSuccess "2 :: False"
                     ]
                 ]
             , testTree
                 "pattern"
                 [ testQuery "let {(a,b) = (3,4)} a" $ LRSuccess "3"
                 , testQuery "let {(a,b) = (3,4)} b" $ LRSuccess "4"
-                , testQuery "let {(a,b): Integer *: Integer = (3,4)} (b,a)" $ LRSuccess "4::3"
-                , testQuery "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4)} (b,a)" $ LRSuccess "7::3"
-                , testQuery "let rec {(a,b) = (3,a +.Integer 4)} (b,a)" $ LRSuccess "7::3"
+                , testQuery "let {(a,b): Integer *: Integer = (3,4)} (b,a)" $ LRSuccess "4 :: 3"
+                , testQuery "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4)} (b,a)" $ LRSuccess "7 :: 3"
+                , testQuery "let rec {(a,b) = (3,a +.Integer 4)} (b,a)" $ LRSuccess "7 :: 3"
                 , testQuery "let rec {(a,b) = (3,a +.Integer 4); (c,d) = (8,c +.Integer 1)} (a,b,c,d)"
-                    $ LRSuccess "3::7::8::9"
+                    $ LRSuccess "3 :: 7 :: 8 :: 9"
                 , testQuery "let rec {(a,b) = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)"
-                    $ LRSuccess "3::7::24::25"
+                    $ LRSuccess "3 :: 7 :: 24 :: 25"
                 , testQuery
                     "let rec {(a,b) = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)"
-                    $ LRSuccess "3::7::24::25"
+                    $ LRSuccess "3 :: 7 :: 24 :: 25"
                 , testQuery
                     "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)"
-                    $ LRSuccess "3::7::24::25"
+                    $ LRSuccess "3 :: 7 :: 24 :: 25"
                 , testQuery
                     "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)"
-                    $ LRSuccess "3::7::24::25"
+                    $ LRSuccess "3 :: 7 :: 24 :: 25"
                 ]
             , testTree
                 "rename"
@@ -530,9 +527,9 @@ testQueries =
         , testTree
             "sum"
             [ testQuery "from.Sum (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $.Function Left \"x\""
-                $ LRSuccess "\"Left\"::\"x\""
+                $ LRSuccess "\"Left\" :: \"x\""
             , testQuery "from.Sum (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $.Function Right \"x\""
-                $ LRSuccess "\"Right\"::\"x\""
+                $ LRSuccess "\"Right\" :: \"x\""
             ]
         , testTree
             "type-signature"
@@ -550,15 +547,15 @@ testQueries =
             , testQuery "let {i : Number -> Number = fn x => x} 0" $ LRSuccess "0"
             , testQuery "let {i : Number +: Boolean = Left 5} i" $ LRSuccess "Left 5"
             , testQuery "let {i : Number +: Boolean = Right False} i" $ LRSuccess "Right False"
-            , testQuery "let {i : Maybe Number = Just 5} i" $ LRSuccess "[5]"
-            , testQuery "let {i : Maybe Number = Nothing} i" $ LRSuccess "[]"
+            , testQuery "let {i : Maybe Number = Just 5} i" $ LRSuccess "5 :: ()"
+            , testQuery "let {i : Maybe Number = Nothing} i" $ LRSuccess "()"
             , testTree
                 "polar"
                 [ testQuery "let {x : Text | Number = 3} x" $ LRSuccess "3"
                 , testQuery "let {f : Any -> Integer = fn _ => 3} f ()" $ LRSuccess "3"
-                , testQuery "(fn x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
-                , testQuery "let {f = (fn x => (x,x)) : (a & Number) -> Showable *: a} f 3" $ LRSuccess "3::3"
-                , testQuery "let {f : (a & Number) -> Showable *: a = fn x => (x,x)} f 3" $ LRSuccess "3::3"
+                , testQuery "(fn x => (x,x)) : ((a & Number) -> ToSource.Pinafore *: a)" $ LRSuccess "<?>"
+                , testQuery "let {f = (fn x => (x,x)) : (a & Number) -> ToSource.Pinafore *: a} f 3" $ LRSuccess "3 :: 3"
+                , testQuery "let {f : (a & Number) -> ToSource.Pinafore *: a = fn x => (x,x)} f 3" $ LRSuccess "3 :: 3"
                 ]
             ]
         , testTree
@@ -572,8 +569,8 @@ testQueries =
             , testQuery "let {Just a = Just 73} a" $ LRSuccess "73"
             , testTree
                 "at"
-                [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "2::2"
-                , testQuery "(fn (Just a)@(Just b) => (a,b)) (Just 578)" $ LRSuccess "578::578"
+                [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "2 :: 2"
+                , testQuery "(fn (Just a)@(Just b) => (a,b)) (Just 578)" $ LRSuccess "578 :: 578"
                 , testQuery "(fn (Nothing)@Nothing => 345) Nothing" $ LRSuccess "345"
                 , testQuery "(fn Nothing@Nothing => 345) Nothing" $ LRSuccess "345"
                 ]
@@ -588,7 +585,7 @@ testQueries =
                 , testQuery "2 >-.Function fn {a => a}" $ LRSuccess "2"
                 , testQuery "2 >-.Function fn {_ => 5}" $ LRSuccess "5"
                 , testQuery "2 >-.Function fn {_ => 5; _ => 3}" $ LRSuccess "5"
-                , testQuery "2 >-.Function fn {a@b => (a,b)}" $ LRSuccess "2::2"
+                , testQuery "2 >-.Function fn {a@b => (a,b)}" $ LRSuccess "2 :: 2"
                 ]
             , testTree
                 "Boolean"
@@ -630,13 +627,13 @@ testQueries =
                 , testQuery "[] >-.Function fn {_::_ => True; _ => False}" $ LRSuccess "False"
                 , testQuery "[1,2] >-.Function fn {[] => True; _ => False}" $ LRSuccess "False"
                 , testQuery "[3,4] >-.Function fn {_::_ => True; _ => False}" $ LRSuccess "True"
-                , testQuery "[3] >-.Function fn {a::b => (a,b)}" $ LRSuccess "[3]"
-                , testQuery "[3,4] >-.Function fn {a::b => (a,b)}" $ LRSuccess "[3,4]"
-                , testQuery "[3,4,5] >-.Function fn {a::b => (a,b)}" $ LRSuccess "[3,4,5]"
+                , testQuery "[3] >-.Function fn {a::b => (a,b)}" $ LRSuccess "3 :: ()"
+                , testQuery "[3,4] >-.Function fn {a::b => (a,b)}" $ LRSuccess "3 :: 4 :: ()"
+                , testQuery "[3,4,5] >-.Function fn {a::b => (a,b)}" $ LRSuccess "3 :: 4 :: 5 :: ()"
                 , testQuery "[3] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "2"
                 , testQuery "[3,4] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "1"
                 , testQuery "[3,4,5] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "2"
-                , testQuery "[3,4] >-.Function fn {[a,b] => (a,b)}" $ LRSuccess "3::4"
+                , testQuery "[3,4] >-.Function fn {[a,b] => (a,b)}" $ LRSuccess "3 :: 4"
                 ]
             ]
         , testTree
@@ -647,7 +644,7 @@ testQueries =
             , testQuery "(fn {a => a}) 2" $ LRSuccess "2"
             , testQuery "(fn {_ => 5}) 2" $ LRSuccess "5"
             , testQuery "(fn {_ => 5; _ => 3}) 2" $ LRSuccess "5"
-            , testQuery "(fn {a@b => (a,b)}) 2" $ LRSuccess "2::2"
+            , testQuery "(fn {a@b => (a,b)}) 2" $ LRSuccess "2 :: 2"
             ]
         , testTree
             "matches"
@@ -665,7 +662,7 @@ testQueries =
             ]
         , testTree
             "type-operator"
-            [ testSameType True "Unit" "Unit" ["[]"]
+            [ testSameType True "Unit" "Unit" ["()"]
             , testSameType True "List a" "List a" []
             , testSameType True "a *: b +: c *: d" "(a *: b) +: (c *: d)" []
             , testSameType True "a *: b *: c *: d" "a *: (b *: (c *: d))" []
@@ -673,7 +670,7 @@ testQueries =
                 True
                 "Integer *: Boolean *: Integer *: Boolean"
                 "Integer *: (Boolean *: (Integer *: Boolean))"
-                ["3::True::7::False"]
+                ["3 :: True :: 7 :: False"]
             ]
         , testTree
             "subtype"
@@ -684,27 +681,27 @@ testQueries =
             ]
         , testTree
             "subsume"
-            [ testQuery "let rec {a: Unit = a} ()" $ LRSuccess "[]"
-            , testQuery "let rec {a: Integer = a} ()" $ LRSuccess "[]"
-            , testQuery "let {a: Integer|Text = error.Function \"undefined\"} ()" $ LRSuccess "[]"
-            , testQuery "let rec {a: Integer|Text = a} ()" $ LRSuccess "[]"
-            , testQuery "let {a: Integer|Text = 3} ()" $ LRSuccess "[]"
-            , testQuery "let {a: Integer|Text = 3; b: Integer|Text = 3} ()" $ LRSuccess "[]"
-            , testQuery "let {a: Integer|Text = 3; b: Integer|Text = a} ()" $ LRSuccess "[]"
-            , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "[]"
-            , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "[]"
-            , testQuery "let rec {r = a; a: Integer|Text = r} ()" $ LRSuccess "[]"
-            , testQuery "let rec {a: None = a} ()" $ LRSuccess "[]"
-            , testQuery "let rec {r = r} let {a : None = r} ()" $ LRSuccess "[]"
-            , testQuery "let rec {r = a; a: None = r} ()" $ LRSuccess "[]"
-            , testQuery "let {a: List (Integer|Text) = []} a" $ LRSuccess "[]"
-            , testQuery "let {a: List Integer | List Text = []} a" $ LRSuccess "[]"
+            [ testQuery "let rec {a: Unit = a} ()" $ LRSuccess "()"
+            , testQuery "let rec {a: Integer = a} ()" $ LRSuccess "()"
+            , testQuery "let {a: Integer|Text = error.Function \"undefined\"} ()" $ LRSuccess "()"
+            , testQuery "let rec {a: Integer|Text = a} ()" $ LRSuccess "()"
+            , testQuery "let {a: Integer|Text = 3} ()" $ LRSuccess "()"
+            , testQuery "let {a: Integer|Text = 3; b: Integer|Text = 3} ()" $ LRSuccess "()"
+            , testQuery "let {a: Integer|Text = 3; b: Integer|Text = a} ()" $ LRSuccess "()"
+            , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "()"
+            , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "()"
+            , testQuery "let rec {r = a; a: Integer|Text = r} ()" $ LRSuccess "()"
+            , testQuery "let rec {a: None = a} ()" $ LRSuccess "()"
+            , testQuery "let rec {r = r} let {a : None = r} ()" $ LRSuccess "()"
+            , testQuery "let rec {r = a; a: None = r} ()" $ LRSuccess "()"
+            , testQuery "let {a: List (Integer|Text) = []} a" $ LRSuccess "()"
+            , testQuery "let {a: List Integer | List Text = []} a" $ LRSuccess "()"
             , testSameType True "Integer" "Integer" ["56"]
             , testSameType False "Integer|Text" "Integer|Text" []
-            , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["[]"]
-            , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
-            , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
-            , testQuery "let {a: Integer|Text = 3; b: List Integer | List Text = [a]} b" $ LRSuccess "[3]"
+            , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["()"]
+            , testSameType False "List Integer | List Text" "List Integer | List Text" ["()"]
+            , testSameType False "List (Integer|Text)" "List Integer | List Text" ["()"]
+            , testQuery "let {a: Integer|Text = 3; b: List Integer | List Text = [a]} b" $ LRSuccess "3 :: ()"
             , testQuery "newMem.WholeModel >>= fn m => m := 1 >> get m >>= outputLn.Env" LRCheckFail
             , testQuery
                 "newMem.WholeModel >>= fn m => let {n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text} n1 := 1 >> get n2 >>= outputLn.Env"
@@ -714,7 +711,7 @@ testQueries =
             "conversion"
             [ testQuery ("((fn x => Just x): Integer -> Maybe Integer) 34 >-.Function fn {Just x => x}")
                 $ LRSuccess "34"
-            , testQuery ("((fn x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "[79]"
+            , testQuery ("((fn x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "79 :: ()"
             , testQuery ("((fn x => x :: []): Integer -> List Integer) 57 >-.Function fn {x::_ => x}")
                 $ LRSuccess "57"
             ]
@@ -722,38 +719,38 @@ testQueries =
             "recursive"
             [ testTree
                 "automaton"
-                [ testQuery "Nothing: Maybe (rec a, List a)" $ LRSuccess "[]"
-                , testQuery "Nothing: Maybe (rec a, Maybe a)" $ LRSuccess "[]"
-                , testQuery "Nothing: rec a, Maybe a" $ LRSuccess "[]"
-                , testQuery "[]: rec a, List a" $ LRSuccess "[]"
+                [ testQuery "Nothing: Maybe (rec a, List a)" $ LRSuccess "()"
+                , testQuery "Nothing: Maybe (rec a, Maybe a)" $ LRSuccess "()"
+                , testQuery "Nothing: rec a, Maybe a" $ LRSuccess "()"
+                , testQuery "[]: rec a, List a" $ LRSuccess "()"
                 ]
             , let
-                atree = ["[]", "[[]]", "[[[[]]]]", "[[],[[]]]"]
+                atree = ["()", "() :: ()", "(() :: ()) :: ()", "() :: (() :: ()) :: ()"]
                 in testTree
                     "equivalence"
                     [ testSameType True "Integer" "Integer" ["0"]
                     , testSameType True "Integer" "rec a, Integer" ["0"]
-                    , testSameType True "List Integer" "List (rec a, Integer)" ["[0]"]
+                    , testSameType True "List Integer" "List (rec a, Integer)" ["0 :: ()"]
                     , testSameType True "rec a, List a" "rec a, List a" atree
                     , testSameType True "rec a, List a" "rec a, List (List a)" atree
-                    , testSubtype True "rec a, (Unit +: a)" "rec a, (Unit +: a | List a)" ["Left []", "Right (Left [])"]
-                    , testSubtype False "Unit +: None" "rec a, (Unit +: a | List a)" ["Left []"]
-                    , testSubtype False "List None" "rec a, (Unit +: a | List a)" ["[]"]
-                    , testSubtype False "Unit +: None | List None" "rec a, (Unit +: a | List a)" ["[]", "Left []"]
-                    , testSubtype False "Unit +: None" "(rec a, Unit +: a) | (rec b, List b)" ["Left []"]
-                    , testSubtype False "List None" "(rec a, Unit +: a) | (rec b, List b)" ["[]"]
+                    , testSubtype True "rec a, (Unit +: a)" "rec a, (Unit +: a | List a)" ["Left ()", "Right (Left ())"]
+                    , testSubtype False "Unit +: None" "rec a, (Unit +: a | List a)" ["Left ()"]
+                    , testSubtype False "List None" "rec a, (Unit +: a | List a)" ["()"]
+                    , testSubtype False "Unit +: None | List None" "rec a, (Unit +: a | List a)" ["()", "Left ()"]
+                    , testSubtype False "Unit +: None" "(rec a, Unit +: a) | (rec b, List b)" ["Left ()"]
+                    , testSubtype False "List None" "(rec a, Unit +: a) | (rec b, List b)" ["()"]
                     , testSubtype
                         False
                         "(rec a, Unit +: a) | (rec b, List b)"
                         "rec a, (Unit +: a | List a)"
-                        ["[]", "[]", "[[]]", "[[]]"]
-                    , testSubtype True "rec a, List a" "Showable" []
-                    , testSubtype True "List (rec a, List a)" "Showable" []
-                    , testSubtype True "rec a, List a" "List Showable" ["[]"]
-                    , testSubtype True "List (rec a, List a)" "List Showable" ["[]"]
+                        ["()", "() :: ()"]
+                    , testSubtype True "rec a, List a" "ToSource.Pinafore" []
+                    , testSubtype True "List (rec a, List a)" "ToSource.Pinafore" []
+                    , testSubtype True "rec a, List a" "List ToSource.Pinafore" ["()"]
+                    , testSubtype True "List (rec a, List a)" "List ToSource.Pinafore" ["()"]
                     , testSameType False "None" "None" []
                     , testSameType True "rec a, Integer" "Integer" ["0"]
-                    , testSameType True "List (rec a, Integer)" "List Integer" ["[0]"]
+                    , testSameType True "List (rec a, Integer)" "List Integer" ["0 :: ()"]
                     , testTree
                         "unroll"
                         [ testSameType True "rec a, List a" "List (rec a, List a)" atree
@@ -761,7 +758,7 @@ testQueries =
                             False
                             "rec a, (List a|Integer)"
                             "List (rec a, (List a|Integer))|Integer"
-                            ["[]"]
+                            ["()"]
                         , testSameType
                             False
                             "rec a, (List a|Integer)"
@@ -771,22 +768,22 @@ testQueries =
                             False
                             "rec a, List (a|Integer)"
                             "List ((rec a, List (a|Integer))|Integer)"
-                            ["[]"]
+                            ["()"]
                         , testSameType
                             False
                             "rec a, List (a|Integer)"
                             "List ((rec a, List (a|Integer))|Integer)"
-                            ["[3]"]
+                            ["3 :: ()"]
                         , testSameType
                             False
                             "rec a, List (a|Integer)"
                             "List (rec a, (List (a|Integer)|Integer))"
-                            ["[]"]
+                            ["()"]
                         , testSameType
                             False
                             "rec a, List (a|Integer)"
                             "List (rec a, (List (a|Integer)|Integer))"
-                            ["[3]"]
+                            ["3 :: ()"]
                         ]
                     ]
             , testTree
@@ -807,8 +804,8 @@ testQueries =
                 ]
             , testTree
                 "subsume"
-                [ testQuery "let rec {rval: rec a, Maybe a = rval} []" $ LRSuccess "[]"
-                , testQuery "let rec {rval: rec a, Maybe a = Just rval} []" $ LRSuccess "[]"
+                [ testQuery "let rec {rval: rec a, Maybe a = rval} []" $ LRSuccess "()"
+                , testQuery "let rec {rval: rec a, Maybe a = Just rval} []" $ LRSuccess "()"
                 , testQuery
                     "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount"
                     $ LRSuccess "<?>"
@@ -838,7 +835,7 @@ testQueries =
                     $ LRSuccess "1"
                 , testQuery
                     "with Function, Integer let rec {rcount: (rec x, Maybe x) -> Integer = rcount1; rcount1: (rec x, Maybe x) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} ()"
-                    $ LRSuccess "[]"
+                    $ LRSuccess "()"
                 , testQuery
                     "with Function, Integer let rec {rcount = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing"
                     $ LRSuccess "1"
@@ -976,7 +973,7 @@ testQueries =
                 , testQuery
                     "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just Nothing} rcount rval"
                     $ LRSuccess "2"
-                , testQuery "with Function let {} Just $ Just $ Just Nothing" $ LRSuccess "[[[[]]]]"
+                , testQuery "with Function let {} Just $ Just $ Just Nothing" $ LRSuccess "((() :: ()) :: ()) :: ()"
                 , testQuery
                     "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval = Just $ Just $ Just Nothing} rcount rval"
                     $ LRSuccess "3"
@@ -1019,7 +1016,6 @@ testQueries =
             testSupertype supertype subtype val altval good = let
                 result =
                     LRSuccess
-                        $ unpack
                         $ if good
                             then val
                             else altval
@@ -1086,8 +1082,8 @@ testQueries =
             testLiteral len embedded val =
                 testTree
                     (unpack val)
-                    [ testQuery ("literalLength.Debug " <> val) $ LRSuccess $ show len
-                    , testQuery ("literalIsEmbedded.Debug " <> val) $ LRSuccess $ show embedded
+                    [ testQuery ("literalLength.Debug " <> val) $ LRSuccess $ showText len
+                    , testQuery ("literalIsEmbedded.Debug " <> val) $ LRSuccess $ showText embedded
                     ]
             in testTree
                 "literal"
@@ -1142,10 +1138,10 @@ testQueries =
                 "ap{let {m = %ap{Just}} (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
                 "{} -> WholeModel. +(Maybe. (Natural. | Text.) *: Maybe. (Natural. | Text.))"
             , testQuery "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}"
-                $ LRSuccess "[[3],\"text\"]"
+                $ LRSuccess "(3 :: ()) :: \"text\" :: ()"
             , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf {}"
-                $ LRSuccess "[[3],\"text\"]"
-            , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "[[3],\"text\"]"
+                $ LRSuccess "(3 :: ()) :: \"text\" :: ()"
+            , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "(3 :: ()) :: \"text\" :: ()"
             ]
         , testTree
             "splice"

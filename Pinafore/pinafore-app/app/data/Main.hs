@@ -17,7 +17,7 @@ import Pinafore.Version
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do
     let
-        maxLevel :: Int
+        maxLevel :: Word
         maxLevel = maximum $ fmap (fixityPrec . snd) fixities
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"

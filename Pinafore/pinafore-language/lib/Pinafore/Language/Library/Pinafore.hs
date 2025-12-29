@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Library.Pinafore
     ( pinaforeLibSection
+    , ToSource (..)
     )
 where
 
@@ -157,6 +158,16 @@ newtype ToSource = MkToSource {toSource :: PrecText}
 instance HasQGroundType '[] ToSource where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ToSource)|]) "ToSource.Pinafore."
 
+toSourceSubtype :: forall t. HasQPartialGroundedType QPolyShim 'Negative t => (t -> PrecText) -> LibraryStuff
+toSourceSubtype f =
+    subtypeRelationBDS Verify "as Pinafore source text" qGroundedType qGroundedType
+        $ functionToShim "conv"
+        $ MkToSource
+        . f
+
+applyOp :: FixAssoc -> PrecText -> (Text, Word) -> PrecText -> PrecText
+applyOp fa ta (op, prec) tb = applyOpPrecText ta (op, MkFixity fa prec) tb
+
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
     headingBDS
@@ -201,8 +212,9 @@ pinaforeLibSection =
                    , valBDS "toText" "" (toText @PrecText)
                    , valBDS "name" "" nameTextToPrec
                    , valBDS "apply" "" applyPrecText
-                   , valBDS "applyOpL" "" applyOpLPrecText
-                   , valBDS "applyOpR" "" applyOpRPrecText
+                   , valBDS "applyOpL" "" $ applyOp AssocLeft
+                   , valBDS "applyOpR" "" $ applyOp AssocRight
+                   , valBDS "applyOpN" "" $ applyOp AssocNone
                    ]
             ]
         , namespaceBDS
@@ -221,6 +233,17 @@ pinaforeLibSection =
                     ]
                 , valBDS "toSource" "" toSource
                 , valBDS "toText" "" (toText @ToSource)
+                , toSourceSubtype @Void $ never
+                , toSourceSubtype @Bool $ nameTextToPrec . showText
+                , toSourceSubtype @Ordering $ nameTextToPrec . showText
+                , toSourceSubtype @Number $ nameTextToPrec . showText
+                , toSourceSubtype @Text $ nameTextToPrec . showText
+                , toSourceSubtype @(Either ToSource ToSource) $ \case
+                    Left x -> applyPrecText "Left" $ toSource x
+                    Right x -> applyPrecText "Right" $ toSource x
+                , toSourceSubtype @(Link ToSource ToSource) $ \case
+                    NilLink -> "()"
+                    ConsLink a b -> applyOperatorPrecText (toSource a) "::" (toSource b)
                 ]
             , headingBDS
                 "Context"

@@ -1,6 +1,6 @@
 module Pinafore.Language.Interpret.Interact
     ( runInteract
-    , showPinaforeModel
+    , showQValue
     )
 where
 
@@ -15,8 +15,8 @@ import Pinafore.Language.Interpret.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
-showPinaforeModel :: QValue -> QInterpreter String
-showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QLocatedError) -> return "<?>")
+showQValue :: QValue -> QInterpreter String
+showQValue val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QLocatedError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT QInterpreter View)
 
@@ -36,7 +36,7 @@ runValue outh val =
     interactRunQInterpreter
         $ catchExc (qUnifyValue val)
         $ \_ -> do
-            s <- showPinaforeModel val
+            s <- showQValue val
             return $ liftIO $ hPutStrLn outh s
 
 interactParse :: Text -> Interact InteractiveCommand

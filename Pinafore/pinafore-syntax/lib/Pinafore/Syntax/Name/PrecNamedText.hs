@@ -5,8 +5,7 @@ module Pinafore.Syntax.Name.PrecNamedText
     , identifierPrecNamedText
     , precNamedText
     , applyPrecNamedText
-    , applyOpLPrecNamedText
-    , applyOpRPrecNamedText
+    , applyOpPrecNamedText
     )
 where
 
@@ -19,7 +18,7 @@ newtype PrecNamedText
     = MkPrecNamedText ((NamedTextItem -> Text) -> PrecText)
     deriving newtype (Semigroup, Monoid)
 
-namedTextPrec :: Int -> NamedText -> PrecNamedText
+namedTextPrec :: Word -> NamedText -> PrecNamedText
 namedTextPrec c (MkNamedText ftt) = MkPrecNamedText $ \ft -> textPrec c $ ftt ft
 
 namedTextToPrec :: NamedText -> PrecNamedText
@@ -31,7 +30,7 @@ identifierPrecNamedText t = namedTextToPrec $ toNamedText t
 instance IsString PrecNamedText where
     fromString s = identifierPrecNamedText $ pack s
 
-precNamedText :: Int -> PrecNamedText -> NamedText
+precNamedText :: Word -> PrecNamedText -> NamedText
 precNamedText c (MkPrecNamedText pnt) =
     MkNamedText $ \fnt -> precText c $ pnt fnt
 
@@ -41,8 +40,5 @@ instance ToNamedText PrecNamedText where
 applyPrecNamedText :: PrecNamedText -> PrecNamedText -> PrecNamedText
 applyPrecNamedText (MkPrecNamedText f) (MkPrecNamedText x) = MkPrecNamedText $ \ntt -> applyPrecText (f ntt) (x ntt)
 
-applyOpLPrecNamedText :: PrecNamedText -> (Text, Int) -> PrecNamedText -> PrecNamedText
-applyOpLPrecNamedText (MkPrecNamedText a) opc (MkPrecNamedText b) = MkPrecNamedText $ \ntt -> applyOpLPrecText (a ntt) opc (b ntt)
-
-applyOpRPrecNamedText :: PrecNamedText -> (Text, Int) -> PrecNamedText -> PrecNamedText
-applyOpRPrecNamedText (MkPrecNamedText a) opc (MkPrecNamedText b) = MkPrecNamedText $ \ntt -> applyOpRPrecText (a ntt) opc (b ntt)
+applyOpPrecNamedText :: PrecNamedText -> (Text, Fixity) -> PrecNamedText -> PrecNamedText
+applyOpPrecNamedText (MkPrecNamedText a) opc (MkPrecNamedText b) = MkPrecNamedText $ \ntt -> applyOpPrecText (a ntt) opc (b ntt)

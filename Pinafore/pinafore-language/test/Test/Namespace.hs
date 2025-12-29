@@ -143,7 +143,7 @@ testNamespace =
                 , testExpectSuccess "let {nna=1; namespace M {nna=2}} test $ nna == 1"
                 , testExpectSuccess "let {nna=1; namespace M {nna=2}} test $ nna. == 1"
                 ]
-            , tDecls ["testeq = fn e, f => if e == f then pass else fail $ \"found: \" <>.Text show f"]
+            , tDecls ["testeq = fn e, f => if e == f then pass else fail $ \"found: \" <>.Text toText.Pinafore f"]
                 $ tGroup
                     "with"
                     [ tDecls
