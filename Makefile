@@ -119,6 +119,13 @@ watch-build: out docker-image
 	stack --docker-env DISPLAY $(STACKFLAGS) build --file-watch --fast
 
 
+### Hoogle
+
+.PHONY: hoogle
+hoogle: docker-image
+	stack --docker-env DISPLAY $(STACKFLAGS) hoogle --server
+
+
 ### Executables
 
 ${BINPATH}/pinafore ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
