@@ -448,6 +448,9 @@ update-locks: docker-image
 top-format:
 	make format
 
+top-hoogle:
+	make hoogle
+
 top-watch-build:
 	make watch-build
 
