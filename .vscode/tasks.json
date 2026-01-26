@@ -151,6 +151,11 @@
                     ]
                 }
             ]
+        },
+        {
+            "label": "Hoogle",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && stack hoogle"
         }
     ]
 }
