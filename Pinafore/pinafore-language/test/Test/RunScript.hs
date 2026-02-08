@@ -62,7 +62,7 @@ tWith :: [Text] -> ScriptTestTree -> ScriptTestTree
 tWith tt = tDeclarator $ "with " <> intercalate ", " tt
 
 tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
-tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
+tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap showT tt)
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
 tOpenDefaultStore = tPrefix "?openTestStore >>=.Action fn store =>"

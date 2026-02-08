@@ -433,3 +433,6 @@ pattern NaturalInteger :: Natural -> Integer
 pattern NaturalInteger n <- (toNaturalMaybe -> Just n)
     where
         NaturalInteger n = toInteger n
+
+showT :: forall a. Show a => a -> Text
+showT = pack . show

@@ -12,7 +12,7 @@ import System.FilePath
 import Changes.World.GNOME.GTK
 
 textCodec :: ReasonCodec LazyByteString Text
-textCodec = hoistCodec (mapResultFailure $ pack . show) utf8Codec . bijectionCodec strictBytestringBijection
+textCodec = hoistCodec (mapResultFailure showT) utf8Codec . bijectionCodec strictBytestringBijection
 
 textLens :: ChangeLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
 textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertChangeLens

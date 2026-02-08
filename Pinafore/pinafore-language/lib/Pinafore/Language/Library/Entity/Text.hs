@@ -32,7 +32,7 @@ rootOrder :: Order Text
 rootOrder = collatorOrder Text.Collate.rootCollator
 
 langQuote :: Text -> Text
-langQuote = pack . show . unpack
+langQuote = showT . unpack
 
 textEntityLibSection :: LibraryStuff
 textEntityLibSection =

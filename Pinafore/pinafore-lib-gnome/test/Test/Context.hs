@@ -32,7 +32,7 @@ tWith :: [Text] -> ScriptTestTree -> ScriptTestTree
 tWith tt = tDeclarator $ "with " <> intercalate ", " tt
 
 tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
-tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
+tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap showT tt)
 
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
 tDecls defs = tPrefix $ pack $ "let {\n" <> intercalate ";\n" defs <> "\n}\n"
