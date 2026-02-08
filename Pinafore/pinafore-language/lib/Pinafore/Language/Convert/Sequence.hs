@@ -55,7 +55,7 @@ instance HasQGroundType '[] () where
         props = singleGroundProperty storabilityProperty storability
         gds :: QPolyGreatestDynamicSupertype '[] ()
         gds =
-            MkPolyGreatestDynamicSupertype
+            varPolyGreatestDynamicSupertype
                 NilCCRArguments
                 $ mapNegShimWit (functionToShim "fromNilLink" $ decode unitTypeCodec) (qGroundedType :: _ (Link TopType TopType))
         in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
@@ -87,7 +87,7 @@ instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where
         showtype ta tb = applyTypeOperatorPrecNamedText ta "*:" tb
         gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance, CoCCRVariance] (,)
         gds =
-            MkPolyGreatestDynamicSupertype
+            varPolyGreatestDynamicSupertype
                 (ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"a") $ ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"b") NilCCRArguments)
                 $ mapNegShimWit (functionToShim "fromConsLink" $ decode pairTypeCodec . coerce) (qGroundedType :: _ (Link A B))
         in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype)
@@ -193,7 +193,7 @@ instance HasQGroundType '[CoCCRVariance] LangMaybe where
         props = singleGroundProperty storabilityProperty storability
         gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance] LangMaybe
         gds =
-            MkPolyGreatestDynamicSupertype
+            varPolyGreatestDynamicSupertype
                 (ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"a") NilCCRArguments)
                 $ mapNegShimWit (functionToShim "decodeToMaybe" $ decodeToMaybe . coerce) (qGroundedType :: _ (Link A (Link TopType TopType)))
         in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMaybe)|]) "Maybe")
@@ -342,7 +342,7 @@ instance HasQGroundType '[CoCCRVariance] LangList1 where
         props = singleGroundProperty storabilityProperty storability
         gds :: QPolyGreatestDynamicSupertype '[CoCCRVariance] LangList1
         gds =
-            MkPolyGreatestDynamicSupertype
+            varPolyGreatestDynamicSupertype
                 (ConsCCRArguments (CoNonpolarArgument $ mkTypeVarT @"a") NilCCRArguments)
                 $ mapNegShimWit (functionToShim "decodeToLangList1" $ decodeToLangList1 . coercionToFunction (applyCoercion1 id MkCoercion)) (qGroundedType :: _ (LangList A))
         in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangList1)|]) "List1.")

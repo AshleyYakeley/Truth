@@ -79,7 +79,7 @@ makePredicateTypeBox name md storable sparent spredicate =
                     gt =
                         (singleGroundType' (identifiedFamilialType tidsym) props $ exprShowPrec name)
                             { qgtGreatestDynamicSupertype =
-                                MkPolyGreatestDynamicSupertype NilCCRArguments
+                                varPolyGreatestDynamicSupertype NilCCRArguments
                                     $ case gds of
                                         MkShimWit dpt (MkPolarShim (MkPolyComposeShim convexpr)) ->
                                             MkShimWit dpt

@@ -456,7 +456,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                     else Nothing
                                         gds :: QPolyGreatestDynamicSupertype dv maintype
                                         gds =
-                                            MkPolyGreatestDynamicSupertype (tParamsToNonpolarVarArguments tparams)
+                                            varPolyGreatestDynamicSupertype (tParamsToNonpolarVarArguments tparams)
                                                 $ mapShimWit gdsConv gdsType
                                         in baseGroundType
                                             { qgtGreatestDynamicSupertype =

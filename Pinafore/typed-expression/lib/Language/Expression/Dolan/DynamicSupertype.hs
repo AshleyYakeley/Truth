@@ -1,11 +1,11 @@
 module Language.Expression.Dolan.DynamicSupertype
     ( DolanExprShim
-    , PolyGreatestDynamicSupertype (..)
+    , PolyGreatestDynamicSupertype
     , nullPolyGreatestDynamicSupertype
+    , varPolyGreatestDynamicSupertype
     , simplePolyGreatestDynamicSupertype
     , runPolyGreatestDynamicSupertype
-    , PolyGDSArgs (..)
-    , getPolyGreatestDynamicSupertype
+    , getGreatestDynamicSupertypeName
     )
 where
 
@@ -36,13 +36,20 @@ nullPolyGreatestDynamicSupertype ::
     PolyGreatestDynamicSupertype ground dv gt
 nullPolyGreatestDynamicSupertype = NullPolyGreatestDynamicSupertype
 
+varPolyGreatestDynamicSupertype ::
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) t.
+    NonpolarArguments TypeVarT dv gt t ->
+    PShimWit (DolanExprShim ground) (DolanGroundedType ground) 'Negative (Maybe t) ->
+    PolyGreatestDynamicSupertype ground dv gt
+varPolyGreatestDynamicSupertype = MkPolyGreatestDynamicSupertype
+
 simplePolyGreatestDynamicSupertype ::
     forall (ground :: GroundTypeKind) (pt :: Type) (t :: Type).
     ground '[] pt ->
     DolanShim ground pt (Maybe t) ->
     PolyGreatestDynamicSupertype ground '[] t
 simplePolyGreatestDynamicSupertype wt conv =
-    MkPolyGreatestDynamicSupertype NilCCRArguments
+    varPolyGreatestDynamicSupertype NilCCRArguments
         $ MkShimWit (MkDolanGroundedType wt NilCCRArguments)
         $ MkPolarShim
         $ purePolyComposeShim conv
@@ -135,3 +142,13 @@ runPolyGreatestDynamicSupertype pgds args = do
     MkPolyGDSArgs gt f <- getPolyGreatestDynamicSupertype pgds
     MkShimWit gargs conv <- f args
     pure $ MkShimWit (MkDolanGroundedType gt gargs) conv
+
+getGreatestDynamicSupertypeName ::
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) a.
+    (forall sv t. NonpolarArgument TypeVarT sv t -> a) ->
+    (forall t. DolanGroundedType ground 'Negative t -> a) ->
+    PolyGreatestDynamicSupertype ground dv gt ->
+    Maybe ([a], a)
+getGreatestDynamicSupertypeName showArg showGround = \case
+    NullPolyGreatestDynamicSupertype -> Nothing
+    MkPolyGreatestDynamicSupertype args (MkShimWit f _) -> Just $ (ccrArgumentsToList showArg args, showGround f)
