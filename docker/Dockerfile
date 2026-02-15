@@ -65,6 +65,7 @@ RUN apt-get update
 RUN apt-get install -y nodejs
 RUN npm --global install @vscode/vsce
 
-# yq
+# jq & yq
+RUN apt-get install -y jq
 RUN curl -fsSLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.47.1/yq_linux_amd64
 RUN chmod +x /usr/local/bin/yq
