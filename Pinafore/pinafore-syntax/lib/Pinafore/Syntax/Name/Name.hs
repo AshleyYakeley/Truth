@@ -1,8 +1,9 @@
 module Pinafore.Syntax.Name.Name where
 
 import Language.Expression.TypeSystem
-import Pinafore.Base
 import Shapes
+
+import Pinafore.Syntax.Name.Show.Text
 
 allowedAlphaNameFirstChar :: Char -> Bool
 allowedAlphaNameFirstChar '_' = True

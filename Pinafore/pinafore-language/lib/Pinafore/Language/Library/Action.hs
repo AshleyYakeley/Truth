@@ -4,14 +4,19 @@
 
 module Pinafore.Language.Library.Action
     ( actionLibSection
+    , TextException (..)
+    , StopException (..)
     )
 where
+
+import System.IO.Error
 
 import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Type
 
 qfail :: Text -> Action BottomType
 qfail t = fail $ unpack t
@@ -28,14 +33,53 @@ tryStop action = actionLiftView $ fmap knowToMaybe $ unliftAction action
 tryStop_ :: Action () -> Action ()
 tryStop_ action = actionLiftView $ fmap (\_ -> ()) $ unliftAction action
 
+instance HasQGroundType '[] ActionException where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ActionException)|]) "Exception"
+
+newtype TextException = MkTextException {unTextException :: Text}
+
+instance HasQGroundType '[] TextException where
+    qGroundType = let
+        gds :: QPolyGreatestDynamicSupertype '[] TextException
+        gds =
+            varPolyGreatestDynamicSupertype
+                NilCCRArguments
+                $ mapNegShimWit
+                    ( functionToShim "" $ \case
+                        ExActionException se | Just e <- fromException se, isUserError e -> Just $ MkTextException $ pack $ ioeGetErrorString e
+                        _ -> Nothing
+                    )
+                    (qGroundedType :: _ ActionException)
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TextException)|]) "TextException")
+            { qgtGreatestDynamicSupertype = gds
+            }
+
+data StopException = MkStopException
+
+instance HasQGroundType '[] StopException where
+    qGroundType = let
+        gds :: QPolyGreatestDynamicSupertype '[] StopException
+        gds =
+            varPolyGreatestDynamicSupertype
+                NilCCRArguments
+                $ mapNegShimWit
+                    ( functionToShim "" $ \case
+                        StopActionException -> Just MkStopException
+                        _ -> Nothing
+                    )
+                    (qGroundedType :: _ ActionException)
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily StopException)|]) "Stop")
+            { qgtGreatestDynamicSupertype = gds
+            }
+
 actionLibSection :: LibraryStuff
 actionLibSection =
     headingBDS
         "Action"
         ""
-        [ typeBDS "Action" "" (MkSomeGroundType actionGroundType) []
+        [ typeBDS "Action" "" (qSomeGroundType @_ @Action) []
         , namespaceBDS "Action"
-            $ fmap addNameInRootBDS (monadEntries @Action)
+            $ fmap addNameInRootBDS (monadExceptionEntries @Action)
             <> [ addNameInRootBDS $ valBDS "mfix" "The fixed point of an Action." $ mfix @Action @A
                , addNameInRootBDS $ valBDS "fail" "Fail, causing the program to terminate with error." $ qfail
                , addNameInRootBDS
@@ -62,4 +106,29 @@ actionLibSection =
                     $ tryStop_
                , addNameInRootBDS $ valBDS "sleep" "Do nothing for this duration." threadSleep
                ]
+        , hasSubtypeRelationBDS @(Result ActionException A) @(Action A) Verify ""
+            $ functionToShim "fromResultExc" fromResultExc
+        , typeBDS
+            "Stop"
+            ""
+            (qSomeGroundType @_ @StopException)
+            [ valPatBDS "Mk" "" MkStopException $ PureFunction $ pure $ \MkStopException -> ()
+            ]
+        , hasSubtypeRelationBDS @StopException @ActionException Verify ""
+            $ functionToShim "StopActionException"
+            $ \MkStopException -> StopActionException
+        , typeBDS "Exception" "" (qSomeGroundType @_ @ActionException) []
+        , typeBDS
+            "TextException"
+            ""
+            (qSomeGroundType @_ @TextException)
+            [ valPatBDS "Mk" "" MkTextException $ PureFunction $ pure $ \(MkTextException t) -> (t, ())
+            ]
+        , hasSubtypeRelationBDS @TextException @ActionException Verify ""
+            $ functionToShim "userError"
+            $ ExActionException
+            . toException
+            . userError
+            . unpack
+            . unTextException
         ]

@@ -53,7 +53,6 @@ import Pinafore.Language
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Library.Pinafore
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Pinafore.Main

@@ -14,11 +14,11 @@ let rec {
     };
 } do {
   outputLn.Env "START";
-  outputLn.Env $ show $ ff Just Nothing;
-  outputLn.Env $ show $ ff Just (Just Nothing);
-  outputLn.Env $ show $ (ff $ ff $ Just) (Just Nothing);
-  outputLn.Env $ show $ (ff $ ff $ Just) (Just $ Just Nothing);
-  outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just Nothing);
-  outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just $ Just Nothing);
+  outputLn.Env $ toText.Pinafore $ ff Just Nothing;
+  outputLn.Env $ toText.Pinafore $ ff Just (Just Nothing);
+  outputLn.Env $ toText.Pinafore $ (ff $ ff $ Just) (Just Nothing);
+  outputLn.Env $ toText.Pinafore $ (ff $ ff $ Just) (Just $ Just Nothing);
+  outputLn.Env $ toText.Pinafore $ manytimes 5 ff Just (Just $ Just $ Just $ Just Nothing);
+  outputLn.Env $ toText.Pinafore $ manytimes 5 ff Just (Just $ Just $ Just $ Just $ Just Nothing);
   outputLn.Env "END";
 }

@@ -17,7 +17,6 @@ module Pinafore.Syntax.Parse
     , readType
     , operatorFixity
     , applyOperatorPrecText
-    , allKeywords
     )
 where
 
@@ -25,5 +24,4 @@ import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Expression
 import Pinafore.Syntax.Parse.Interactive
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Parse.Type

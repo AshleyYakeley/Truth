@@ -1,6 +1,5 @@
-module Pinafore.Base.Number
+module Pinafore.Base.Numeric.Number
     ( Number (..)
-    , showDecimalRational
     , numberToDouble
     , safeRationalNumber
     , approximate
@@ -8,15 +7,13 @@ module Pinafore.Base.Number
     , numberIsInfinite
     , numberIsNegativeZero
     , numberIsExact
-    , readNumberLiteral
     )
 where
 
 import Shapes hiding ((+++))
 import Shapes.Numeric
 
-import Pinafore.Base.SafeRational
-import Pinafore.Base.Showable
+import Pinafore.Base.Numeric.SafeRational
 
 data Number
     = ExactNumber Rational
@@ -155,59 +152,3 @@ instance Floating Number where
     asinh = liftDoubleOp1R asinh
     acosh = liftDoubleOp1R acosh
     atanh = liftDoubleOp1R atanh
-
-showDecimalRational :: Int -> Rational -> Text
-showDecimalRational maxDigits r = let
-    sn = numerator r
-    d = denominator r
-    sign =
-        if sn < 0
-            then "-"
-            else ""
-    n = abs sn
-    (i', decimal') =
-        if d == 1
-            then (n, "")
-            else let
-                factorCount f x
-                    | mod x f > 0 = 0
-                factorCount f x = 1 + factorCount f (div x f)
-                fixedCount = max (factorCount 2 d) (factorCount 5 d)
-                i = div n d
-                fn = n - i * d
-                numbers = iterate (\fn10 -> (mod fn10 d) * 10) $ fn * 10
-                toDigit fn10 = fromMaybe (error "impossible") $ listToMaybe $ show $ div fn10 d
-                (preNumbers, repNumbers) = splitAt fixedCount numbers
-                repeating =
-                    case repNumbers of
-                        0 : _ -> ""
-                        c : rest -> '_' : (toDigit c) : (fmap toDigit $ takeWhile (/= c) rest)
-                        [] -> error "impossible"
-                predigits = fmap toDigit preNumbers
-                in (i, '.' : (take maxDigits $ predigits ++ repeating))
-    in pack $ sign ++ show i' ++ decimal'
-
-instance ShowText Number where
-    showText (ExactNumber r) = showText (SRNumber r)
-    showText (InexactNumber d)
-        | isNaN d = showText SRNaN
-    showText (InexactNumber d) = "~" <> showText d
-
-instance Show Number where
-    show v = unpack $ showText v
-
-readNumberLiteral :: String -> Maybe Number
-readNumberLiteral = runReadPrec readPrec
-
-instance Read Number where
-    readPrec = let
-        readInexact :: ReadPrec Double
-        readInexact = do
-            rLiteral '~'
-            readPrec
-        in fmap InexactNumber readInexact <++ do
-            sr <- readPrec
-            return
-                $ case sr of
-                    SRNumber n -> ExactNumber n
-                    SRNaN -> InexactNumber $ 0 / 0

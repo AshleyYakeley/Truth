@@ -9,9 +9,9 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 
@@ -30,6 +30,9 @@ fromBlob = otoList
 hexTextPrism :: LangPrism' Text StrictByteString
 hexTextPrism = prism (fromLooseHexadecimal . unpack) (pack . toHexadecimal)
 
+showHex :: StrictByteString -> Text
+showHex = pack . toLowercaseHexadecimal
+
 blobEntityLibSection :: LibraryStuff
 blobEntityLibSection =
     headingBDS
@@ -41,7 +44,7 @@ blobEntityLibSection =
             (MkSomeGroundType blobGroundType)
             [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ pure $ \b -> (fromBlob b, ())]
         , literalSubtypeRelationEntry @StrictByteString
-        , showableSubtypeRelationEntry @StrictByteString
+        , showableSubtypeRelationEntry "show as lower-case hexadecimal" showHex
         , namespaceBDS "Blob"
             $ mconcat
                 [ monoidEntries @StrictByteString

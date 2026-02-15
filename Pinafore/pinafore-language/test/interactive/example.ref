@@ -5,7 +5,7 @@ pinafore> f = fn x => x <>.List x
 pinafore> :type f
 : List a -> List a
 pinafore> f p
-[5,6,7,1,1,1,5,6,7,1,1,1]
+5 :: 6 :: 7 :: 1 :: 1 :: 1 :: 5 :: 6 :: 7 :: 1 :: 1 :: 1 :: ()
 pinafore> :simplify+ (a -> Literal) | ((Text & b) -> a)
 Text -> Literal
 pinafore> <END>

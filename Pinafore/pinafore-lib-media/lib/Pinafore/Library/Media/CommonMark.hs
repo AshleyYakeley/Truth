@@ -42,7 +42,7 @@ asMedia =
             )
 
 parseErrorToLS :: C.ParseError -> Located Showable
-parseErrorToLS err = fmap (PlainShowable . toText . getMessagesNamedText) $ parseErrorMessage err
+parseErrorToLS err = fmap (MkShowable . toText . getMessagesNamedText) $ parseErrorMessage err
 
 toHTML :: CommonMarkText -> Result (Located Showable) HTMLText
 toHTML (MkCommonMarkText t) =

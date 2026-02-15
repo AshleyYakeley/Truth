@@ -123,6 +123,7 @@ library
     , monadology
     , mono-traversable
     , open-witness
+    , parsec
     , primitive-serial
     , random
     , reflection

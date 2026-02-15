@@ -22,9 +22,9 @@ import Pinafore.Base.Model.ModelBased as I
 import Pinafore.Base.Model.ModelOrder as I
 import Pinafore.Base.Model.ModelProperty as I
 import Pinafore.Base.Model.PredicateProperty as I
-import Pinafore.Base.Number as I
-import Pinafore.Base.SafeRational as I
-import Pinafore.Base.Showable as I
+import Pinafore.Base.Numeric.Number as I
+import Pinafore.Base.Numeric.ReadShow as I
+import Pinafore.Base.Numeric.SafeRational as I
 import Pinafore.Base.Storable.EntityStorer as I
 import Pinafore.Base.Storable.StoreAdapter as I
 import Pinafore.Base.Text as I

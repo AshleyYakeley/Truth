@@ -3,11 +3,11 @@ module Main
     )
 where
 
-import Pinafore.Base
 import Shapes
 import Shapes.Test
 
 import Pinafore.Syntax
+import Test.ReadShow
 
 testParseAccept :: Text -> TestTree
 testParseAccept t =
@@ -57,4 +57,5 @@ main =
                     SyntaxErrorType _ -> True
                     _ -> False
                 ]
+            , testReadShow
             ]

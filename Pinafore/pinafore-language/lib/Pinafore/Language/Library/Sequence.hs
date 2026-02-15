@@ -8,6 +8,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 
 append :: NonEmpty A -> [A] -> NonEmpty A
 append (a :| aa) bb = a :| (aa <> bb)
@@ -15,10 +16,12 @@ append (a :| aa) bb = a :| (aa <> bb)
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ concatmap toList lna
 
-linkShowable :: Link Showable Showable -> Showable
-linkShowable NilLink = ListShowable []
-linkShowable (ConsLink sa (ListShowable sb)) = ListShowable $ sa : sb
-linkShowable (ConsLink sa (PlainShowable tb)) = PlainShowable $ showText sa <> "::" <> tb
+linkShowable :: Link Showable Showable -> Text
+linkShowable = \case
+    NilLink -> ""
+    ConsLink (MkShowable "") (MkShowable tb) -> tb
+    ConsLink (MkShowable ta) (MkShowable "") -> ta
+    ConsLink (MkShowable ta) (MkShowable tb) -> ta <> ", " <> tb
 
 sequenceLibSection :: LibraryStuff
 sequenceLibSection =
@@ -30,7 +33,7 @@ sequenceLibSection =
             "A pair, or nil."
             []
         , hasSubtypeRelationBDS @(Link Entity Entity) @Entity Verify "" $ functionToShim "linkEntityConvert" linkEntityConvert
-        , hasSubtypeRelationBDS @(Link Showable Showable) @Showable Verify "" $ functionToShim "show" linkShowable
+        , showableSubtypeRelationEntry @(Link Showable Showable) "show by comma-space-separation, if both halves are non-empty" linkShowable
         , hasSubtypeRelationBDS @() @(Link BottomType BottomType) Verify "" $ functionToShim "" $ \() -> NilLink
         , hasSubtypeRelationBDS @(A, B) @(Link A B) Verify "" $ functionToShim "" $ \(a, b) -> ConsLink a b
         , typeBDS_ @_ @LangList

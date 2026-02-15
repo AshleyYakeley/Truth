@@ -9,8 +9,8 @@ import Shapes hiding (try)
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 readRecordValue :: Parser SyntaxExpression -> Parser [(Name, SyntaxExpression)]
 readRecordValue p =

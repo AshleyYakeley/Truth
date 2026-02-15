@@ -5,7 +5,6 @@ module Pinafore.Language.Convert.Basic
     , resultGroundType
     , entityMapGroundType
     , mapEntityConvert
-    , showableGroundType
     , eitherEntityConvert
     , resultEntityConvert
     )
@@ -113,10 +112,3 @@ instance HasQGroundType '[CoCCRVariance] EntityMap where
 
 mapEntityConvert :: EntityMap Entity -> Entity
 mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter
-
-showableGroundType :: QGroundType '[] Showable
-showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
-
--- Showable
-instance HasQGroundType '[] Showable where
-    qGroundType = showableGroundType

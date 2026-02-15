@@ -12,9 +12,9 @@ import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Expression
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Parse.Type
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 data InteractiveCommand
     = NullInteractiveCommand

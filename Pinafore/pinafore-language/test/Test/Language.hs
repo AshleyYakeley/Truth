@@ -9,7 +9,6 @@ import Data.Shim
 import Shapes
 import Shapes.Numeric
 import Shapes.Test
-import Prelude (read)
 
 import Pinafore.Documentation
 import Pinafore.Test.Internal
@@ -77,7 +76,7 @@ testNumbersArithemetic =
 
 testShowRead ::
     forall t.
-    (Show t, Eq (PreciseEq t), Read t) =>
+    (Show t, Eq (PreciseEq t), LexLiteral t) =>
     String ->
     t ->
     TestTree
@@ -85,17 +84,17 @@ testShowRead str t =
     testTree
         (show str)
         [ testTree "show" $ assertEqual "" str $ show t
-        , testTree "read" $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
-        , testTree "read-show" $ assertEqual "" str $ show $ read @t str
+        , testTree "read" $ assertEqual "" (Just $ MkPreciseEq t) $ fmap MkPreciseEq $ readLiteralMaybe str
+        , testTree "read-show" $ assertEqual "" (Just str) $ fmap show $ readLiteralMaybe @t str
         ]
 
 testRead ::
     forall t.
-    (Show t, Eq (PreciseEq t), Read t) =>
+    (Show t, Eq (PreciseEq t), LexLiteral t) =>
     String ->
     Maybe t ->
     TestTree
-testRead str t = testTree (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ readMaybe str
+testRead str t = testTree (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ readLiteralMaybe str
 
 testNumbersShowRead :: TestTree
 testNumbersShowRead =

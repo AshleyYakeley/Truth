@@ -6,6 +6,7 @@ import Shapes
 import Text.Parsec (SourcePos)
 
 import Pinafore.Syntax.Name
+import Pinafore.Syntax.ReadShow
 
 data WithSourcePos t
     = MkWithSourcePos
@@ -243,8 +244,8 @@ data SyntaxConstructor
     deriving stock Eq
 
 instance ExprShow SyntaxConstructor where
-    exprShowPrec (SLNumber x) = identifierPrecNamedText $ pack $ show x
-    exprShowPrec (SLString x) = identifierPrecNamedText x
+    exprShowPrec (SLNumber x) = precToPrecNamedText $ showPinafore x
+    exprShowPrec (SLString x) = precToPrecNamedText $ showPinafore x
     exprShowPrec (SLNamedConstructor x mv) =
         namedTextPrec 7
             $ exprPrecShow 6 x

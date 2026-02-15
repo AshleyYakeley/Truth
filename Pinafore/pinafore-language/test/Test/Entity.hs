@@ -270,13 +270,13 @@ testEntity =
                         [ testExpectSuccess "testconvr 1"
                         , testExpectSuccess "testconvr 2.5"
                         , testExpectSuccess "testeq (convl 31.5) (convl $ convn 31.5)"
-                        , testExpectSuccess "testeq \"63/2\" (show 31.5)"
-                        , testExpectSuccess "testeq \"63/2\" (show $ convn 31.5)"
+                        , testExpectSuccess "testeq \"63/2\" (toText.Pinafore 31.5)"
+                        , testExpectSuccess "testeq \"63/2\" (toText.Pinafore $ convn 31.5)"
                         ]
                     , let
                         testLiteralConversion :: ScriptExpectation -> Text -> Text -> ScriptTestTree
                         testLiteralConversion se ptype val =
-                            testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se
+                            testScriptExpectation (val <> ": " <> ptype <> " => " <> showT se) se
                                 $ "(("
                                 <> val
                                 <> "): Literal) >- fn {val:? "
@@ -323,9 +323,9 @@ testEntity =
                             ]
                     , tGroup
                         "show"
-                        [ testExpectSuccess "testeq \"False\" $ show False"
-                        , testExpectSuccess "testeq \"34\" $ show 34"
-                        , testExpectSuccess "testeq \"\\\"hello\\\"\" $ show \"hello\""
+                        [ testExpectSuccess "testeq \"False\" $ toText.Pinafore False"
+                        , testExpectSuccess "testeq \"34\" $ toText.Pinafore 34"
+                        , testExpectSuccess "testeq \"\\\"hello\\\"\" $ toText.Pinafore \"hello\""
                         ]
                     ]
             , tOpenDefaultStore
@@ -899,9 +899,9 @@ testEntity =
                             , subtypeTest False SRSingle "(Integer *: Unit) *: Unit" "ML Integer"
                             , testExpectSuccess "testeq (Just [12]) (Just [12])"
                             , testExpectSuccess "testeq (Just [12]: Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
-                            , testExpectSuccess "testeq \"[[12]]\" (show ([[12]]: Maybe (List Integer)))"
-                            , testExpectSuccess "testeq \"[[12]]\" (show ([[12]]: ML Integer))"
-                            , testExpectSuccess "testeq \"[[12]]\" (show (Just [12]: ML Integer))"
+                            , testExpectSuccess "testeq \"(12 :: ()) :: ()\" (toText.Pinafore ([[12]]: Maybe (List Integer)))"
+                            , testExpectSuccess "testeq \"(12 :: ()) :: ()\" (toText.Pinafore ([[12]]: ML Integer))"
+                            , testExpectSuccess "testeq \"(12 :: ()) :: ()\" (toText.Pinafore (Just [12]: ML Integer))"
                             , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
                             , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: ML Integer)"
                             , testExpectSuccess "testeq (Just [55]) (gfa (Just [55]))"
@@ -1116,16 +1116,16 @@ testEntity =
                             "conversion"
                             [ tDecls
                                 [ "datatype D +a {Mk1 (List a); Mk2 (Maybe a)}"
-                                , "showD: D Showable -> Text = fn {Mk1.D aa => show aa; Mk2.D ma => show ma}"
+                                , "showD: D ToSource.Pinafore -> Text = fn {Mk1.D aa => toText.Pinafore aa; Mk2.D ma => toText.Pinafore ma}"
                                 , "di: D Integer = Mk1.D [576,469,12]"
                                 , "sdi: Text = showD di"
                                 ]
-                                $ testExpectSuccess "if sdi == \"[576,469,12]\" then pass else fail sdi"
+                                $ testExpectSuccess "if sdi == \"576 :: 469 :: 12 :: ()\" then pass else fail sdi"
                             , tDecls
                                 [ "datatype D -a {Mk1 (a -> Integer); Mk2 (a -> a -> Text)}"
-                                , "dShow: D Number = Mk2.D $ fn a, b => show a <>.Text \",\" <>.Text show b"
+                                , "dShow: D Number = Mk2.D $ fn a, b => toText.Pinafore a <>.Text \",\" <>.Text toText.Pinafore b"
                                 , "di: D Integer = dShow"
-                                , "showD: a -> D a -> Text = fn a => fn {Mk1.D ai => show $ ai a; Mk2.D aat => aat a a}"
+                                , "showD: a -> D a -> Text = fn a => fn {Mk1.D ai => toText.Pinafore $ ai a; Mk2.D aat => aat a a}"
                                 , "sd: Text = showD 356 di"
                                 ]
                                 $ testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
@@ -1344,17 +1344,17 @@ testEntity =
                         , tDecls
                             [ "datatype R +a {Mk {val: List a}}"
                             , "mkR: List a -> R a = fn val => Mk.R"
-                            , "rShow: R Showable -> Text = fn Mk.R => show val"
+                            , "rShow: R ToSource.Pinafore -> Text = fn Mk.R => toText.Pinafore val"
                             ]
                             $ tGroup
                                 "map"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess
-                                    "let {r1: R Integer = mkR []; r2: R Showable = r1} testeq \"[]\" $ rShow r2"
+                                    "let {r1: R Integer = mkR []; r2: R ToSource.Pinafore = r1} testeq \"()\" $ rShow r2"
                                 , testExpectSuccess
-                                    "let {r1: R Integer = mkR [57]; r2: R Showable = r1} testeq \"[57]\" $ rShow r2"
+                                    "let {r1: R Integer = mkR [57]; r2: R ToSource.Pinafore = r1} testeq \"57 :: ()\" $ rShow r2"
                                 , testExpectSuccess
-                                    "let {r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1} testeq \"[12,10,57]\" $ rShow r2"
+                                    "let {r1: R Integer = mkR [12, 10, 57]; r2: R ToSource.Pinafore = r1} testeq \"12 :: 10 :: 57 :: ()\" $ rShow r2"
                                 ]
                         , tDecls
                             [ "datatype Rec +a {Mk {rval: rec r, Maybe (a *: r)}}"

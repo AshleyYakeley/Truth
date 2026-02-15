@@ -16,10 +16,10 @@ let {
           fn {
             v :? Text => v;
             v :? Number => v;
-            _ => Text.Showable "<literal>";
+            _ => Mk.Showable "<literal>";
           };
-        Func _ => Text.Showable "<function>";
-        Err e => Text.Showable $ "<#error " <>.Text e <>.Text ">";
+        Func _ => Mk.Showable "<function>";
+        Err e => Mk.Showable $ "<#error " <>.Text e <>.Text ">";
       };
 
     apply: Value -> Value -> Value =

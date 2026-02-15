@@ -3,10 +3,11 @@ module Test.ReadShow
     )
 where
 
+import Pinafore.Base
 import Shapes
 import Shapes.Test
 
-import Pinafore.Base
+import Pinafore.Syntax
 
 testShowInteger :: String -> Integer -> TestTree
 testShowInteger expected i = testTree expected $ assertEqual "" expected $ rsShow integerReadShow i
@@ -15,7 +16,7 @@ testItem :: String -> String -> TestTree
 testItem expected text =
     testTree text $ let
         mfound :: Maybe SafeRational
-        mfound = readMaybe text
+        mfound = readLiteralMaybe text
         in case mfound of
             Nothing -> assertFailure "no parse"
             Just found -> assertEqual "" expected $ show found

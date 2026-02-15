@@ -128,6 +128,11 @@ instance HasVariance Link where
 instance HasVariance (Link a) where
     type VarianceOf (Link a) = 'Covariance
 
+instance (ShowPinafore a, ShowPinafore b) => ShowPinafore (Link a b) where
+    showPinafore = \case
+        NilLink -> "()"
+        ConsLink a b -> applyOperatorPrecText (showPinafore a) "::" (showPinafore b)
+
 linkStoreAdapter :: StoreAdapter a -> StoreAdapter b -> StoreAdapter (Link a b)
 linkStoreAdapter sa sb = let
     from :: Either (a, b) () -> Link a b

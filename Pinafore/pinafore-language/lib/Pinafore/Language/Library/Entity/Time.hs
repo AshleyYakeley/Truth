@@ -13,8 +13,8 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Numeric
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 
@@ -119,7 +119,7 @@ timeEntityLibSection =
                         $ \d -> (nominalDiffTimeToSeconds d, ())
                     ]
               , literalSubtypeRelationEntry @NominalDiffTime
-              , showableSubtypeRelationEntry @NominalDiffTime
+              , showableSubtypeRelationEntry @NominalDiffTime "" showT
               , namespaceBDS "Duration"
                     $ ordEntries @NominalDiffTime
                     <> [ valBDS "zero" "No duration." $ (0 :: NominalDiffTime)
@@ -161,7 +161,7 @@ timeEntityLibSection =
                         $ \d -> (utcTimeToPOSIXSeconds d, ())
                     ]
               , literalSubtypeRelationEntry @UTCTime
-              , showableSubtypeRelationEntry @UTCTime
+              , showableSubtypeRelationEntry @UTCTime "" showT
               , namespaceBDS "Time"
                     $ ordEntries @UTCTime
                     <> [ plainFormattingDef @UTCTime "a time"
@@ -190,7 +190,7 @@ timeEntityLibSection =
                         $ \day -> (toModifiedJulianDay day, ())
                     ]
               , literalSubtypeRelationEntry @Day
-              , showableSubtypeRelationEntry @Day
+              , showableSubtypeRelationEntry @Day "" showT
               , namespaceBDS "Date"
                     $ enumEntries @Day
                     <> ordEntries @Day
@@ -222,7 +222,7 @@ timeEntityLibSection =
                             (PureFunction $ pure $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
                     ]
               , literalSubtypeRelationEntry @TimeOfDay
-              , showableSubtypeRelationEntry @TimeOfDay
+              , showableSubtypeRelationEntry @TimeOfDay "" showT
               , namespaceBDS "TimeOfDay"
                     $ ordEntries @TimeOfDay
                     <> [ plainFormattingDef @TimeOfDay "a time of day"
@@ -243,7 +243,7 @@ timeEntityLibSection =
                         $ \LocalTime{..} -> (localDay, (localTimeOfDay, ()))
                     ]
               , literalSubtypeRelationEntry @LocalTime
-              , showableSubtypeRelationEntry @LocalTime
+              , showableSubtypeRelationEntry @LocalTime "" showT
               , namespaceBDS "LocalTime"
                     $ ordEntries @LocalTime
                     <> [ plainFormattingDef @LocalTime "a local time"

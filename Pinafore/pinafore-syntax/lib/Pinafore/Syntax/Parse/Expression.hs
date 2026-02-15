@@ -19,9 +19,9 @@ import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Infix
 import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Parse.Pattern
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Parse.Type
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readOpenEntityTypeDeclaration = do

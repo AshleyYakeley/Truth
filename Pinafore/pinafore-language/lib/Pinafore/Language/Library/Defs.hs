@@ -31,6 +31,7 @@ module Pinafore.Language.Library.Defs
     , functorEntries
     , applicativeEntries
     , monadEntries
+    , monadExceptionEntries
     , semigroupEntries
     , monoidEntries
     , sequenceEntries
@@ -191,10 +192,7 @@ nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
 getGDSName :: QGroundType dv t -> Maybe ([NamedText], NamedText)
-getGDSName gt =
-    case qgtGreatestDynamicSupertype gt of
-        NullPolyGreatestDynamicSupertype -> Nothing
-        MkPolyGreatestDynamicSupertype args f -> Just $ (ccrArgumentsToList exprShow args, exprShow f)
+getGDSName gt = getGreatestDynamicSupertypeName exprShow exprShow $ qgtGreatestDynamicSupertype gt
 
 typeBDS :: FullNameRef -> RawMarkdown -> QSomeGroundType -> [LibraryStuff] -> LibraryStuff
 typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
@@ -497,6 +495,36 @@ monadEntries ::
     ) =>
     [LibraryStuff]
 monadEntries = applicativeEntries @f <> [headingBDS "Monad" "" [valBDS ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]]
+
+monadExceptionEntries ::
+    forall (f :: Type -> Type).
+    ( MonadException f
+    , HasQType QPolyShim 'Negative (f TopType)
+    , HasQType QPolyShim 'Negative (f ())
+    , HasQType QPolyShim 'Positive (f ())
+    , HasQType QPolyShim 'Positive (f A)
+    , HasQType QPolyShim 'Negative (f A)
+    , HasQType QPolyShim 'Positive (f B)
+    , HasQType QPolyShim 'Negative (f B)
+    , HasQType QPolyShim 'Positive (f C)
+    , HasQType QPolyShim 'Positive (f (A, B))
+    , HasQType QPolyShim 'Positive (f [B])
+    , HasQType QPolyShim 'Negative (f (A -> B))
+    , HasQType QPolyShim 'Positive (Exc f)
+    , HasQType QPolyShim 'Negative (Exc f)
+    , HasQType QPolyShim 'Positive (f (Result (Exc f) A))
+    ) =>
+    [LibraryStuff]
+monadExceptionEntries =
+    monadEntries @f
+        <> [ headingBDS
+                "Exception"
+                ""
+                [ valBDS "throw" "" $ throwExc @f @A
+                , valBDS "catch" "" $ catchExc @f @A
+                , valBDS "try" "" $ tryExc @f @A
+                ]
+           ]
 
 semigroupEntries ::
     forall (a :: Type).

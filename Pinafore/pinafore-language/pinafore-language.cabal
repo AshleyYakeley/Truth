@@ -98,9 +98,10 @@ library
       Pinafore.Language.Library.Defs
       Pinafore.Language.Library.Convert
       Pinafore.Language.Library.Types
+      Pinafore.Language.Library.Showable
+      Pinafore.Language.Library.ToSource
       Pinafore.Language.Library.Entity.Entity
       Pinafore.Language.Library.Entity.Literal
-      Pinafore.Language.Library.Entity.Showable
       Pinafore.Language.Library.Entity.Void
       Pinafore.Language.Library.Entity.Unit
       Pinafore.Language.Library.Entity.Boolean

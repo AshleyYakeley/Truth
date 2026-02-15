@@ -7,8 +7,8 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 
 voidEntityLibSection :: LibraryStuff
 voidEntityLibSection =
@@ -17,7 +17,7 @@ voidEntityLibSection =
         ""
         [ typeBDS "Void" "A type with no values." (MkSomeGroundType voidGroundType) []
         , literalSubtypeRelationEntry @Void
-        , showableSubtypeRelationEntry @Void
+        , showableSubtypeRelationEntry @Void "" never
         , namespaceBDS "Void"
             $ semigroupEntries @Void
             <> eqEntries @Void

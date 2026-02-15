@@ -8,12 +8,13 @@ import Text.Collate qualified
 
 import Import
 import Pinafore.Language.Convert
+import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Blob ()
 import Pinafore.Language.Library.Entity.Literal
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Value
 
 utf8Prism :: LangPrism' StrictByteString Text
@@ -22,11 +23,11 @@ utf8Prism = codecToPrism utf8Codec
 collatorOrder :: Text.Collate.Collator -> Order Text
 collatorOrder c = MkOrder $ Text.Collate.collate c
 
-langOrder :: Text -> Result Showable (Order Text)
+langOrder :: Text -> Result TextException (Order Text)
 langOrder langcode =
     case Text.Collate.parseLang langcode of
         Right lang -> pure $ collatorOrder $ Text.Collate.collatorFor lang
-        Left err -> FailureResult $ PlainShowable $ pack err
+        Left err -> FailureResult $ MkTextException $ pack err
 
 rootOrder :: Order Text
 rootOrder = collatorOrder Text.Collate.rootCollator
@@ -41,7 +42,7 @@ textEntityLibSection =
         ""
         [ typeBDS "Text" "" (MkSomeGroundType textGroundType) []
         , literalSubtypeRelationEntry @Text
-        , showableSubtypeRelationEntry @Text
+        , showableSubtypeRelationEntry @Text "show as itself" id
         , namespaceBDS "Text"
             $ mconcat
                 [ monoidEntries @Text

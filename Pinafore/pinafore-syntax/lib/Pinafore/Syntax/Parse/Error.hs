@@ -15,6 +15,12 @@ import Text.Parsec.Error qualified as P
 
 import Pinafore.Syntax.Name
 
+{-
+import Control.Exception (SomeException (..))
+import Data.Typeable (cast)
+import Data.Type.OpenWitness.Exception
+-}
+
 showLocated :: P.SourcePos -> Text -> Text
 showLocated spos s =
     toText (P.sourceName spos)
@@ -34,8 +40,17 @@ data Located a
 instance Functor Located where
     fmap ab (MkLocated spos ntt a) = MkLocated spos ntt $ ab a
 
+instance Foldable Located where
+    foldMap am (MkLocated _ _ a) = am a
+
+instance Traversable Located where
+    traverse afb (MkLocated spos ntt a) = fmap (MkLocated spos ntt) $ afb a
+
 instance ShowNamedText a => ShowText (Located a) where
     showText (MkLocated spos ntt err) = showLocated spos $ ntt $ showNamedText err
+
+instance ShowNamedText a => Show (Located a) where
+    show = unpack . showText
 
 instance RepresentationalRole Located where
     representationalCoercion MkCoercion = MkCoercion

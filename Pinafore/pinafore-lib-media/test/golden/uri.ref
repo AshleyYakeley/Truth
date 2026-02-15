@@ -1,118 +1,118 @@
-original: "https://pinafore.info"
+original: https://pinafore.info
 non-data URI
-scheme: "https"
-host: "pinafore.info"
-path: ""
+scheme: https
+host: pinafore.info
+path: 
 absolute
-result: "https://pinafore.info"
-same: True
+result: https://pinafore.info
+same: true
 
-original: "https://pinafore.info/"
+original: https://pinafore.info/
 non-data URI
-scheme: "https"
-host: "pinafore.info"
-path: "/"
+scheme: https
+host: pinafore.info
+path: /
 absolute
-result: "https://pinafore.info/"
-same: True
+result: https://pinafore.info/
+same: true
 
-original: "http://ashley@pinafore.info/"
+original: http://ashley@pinafore.info/
 non-data URI
-scheme: "http"
-userinfo: "ashley"
-host: "pinafore.info"
-path: "/"
+scheme: http
+userinfo: ashley
+host: pinafore.info
+path: /
 absolute
-result: "http://ashley@pinafore.info/"
-same: True
+result: http://ashley@pinafore.info/
+same: true
 
-original: "http://ashley:hunter2@pinafore.info/"
+original: http://ashley:hunter2@pinafore.info/
 non-data URI
-scheme: "http"
-userinfo: "ashley:hunter2"
-host: "pinafore.info"
-path: "/"
+scheme: http
+userinfo: ashley:hunter2
+host: pinafore.info
+path: /
 absolute
-result: "http://ashley:hunter2@pinafore.info/"
-same: True
+result: http://ashley:hunter2@pinafore.info/
+same: true
 
-original: "http://ashley:hunter2@pinafore.info:80/invocation/"
+original: http://ashley:hunter2@pinafore.info:80/invocation/
 non-data URI
-scheme: "http"
-userinfo: "ashley:hunter2"
-host: "pinafore.info"
+scheme: http
+userinfo: ashley:hunter2
+host: pinafore.info
 port: 80
-path: "/invocation/"
+path: /invocation/
 absolute
-result: "http://ashley:hunter2@pinafore.info:80/invocation/"
-same: True
+result: http://ashley:hunter2@pinafore.info:80/invocation/
+same: true
 
-original: "http://ashley:hunter2@pinafore.info:80/invocation?query#fragment"
+original: http://ashley:hunter2@pinafore.info:80/invocation?query#fragment
 non-data URI
-scheme: "http"
-userinfo: "ashley:hunter2"
-host: "pinafore.info"
+scheme: http
+userinfo: ashley:hunter2
+host: pinafore.info
 port: 80
-path: "/invocation"
-query: "query"
-fragment: "fragment"
+path: /invocation
+query: query
+fragment: fragment
 absolute
-result: "http://ashley:hunter2@pinafore.info:80/invocation?query#fragment"
-same: True
+result: http://ashley:hunter2@pinafore.info:80/invocation?query#fragment
+same: true
 
-original: "data:,A%20brief%20note"
+original: data:,A%20brief%20note
 data URI
-base64: False
+base64: false
 type: text/plain;charset=US-ASCII
-as text: "A brief note"
-fragment: ""
-result: "data:,A%20brief%20note"
-same: True
+as text: A brief note
+fragment: 
+result: data:,A%20brief%20note
+same: true
 
-original: "data:text/plain,Hello%20World"
+original: data:text/plain,Hello%20World
 data URI
-base64: False
+base64: false
 type: text/plain
-as text: "Hello World"
-fragment: ""
-result: "data:text/plain,Hello%20World"
-same: True
+as text: Hello World
+fragment: 
+result: data:text/plain,Hello%20World
+same: true
 
-original: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+original: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==
 data URI
-base64: True
+base64: true
 type: image/png
-as image, size: 5::5
-fragment: ""
-result: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
-same: True
+as image, size: 5, 5
+fragment: 
+result: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==
+same: true
 
-original: "foo://example.com:8042/over/there?name=ferret#nose"
+original: foo://example.com:8042/over/there?name=ferret#nose
 non-data URI
-scheme: "foo"
-host: "example.com"
+scheme: foo
+host: example.com
 port: 8042
-path: "/over/there"
-query: "name=ferret"
-fragment: "nose"
+path: /over/there
+query: name=ferret
+fragment: nose
 absolute
-result: "foo://example.com:8042/over/there?name=ferret#nose"
-same: True
+result: foo://example.com:8042/over/there?name=ferret#nose
+same: true
 
-original: "urn:example:animal:ferret:nose"
+original: urn:example:animal:ferret:nose
 non-data URI
-scheme: "urn"
-path: "example:animal:ferret:nose"
+scheme: urn
+path: example:animal:ferret:nose
 absolute
-result: "urn:example:animal:ferret:nose"
-same: True
+result: urn:example:animal:ferret:nose
+same: true
 
-original: "g?y"
+original: g?y
 non-data URI
-path: "g"
-query: "y"
+path: g
+query: y
 relative
-result: "g?y"
-same: True
+result: g?y
+same: true
 
 Done.

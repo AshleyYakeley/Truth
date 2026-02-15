@@ -10,9 +10,9 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 
@@ -44,6 +44,23 @@ plainFormattingDef ::
     LibraryStuff
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t
 
+showDecimalParams :: ListType QDocSignature '[Bool, Natural, Bool, Bool, Bool]
+showDecimalParams =
+    ConsListType (mkValueDocSignature "plusSign" "Show \"+\" with positive numbers" $ Just False)
+        $ ConsListType (mkValueDocSignature "maxDigits" "Maximum digits after the decimal point" $ Just 17)
+        $ ConsListType (mkValueDocSignature "alwaysPoint" "Always show decimal point." $ Just False)
+        $ ConsListType (mkValueDocSignature "separateRecurring" "Separate recurring digits with '_'" $ Just False)
+        $ ConsListType (mkValueDocSignature "impreciseEllipsis" "Show '…' if imprecise" $ Just False)
+        $ NilListType
+
+defaultDecimalOptions :: DecimalOptions
+defaultDecimalOptions = (False, (17, (False, (False, (False, ())))))
+
+showIntegerParams :: ListType QDocSignature '[Bool]
+showIntegerParams =
+    ConsListType (mkValueDocSignature "plusSign" "Show \"+\" with positive numbers" $ Just False)
+        $ NilListType
+
 numericEntityLibSection :: LibraryStuff
 numericEntityLibSection =
     headingBDS
@@ -62,6 +79,7 @@ numericEntityLibSection =
                             "Arithmetic"
                             ""
                             [ plainFormattingDef @Natural "a non-negative integer"
+                            , valBDS "show" "Show as text." showNatural
                             , valBDS "+" "Add." $ (+) @Natural
                             , valBDS "-" "Subtract." subtractNat
                             , valBDS "*" "Multiply." $ (*) @Natural
@@ -95,6 +113,7 @@ numericEntityLibSection =
                             "Arithmetic"
                             ""
                             [ plainFormattingDef @Integer "an integer"
+                            , recordValueBDS "show" "Show as text." showIntegerParams showInteger
                             , addNameInRootBDS $ valBDS "+" "Add." $ (+) @Integer
                             , addNameInRootBDS $ valBDS "-" "Subtract." $ (-) @Integer
                             , addNameInRootBDS $ valBDS "*" "Multiply." $ (*) @Integer
@@ -131,6 +150,8 @@ numericEntityLibSection =
               , namespaceBDS
                     "Rational"
                     [ plainFormattingDef @SafeRational "a rational"
+                    , valBDS "showImproper" "Show as \"n\" or \"n/d\"." $ showImproperSafeRational
+                    , valBDS "showMixed" "Show as \"n\" or \"a b/c\"." $ showMixedSafeRational
                     , valBDS "lesser" "Lesser of two Rationals" $ min @SafeRational
                     , valBDS "greater" "Greater of two Rationals" $ max @SafeRational
                     , valBDS "+" "Add." $ (+) @SafeRational
@@ -156,10 +177,11 @@ numericEntityLibSection =
         , headingBDS "Number" ""
             $ [ typeBDS "Number" "" (MkSomeGroundType numberGroundType) []
               , literalSubtypeRelationEntry @Number
-              , showableSubtypeRelationEntry @Number
+              , showableSubtypeRelationEntry "Show as \"n\" or \"a.bcde...\"." $ showDecimalNumber defaultDecimalOptions
               , namespaceBDS "Number"
                     $ pickNamesInRootBDS ["<", "<=", ">", ">="] (ordEntries @Number)
                     <> [ plainFormattingDef @Number "a number"
+                       , recordValueBDS "showDecimal" "Show as \"n\" or \"a.bcde...\"." showDecimalParams showDecimalNumber
                        , valBDS "+" "Add." $ (+) @Number
                        , valBDS "-" "Subtract." $ (-) @Number
                        , valBDS "*" "Multiply." $ (*) @Number

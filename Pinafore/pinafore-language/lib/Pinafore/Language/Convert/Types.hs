@@ -128,6 +128,9 @@ localTimeGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[] LocalTime where
     qGroundType = localTimeGroundType
 
+instance HasQGroundType '[] PrecText where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PrecText)|]) "PrecText"
+
 -- Double
 instance
     forall (pshim :: PolyShimKind) polarity.

@@ -10,9 +10,9 @@ import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Constructor
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Parse.Type
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 readPatterns :: Parser [SyntaxPattern]
 readPatterns = do

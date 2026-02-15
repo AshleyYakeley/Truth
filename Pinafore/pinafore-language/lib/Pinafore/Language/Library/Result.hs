@@ -12,6 +12,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 
 resultFrom :: (E -> B) -> (A -> B) -> Result E A -> B
 resultFrom eb _ (FailureResult e) = eb e
@@ -45,9 +46,11 @@ resultLibSection =
             ]
         , hasSubtypeRelationBDS @(Result Entity Entity) @Entity Verify ""
             $ functionToShim "resultEntityConvert" resultEntityConvert
-        , hasSubtypeRelationBDS @(Result Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
+        , showableSubtypeRelationEntry @(Result Showable Showable) "" $ \case
+            SuccessResult (MkShowable x) -> x
+            FailureResult (MkShowable x) -> "failure - " <> x
         , namespaceBDS "Result"
-            $ monadEntries @(Result E)
+            $ monadExceptionEntries @(Result E)
             <> [ valBDS "mfix" "The fixed point of a Result." $ mfix @(Result E) @A
                , valBDS "fail" "Failure Result" (FailureResult :: E -> Result E BottomType)
                , valBDS "mapFailure" "" (mapResultFailure :: (B -> C) -> Result B A -> Result C A)
@@ -56,6 +59,5 @@ resultLibSection =
                , valBDS "toSum" "" (resultToEither :: Result E A -> Either E A)
                , valBDS "fromMaybe" "" (resultFromMaybe :: E -> Maybe A -> Result E A)
                , valBDS "toMaybe" "" (resultToMaybe :: Result E A -> _ A)
-               , valBDS "toAction" "" (resultToM . mapResultFailure (unpack . showText) :: Result Showable A -> Action A)
                ]
         ]

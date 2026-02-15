@@ -17,6 +17,8 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
+import Pinafore.Language.Library.ToSource
 import Pinafore.Language.Type
 
 -- QContext
@@ -149,22 +151,6 @@ langImply n (MkLangExpression b) (MkLangExpression expr) = do
     expr1 <- qImply [(MkImplicitName $ MkName n, b)] expr
     return $ MkLangExpression expr1
 
-instance HasQGroundType '[] PrecText where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PrecText)|]) "PrecText."
-
-newtype ToSource = MkToSource {toSource :: PrecText}
-    deriving newtype ToText
-
-instance HasQGroundType '[] ToSource where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ToSource)|]) "ToSource.Pinafore."
-
-toSourceSubtype :: forall t. HasQPartialGroundedType QPolyShim 'Negative t => (t -> PrecText) -> LibraryStuff
-toSourceSubtype f =
-    subtypeRelationBDS Verify "as Pinafore source text" qGroundedType qGroundedType
-        $ functionToShim "conv"
-        $ MkToSource
-        . f
-
 applyOp :: FixAssoc -> PrecText -> (Text, Word) -> PrecText -> PrecText
 applyOp fa ta (op, prec) tb = applyOpPrecText ta (op, MkFixity fa prec) tb
 
@@ -187,13 +173,10 @@ pinaforeLibSection =
                     $ PureFunction
                     $ pure fromLocated
                 ]
-            , hasSubtypeRelationBDS
+            , showableSubtypeRelationEntry
                 @(Located Showable)
-                @Showable
-                Verify
                 ""
-                $ functionToShim "locatedShow"
-                $ \(MkLocated spos _ s) -> PlainShowable $ showLocated spos $ showText s
+                $ functionToShim "showText" showText
             ]
         , headingBDS
             "PrecText"
@@ -233,17 +216,13 @@ pinaforeLibSection =
                     ]
                 , valBDS "toSource" "" toSource
                 , valBDS "toText" "" (toText @ToSource)
-                , toSourceSubtype @Void $ never
-                , toSourceSubtype @Bool $ nameTextToPrec . showText
-                , toSourceSubtype @Ordering $ nameTextToPrec . showText
-                , toSourceSubtype @Number $ nameTextToPrec . showText
-                , toSourceSubtype @Text $ nameTextToPrec . showText
-                , toSourceSubtype @(Either ToSource ToSource) $ \case
-                    Left x -> applyPrecText "Left" $ toSource x
-                    Right x -> applyPrecText "Right" $ toSource x
-                , toSourceSubtype @(Link ToSource ToSource) $ \case
-                    NilLink -> "()"
-                    ConsLink a b -> applyOperatorPrecText (toSource a) "::" (toSource b)
+                , toSourceSubtype @Void
+                , toSourceSubtype @Bool
+                , toSourceSubtype @Ordering
+                , toSourceSubtype @Number
+                , toSourceSubtype @Text
+                , toSourceSubtype @(Either ToSource ToSource)
+                , toSourceSubtype @(Link ToSource ToSource)
                 ]
             , headingBDS
                 "Context"
@@ -343,16 +322,19 @@ pinaforeLibSection =
                 "Anchor"
                 ""
                 [ typeBDS "Anchor" "An anchor, for a point or property." (qSomeGroundType @_ @Anchor) []
-                , hasSubtypeRelationBDS @Anchor @Showable Verify "" $ functionToShim "show" textShowable
+                , namespaceBDS
+                    "Anchor"
+                    [valBDS "show" "" $ showT @Anchor]
                 ]
             , headingBDS
                 "Type"
                 ""
                 [ typeBDS "Type" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangType) []
-                , hasSubtypeRelationBDS @LangType @Showable Verify "" $ functionToShim "show" textShowable
                 , namespaceBDS
                     "Type"
-                    [valBDS "interpret" "Interpret a Pinafore type." interpretToType]
+                    [ valBDS "show" "" $ showText @LangType
+                    , valBDS "interpret" "Interpret a Pinafore type." interpretToType
+                    ]
                 ]
             , headingBDS
                 "OpenType"
@@ -366,7 +348,7 @@ pinaforeLibSection =
                 "Error"
                 ""
                 [ typeBDS "Error" "" (qSomeGroundType @_ @QError) []
-                , hasSubtypeRelationBDS @QError @Showable Verify "" $ functionToShim "show" $ PlainShowable . toText . showNamedText
+                , showableSubtypeRelationEntry @QError "" $ toText . showNamedText
                 ]
             , headingBDS
                 "Expression"

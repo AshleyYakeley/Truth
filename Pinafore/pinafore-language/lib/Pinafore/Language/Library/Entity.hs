@@ -1,6 +1,5 @@
 module Pinafore.Language.Library.Entity
     ( entityLibSection
-    , showableSubtypeRelationEntry
     , literalSubtypeRelationEntry
     )
 where
@@ -14,7 +13,6 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Numeric
 import Pinafore.Language.Library.Entity.Open
 import Pinafore.Language.Library.Entity.Ordering
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.Entity.Text
 import Pinafore.Language.Library.Entity.Time
 import Pinafore.Language.Library.Entity.Unit
@@ -26,7 +24,6 @@ entityLibSection =
     headingBDS "Literals & Entities" ""
         $ [ entityEntityLibSection
           , literalEntityLibSection
-          , showableEntityLibSection
           , voidEntityLibSection
           , unitEntityLibSection
           , booleanEntityLibSection

@@ -189,9 +189,6 @@ instance ShowNamedText QError where
 
 type QLocatedError = Located QError
 
-instance Show QLocatedError where
-    show = unpack . showText
-
 instance Exception QLocatedError
 
 fromParseResult :: MonadThrow QLocatedError m => ParseResult --> m

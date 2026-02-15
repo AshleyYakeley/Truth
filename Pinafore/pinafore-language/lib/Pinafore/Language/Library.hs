@@ -33,6 +33,7 @@ import Pinafore.Language.Library.Pinafore
 import Pinafore.Language.Library.Product
 import Pinafore.Language.Library.Result
 import Pinafore.Language.Library.Sequence
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Library.Storage
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Sum
@@ -51,6 +52,7 @@ pinaforeLibrary =
           , productLibSection
           , sumLibSection
           , sequenceLibSection
+          , showableLibSection
           , mapLibSection
           , resultLibSection
           , actionLibSection

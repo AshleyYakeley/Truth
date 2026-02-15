@@ -14,8 +14,8 @@ import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Infix
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 readType :: Parser SyntaxType
 readType = do

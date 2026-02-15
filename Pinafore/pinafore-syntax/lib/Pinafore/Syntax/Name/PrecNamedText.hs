@@ -3,6 +3,7 @@ module Pinafore.Syntax.Name.PrecNamedText
     , namedTextPrec
     , namedTextToPrec
     , identifierPrecNamedText
+    , precToPrecNamedText
     , precNamedText
     , applyPrecNamedText
     , applyOpPrecNamedText
@@ -26,6 +27,9 @@ namedTextToPrec = namedTextPrec 0
 
 identifierPrecNamedText :: Text -> PrecNamedText
 identifierPrecNamedText t = namedTextToPrec $ toNamedText t
+
+precToPrecNamedText :: PrecText -> PrecNamedText
+precToPrecNamedText pt = MkPrecNamedText $ \_ -> pt
 
 instance IsString PrecNamedText where
     fromString s = identifierPrecNamedText $ pack s

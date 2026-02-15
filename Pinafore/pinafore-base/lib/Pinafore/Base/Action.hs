@@ -1,5 +1,6 @@
 module Pinafore.Base.Action
     ( Action
+    , ActionException (..)
     , unliftAction
     , unliftActionOrFail
     , runAction
@@ -41,9 +42,20 @@ newtype Action a = MkAction
         , MonadIO
         , MonadHoistIO
         , MonadTunnelIO
-        , MonadException
         , RepresentationalRole
         )
+
+data ActionException = StopActionException | ExActionException SomeException
+
+instance MonadException Action where
+    type Exc Action = ActionException
+    throwExc ex = MkAction $ throwExc $ case ex of
+        StopActionException -> Left ()
+        ExActionException se -> Right se
+    catchExc (MkAction ma) cc =
+        MkAction $ catchExc ma $ unAction . cc . \case
+            Left () -> StopActionException
+            Right se -> ExActionException se
 
 unliftAction :: forall a. Action a -> View (Know a)
 unliftAction = unComposeInner . unAction

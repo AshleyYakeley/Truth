@@ -17,8 +17,8 @@ import Shapes.Numeric
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Literal.Type
-import Pinafore.Base.Number
-import Pinafore.Base.SafeRational
+import Pinafore.Base.Numeric.Number
+import Pinafore.Base.Numeric.SafeRational
 
 newtype Literal = MkLiteral
     { unLiteral :: StrictByteString

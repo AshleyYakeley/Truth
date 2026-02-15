@@ -27,6 +27,7 @@ library:
       - random
       - leb128
       - reflection
+      - parsec
       # test
       - directory
       - filepath

@@ -38,8 +38,8 @@ import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Parser
-import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
+import Pinafore.Syntax.Token
 
 readAskNamespace :: Parser Namespace
 readAskNamespace = paramAsk namespaceParam

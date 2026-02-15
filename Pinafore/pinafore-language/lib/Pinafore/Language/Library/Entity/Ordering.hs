@@ -7,8 +7,8 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
-import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 
 orderingEntityLibSection :: LibraryStuff
 orderingEntityLibSection =
@@ -41,7 +41,10 @@ orderingEntityLibSection =
                             _ -> Nothing
                 ]
         , literalSubtypeRelationEntry @Ordering
-        , showableSubtypeRelationEntry @Ordering
+        , showableSubtypeRelationEntry "Show as \"<\", \"=\", \">\"." $ \case
+            LT -> "<" :: Text
+            EQ -> "="
+            GT -> ">"
         , namespaceBDS "Ordering"
             $ ordEntries @Ordering
             <> monoidEntries @Ordering

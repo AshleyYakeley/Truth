@@ -8,7 +8,6 @@ module Pinafore.Library.Media.Media
     )
 where
 
-import Data.Shim
 import Pinafore.API
 import Shapes
 
@@ -115,7 +114,7 @@ mediaEntityLibSection =
                     $ \(MkMediaType t s p) -> (t, (s, (p, ())))
                 ]
             , literalSubtypeRelationEntry @MediaType
-            , hasSubtypeRelationBDS @MediaType @Showable Verify "" $ functionToShim "show" textShowable
+            , showableSubtypeRelationEntry @MediaType "" showText
             ]
         , typeBDS
             "Media"

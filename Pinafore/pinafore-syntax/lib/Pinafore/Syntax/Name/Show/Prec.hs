@@ -1,4 +1,4 @@
-module Pinafore.Syntax.Name.ExprShow where
+module Pinafore.Syntax.Name.Show.Prec where
 
 import Data.Shim
 import Language.Expression.Common
@@ -14,6 +14,7 @@ import Pinafore.Syntax.Name.NamedText
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
 import Pinafore.Syntax.Name.PrecNamedText
+import Pinafore.Syntax.Name.Show.NamedText
 
 class ExprShow t where
     exprShowPrec :: t -> PrecNamedText

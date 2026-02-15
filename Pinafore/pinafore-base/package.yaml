@@ -21,9 +21,9 @@ library:
       - Pinafore.Base
     other-modules:
       - Pinafore.Base.Know
-      - Pinafore.Base.Showable
-      - Pinafore.Base.SafeRational
-      - Pinafore.Base.Number
+      - Pinafore.Base.Numeric.SafeRational
+      - Pinafore.Base.Numeric.Number
+      - Pinafore.Base.Numeric.ReadShow
       - Pinafore.Base.Literal.Type
       - Pinafore.Base.Literal.Literal
       - Pinafore.Base.Literal.Data
@@ -60,5 +60,4 @@ tests:
         other-modules:
           - Test.Numeric
           - Test.Anchor
-          - Test.ReadShow
         ghc-options: -threaded

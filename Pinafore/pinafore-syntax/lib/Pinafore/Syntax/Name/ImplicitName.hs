@@ -1,9 +1,9 @@
 module Pinafore.Syntax.Name.ImplicitName where
 
-import Pinafore.Base
 import Shapes
 
 import Pinafore.Syntax.Name.Name
+import Pinafore.Syntax.Name.Show.Text
 
 newtype ImplicitName
     = MkImplicitName Name

@@ -13,10 +13,11 @@ import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Expression
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Library.ToSource
 import Pinafore.Language.Type
 
-showQValue :: QValue -> QInterpreter String
-showQValue val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QLocatedError) -> return "<?>")
+showQValue :: QValue -> QInterpreter Text
+showQValue val = catch (fmap (toText . toSource) $ qUnifyValue @ToSource val) (\(_ :: QLocatedError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT QInterpreter View)
 
@@ -36,8 +37,8 @@ runValue outh val =
     interactRunQInterpreter
         $ catchExc (qUnifyValue val)
         $ \_ -> do
-            s <- showQValue val
-            return $ liftIO $ hPutStrLn outh s
+            t <- showQValue val
+            return $ liftIO $ hPutStrLn outh $ unpack t
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromParseResult $ parseInteractiveCommand t

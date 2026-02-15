@@ -35,6 +35,12 @@ instance AsHexadecimal Word8 where
         return $ h * 16 + l
     fromStrictHexadecimal _ = Nothing
 
+toUppercaseHexadecimal :: AsHexadecimal a => a -> String
+toUppercaseHexadecimal = toHexadecimal
+
+toLowercaseHexadecimal :: AsHexadecimal a => a -> String
+toLowercaseHexadecimal = toLower . toHexadecimal
+
 instance AsHexadecimal [Word8] where
     toHexadecimal ww = concatmap toHexadecimal ww
     fromStrictHexadecimal [] = return []

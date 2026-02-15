@@ -8,6 +8,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 
 sumLibSection :: LibraryStuff
 sumLibSection =
@@ -34,7 +35,9 @@ sumLibSection =
                 ]
         , hasSubtypeRelationBDS @(Either Entity Entity) @Entity Verify ""
             $ functionToShim "eitherEntityConvert" eitherEntityConvert
-        , hasSubtypeRelationBDS @(Either Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
+        , showableSubtypeRelationEntry @(Either Showable Showable) "" $ \case
+            Left (MkShowable x) -> x
+            Right (MkShowable x) -> x
         , namespaceBDS "Sum"
             $ monadEntries @(Either P)
             <> [ valBDS "from" "Eliminate a sum" $ either @A @C @B

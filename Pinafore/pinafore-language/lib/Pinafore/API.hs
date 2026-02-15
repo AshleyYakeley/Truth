@@ -8,6 +8,9 @@ module Pinafore.API
     , module Pinafore.Language.Library.Types
     , module Pinafore.Language.Value
     , Located (..)
+    , Showable (..)
+    , ToSource (..)
+    , showableSubtypeRelationEntry
     , parseErrorMessage
     , getMessagesNamedText
     , WitKind (..)
@@ -25,12 +28,11 @@ module Pinafore.API
     , QSomeGroundType
     , qSomeGroundType
     , GroundProperties
-    , PolyGreatestDynamicSupertype (..)
+    , PolyGreatestDynamicSupertype
     , simplePolyGreatestDynamicSupertype
     , literalSubtypeRelationEntry
     , mkLiteralGroundType
     , literalStorabilityProp
-    , showableSubtypeRelationEntry
     , stdSingleGroundType
     , QSingularType
     , QType
@@ -58,6 +60,8 @@ import Pinafore.Language.Library.Entity
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model ()
+import Pinafore.Language.Library.Showable
+import Pinafore.Language.Library.ToSource
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
 import Pinafore.Language.Value

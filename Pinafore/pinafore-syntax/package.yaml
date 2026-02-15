@@ -8,6 +8,8 @@ version: *pinafore_version
 library:
     source-dirs: lib
     dependencies:
+      - base
+      - open-witness
       - shapes
       - parsec
       - polar-shim
@@ -30,8 +32,14 @@ library:
       - Pinafore.Syntax.Name.ModuleName
       - Pinafore.Syntax.Name.NamedText
       - Pinafore.Syntax.Name.PrecNamedText
-      - Pinafore.Syntax.Name.ExprShow
-      - Pinafore.Syntax.Parse.Token
+      - Pinafore.Syntax.Name.Show.Text
+      - Pinafore.Syntax.Name.Show.NamedText
+      - Pinafore.Syntax.Name.Show.Prec
+      - Pinafore.Syntax.ReadShow
+      - Pinafore.Syntax.Token
+      - Pinafore.Syntax.Lex.Lexer
+      - Pinafore.Syntax.Lex.Literal
+      - Pinafore.Syntax.Lex
       - Pinafore.Syntax.Parse.Error
       - Pinafore.Syntax.Parse.Parser
       - Pinafore.Syntax.Parse.Basic
@@ -55,4 +63,6 @@ tests:
           - pinafore-base
           - pinafore-syntax
         main: Main.hs
+        other-modules:
+          - Test.ReadShow
         ghc-options: -threaded
