@@ -155,7 +155,8 @@
         {
             "label": "Hoogle",
             "type": "shell",
-            "command": "cd ${workspaceRoot} && stack hoogle"
+            "command": "cd ${workspaceRoot} && stack hoogle",
+            "problemMatcher": []
         }
     ]
 }
