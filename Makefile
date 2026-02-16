@@ -257,7 +257,7 @@ nix/docker/stack.yaml.lock: stack.yaml.lock
 	cp $< $@
 
 nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.yaml nix/docker/stack.yaml.lock
-	docker build -t nix-build nix/docker
+	docker build --memory 8g --memory-swap 16g -t nix-build nix/docker
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
