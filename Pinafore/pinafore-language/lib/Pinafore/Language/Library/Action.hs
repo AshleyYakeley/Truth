@@ -16,6 +16,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Showable
 import Pinafore.Language.Type
 
 qfail :: Text -> Action BottomType
@@ -108,27 +109,32 @@ actionLibSection =
                ]
         , hasSubtypeRelationBDS @(Result ActionException A) @(Action A) Verify ""
             $ functionToShim "fromResultExc" fromResultExc
-        , typeBDS
-            "Stop"
+        , headingBDS
+            "Exceptions"
             ""
-            (qSomeGroundType @_ @StopException)
-            [ valPatBDS "Mk" "" MkStopException $ PureFunction $ pure $ \MkStopException -> ()
+            [ typeBDS "Exception" "" (qSomeGroundType @_ @ActionException) []
+            , showableSubtypeRelationEntry @ActionException "" showText
+            , typeBDS
+                "Stop"
+                ""
+                (qSomeGroundType @_ @StopException)
+                [ valPatBDS "Mk" "" MkStopException $ PureFunction $ pure $ \MkStopException -> ()
+                ]
+            , hasSubtypeRelationBDS @StopException @ActionException Verify ""
+                $ functionToShim "StopActionException"
+                $ \MkStopException -> StopActionException
+            , typeBDS
+                "TextException"
+                ""
+                (qSomeGroundType @_ @TextException)
+                [ valPatBDS "Mk" "" MkTextException $ PureFunction $ pure $ \(MkTextException t) -> (t, ())
+                ]
+            , hasSubtypeRelationBDS @TextException @ActionException Verify ""
+                $ functionToShim "userError"
+                $ ExActionException
+                . toException
+                . userError
+                . unpack
+                . unTextException
             ]
-        , hasSubtypeRelationBDS @StopException @ActionException Verify ""
-            $ functionToShim "StopActionException"
-            $ \MkStopException -> StopActionException
-        , typeBDS "Exception" "" (qSomeGroundType @_ @ActionException) []
-        , typeBDS
-            "TextException"
-            ""
-            (qSomeGroundType @_ @TextException)
-            [ valPatBDS "Mk" "" MkTextException $ PureFunction $ pure $ \(MkTextException t) -> (t, ())
-            ]
-        , hasSubtypeRelationBDS @TextException @ActionException Verify ""
-            $ functionToShim "userError"
-            $ ExActionException
-            . toException
-            . userError
-            . unpack
-            . unTextException
         ]

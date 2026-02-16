@@ -37,3 +37,8 @@ instance ShowText Text where
 
 instance ShowText (SymbolType symbol) where
     showText = pack . witnessToValue
+
+instance ShowText ActionException where
+    showText = \case
+        StopActionException -> "stop"
+        ExActionException se -> showT se
