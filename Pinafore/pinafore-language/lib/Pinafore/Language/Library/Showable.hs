@@ -39,9 +39,18 @@ showableLibSection =
         ""
         [ typeBDS
             "Showable"
-            "Something that can be represented as `Text`."
+            "Something that can be presented as `Text`."
             (qSomeGroundType @_ @Showable)
             [ valPatBDS "Mk" "" MkShowable $ PureFunction $ pure $ \(MkShowable t) -> (t, ())
             ]
-        , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" unShowable]
+        , namespaceBDS
+            "Showable"
+            [ addNameInRootBDS
+                $ valBDS
+                    "show"
+                    ( "Show something as `Text` that can be presented to the user. "
+                        <> "Note that this is deliberately loose and informal; if you want something precise, consider `toText.Pinafore`."
+                    )
+                    unShowable
+            ]
         ]
