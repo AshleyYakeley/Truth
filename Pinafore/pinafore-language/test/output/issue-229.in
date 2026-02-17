@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 let rec {
   datatype Value {
     Lit Integer;

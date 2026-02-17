@@ -34,11 +34,11 @@ while [[ ! -z "$1" ]]; do
             shift 1
             ;;
         -i)
-            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-lib-script/data $ARGS --data $DATA -i 2> "$STDERR"
+            stack --docker-env DISPLAY exec -- pinafore1 -I Pinafore/pinafore-lib-script/data $ARGS --data $DATA -i 2> "$STDERR"
             shift 1
             ;;
         --version)
-            stack --docker-env DISPLAY exec -- pinafore --version 2> "$STDERR"
+            stack --docker-env DISPLAY exec -- pinafore1 --version 2> "$STDERR"
             shift 1
             ;;
         -*)
@@ -46,7 +46,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-lib-script/data $ARGS --data $DATA "$1" 2> "$STDERR"
+            stack --docker-env DISPLAY exec -- pinafore1 -I Pinafore/pinafore-lib-script/data $ARGS --data $DATA "$1" 2> "$STDERR"
             shift 1
             ;;
     esac

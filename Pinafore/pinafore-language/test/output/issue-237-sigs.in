@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 let rec {
   ff: (a -> a) -> (Maybe a -> Maybe a) =
     fn f => fn {

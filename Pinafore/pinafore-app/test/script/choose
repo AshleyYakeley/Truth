@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 import "media", "gnome"
 run.GTK $ fn gtk =>
 let rec {

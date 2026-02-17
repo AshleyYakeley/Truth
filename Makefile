@@ -128,7 +128,7 @@ hoogle: docker-image
 
 ### Executables
 
-${BINPATH}/pinafore ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
+${BINPATH}/pinafore1 ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
@@ -138,7 +138,7 @@ endif
 endif
 	xhost +si:localuser:$${USER}
 	stack --docker-env DISPLAY $(STACKFLAGS) install --ghc-options="-j" --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
-	strip --remove-section=.comment ${BINPATH}/pinafore
+	strip --remove-section=.comment ${BINPATH}/pinafore1
 	strip --remove-section=.comment ${BINPATH}/pinadoc
 ifeq ($(nodocker),1)
 else
@@ -151,7 +151,7 @@ ifeq ($(bench),1)
 endif
 
 .PHONY: exe
-exe: ${BINPATH}/pinafore
+exe: ${BINPATH}/pinafore1
 
 
 ### Debian package
@@ -172,7 +172,7 @@ LIBMODULEFILES := \
 	UILib
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
-		${BINPATH}/pinafore \
+		${BINPATH}/pinafore1 \
 		${BINPATH}/pinadoc \
 		$(foreach I,$(LIBMODULEFILES),Pinafore/pinafore-lib-script/data/$(I).pinafore) \
 		deb/copyright \
@@ -180,7 +180,7 @@ LIBMODULEFILES := \
 		deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
-	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
+	cp ${BINPATH}/pinafore1 $(PACKAGEDIR)/usr/bin/
 	cp ${BINPATH}/pinadoc $(PACKAGEDIR)/usr/bin/
 	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UILib
 	for i in $(LIBMODULEFILES); do cp Pinafore/pinafore-lib-script/data/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
@@ -195,7 +195,7 @@ LIBMODULEFILES := \
 		-D RELEASEDATE="$$(date -R)" \
 		deb/changelog.m4 | gzip -9 > $(PACKAGEDIR)/usr/share/doc/pinafore/changelog.Debian.gz
 	mkdir -p $(PACKAGEDIR)/usr/share/bash-completion/completions/
-	$(STACKEXEC) -- $< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
+	$(STACKEXEC) -- $< --bash-completion-script /usr/bin/pinafore1 > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
 	mkdir -p $(PACKAGEDIR)/DEBIAN
 	$(STACKEXEC) -- \
 		m4 \
@@ -216,7 +216,7 @@ LIBMODULEFILES := \
 
 TESTDISTROS := ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
 
-out/pinafore.deps: ${BINPATH}/pinafore out
+out/pinafore.deps: ${BINPATH}/pinafore1 out
 	ldd $< > $@
 
 .PHONY: deps
@@ -354,7 +354,7 @@ docs: \
 	$(STACKEXEC) -- .build/python/bin/sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
 .PHONY: check-snippets
-check-snippets: ${BINPATH}/pinafore
+check-snippets: ${BINPATH}/pinafore1
 	mkdir -p out/support/website/snippets
 	rm -f out/support/website/snippets/*
 	$(STACKEXEC) --docker-env BINPATH=${BINPATH} -- support/website/check-snippets

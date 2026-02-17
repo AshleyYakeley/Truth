@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 import "gnome"
 openLocal.Store {} >>= fn store =>
 run.GTK $ fn gtk =>

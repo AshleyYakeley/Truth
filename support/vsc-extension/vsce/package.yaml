@@ -20,9 +20,10 @@ contributes:
     aliases:
     - Pinafore
     - pinafore
+    - pinafore1
     extensions:
     - ".pinafore"
-    firstLine: "^#!/.*\\bpinafore\\b"
+    firstLine: "^#!/.*\\bpinafore[0-9]*\\b"
     icon:
       light: images/logo.png
       dark: images/logo.png

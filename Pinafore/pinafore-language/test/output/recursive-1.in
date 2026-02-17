@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 let {
   recf: (Integer -> b -> b) -> Integer -> b -> b =
     fn s, a, b => if a <= 0 then b else s (pred a) b;

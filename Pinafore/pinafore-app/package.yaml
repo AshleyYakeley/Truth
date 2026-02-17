@@ -38,7 +38,7 @@ library:
       - Pinafore.Libs
 
 executables:
-    pinafore:
+    pinafore1:
         source-dirs: app/main
         dependencies:
           - thread-trace

@@ -1,2 +1,2 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 outputLn.Env "hello"

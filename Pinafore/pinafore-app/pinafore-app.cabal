@@ -116,7 +116,7 @@ executable pinadata
     , shapes
   default-language: GHC2024
 
-executable pinafore
+executable pinafore1
   main-is: Main.hs
   other-modules:
       Options

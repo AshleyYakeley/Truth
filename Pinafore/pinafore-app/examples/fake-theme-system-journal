@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 import "media", "gnome", "UILib"
 with GTK., UILib.
 run.Context $ fn Mk.Context =>

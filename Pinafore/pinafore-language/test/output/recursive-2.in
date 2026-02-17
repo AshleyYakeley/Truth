@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 let {
   recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b =
     fn s, a, b => if a <= 0 then Just b else s (pred a) b;

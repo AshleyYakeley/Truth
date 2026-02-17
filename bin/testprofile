@@ -1,7 +1,7 @@
 #!/bin/sh -e
 stack install --profile pinafore-app
 stack --docker-env DISPLAY exec -- \
-    .stack-work/docker/_home/.local/bin/pinafore \
+    .stack-work/docker/_home/.local/bin/pinafore1 \
     -I Pinafore/pinafore-lib-script/data \
     --data test/pinafore \
     -n \
@@ -9,4 +9,4 @@ stack --docker-env DISPLAY exec -- \
     +RTS -p
 
 # stack install profiterole
-# stack exec -- .stack-work/docker/_home/.local/bin/profiterole pinafore.prof
+# stack exec -- .stack-work/docker/_home/.local/bin/profiterole pinafore1.prof

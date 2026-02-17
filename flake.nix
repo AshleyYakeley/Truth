@@ -88,7 +88,7 @@
           ];
           pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
           flake = pkgs.pinaforeProject.flake { };
-          exePackage = flake.packages."pinafore-app:exe:pinafore";
+          exePackage = flake.packages."pinafore-app:exe:pinafore1";
           stdLibPackage = pkgs.runCommand "pinafore-lib-script" { libdir = ./Pinafore/pinafore-lib-script/data; }
             ''
               mkdir -p $out/share/pinafore/lib
@@ -139,7 +139,7 @@
             vscodeExtUniqueId = "Pinafore.pinafore";
             version = "${VSCXVERSION}";
           };
-          app = flake.apps."pinafore-app:exe:pinafore".program;
+          app = flake.apps."pinafore-app:exe:pinafore1".program;
           minscript = pkgs.writeText "minscript" "pure ()";
           importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
           interpretFileCheck = pkgs.runCommand "interpretFileCheck" {} "${app} -n ${minscript} > $out";
@@ -156,8 +156,9 @@
           };
           apps =
             {
-              default = flake.apps."pinafore-app:exe:pinafore";
-              pinafore = flake.apps."pinafore-app:exe:pinafore";
+              default = flake.apps."pinafore-app:exe:pinafore1";
+              pinafore = flake.apps."pinafore-app:exe:pinafore1";
+              pinafore1 = flake.apps."pinafore-app:exe:pinafore1";
               pinadoc = flake.apps."pinafore-docgen:exe:pinadoc";
               pinadata = flake.apps."pinafore-app:exe:pinadata";
             };

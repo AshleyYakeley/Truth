@@ -23,13 +23,13 @@ The directory `lib` within the data directory will also be searched.
 If you want to make a script executable from the command line, you can put this at the top, in the usual Unix fashion:
 
 ```text
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 ```
 
 or (expecially on NixOS)
 
 ```text
-#!/usr/bin/env pinafore
+#!/usr/bin/env pinafore1
 ```
 
 ## Interactive Mode

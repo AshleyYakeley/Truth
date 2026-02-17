@@ -4,6 +4,6 @@ apt update
 apt install -y sudo
 apt install -y /home/$1
 useradd -u $2 user
-sudo -u user pinafore /home/checkscript
+sudo -u user pinafore1 /home/checkscript
 sudo -u user /home/checkscript
 echo "package runs OK"

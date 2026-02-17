@@ -1,4 +1,4 @@
-#!/usr/bin/env pinafore
+#!/usr/bin/env pinafore1
 
 # bin/testpinafore --build Pinafore/pinafore-app/test/script/issue-310
 

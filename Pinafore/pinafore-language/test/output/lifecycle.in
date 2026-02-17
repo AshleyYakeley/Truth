@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 with Env do {
   outputLn "A";
   onClose $ outputLn "B";

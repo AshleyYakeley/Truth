@@ -11,7 +11,7 @@ Pinafore is available for 64-bit Ubuntu 22.04 and later, and Debian 12 and later
 * an extension for Visual Studio Code
 * a Pygments lexer
 
-Installing the Debian package will put the intepreter in `/usr/bin/pinafore`.
+Installing the Debian package will put the intepreter in `/usr/bin/pinafore1`.
 
 ### Nix
 

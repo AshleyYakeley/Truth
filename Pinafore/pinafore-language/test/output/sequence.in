@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 let {
   rrange =
     fn s, a, b => if a > b then [] else a :: s (succ a) b;

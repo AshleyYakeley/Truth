@@ -1,4 +1,4 @@
-#!/usr/bin/env -S pinafore
+#!/usr/bin/env pinafore1
 import "media"
 let {
     writeEntry: Text -> Showable -> Action Unit =

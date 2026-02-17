@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env pinafore1
 import "media", "gnome"
 openLocal.Store {} >>= fn dstore =>
 new.UndoHandler >>= fn uh =>

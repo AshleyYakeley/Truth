@@ -1,4 +1,4 @@
-#!/usr/bin/env -S pinafore
+#!/usr/bin/env pinafore1
 import "gnome" do {
   outputLn.Env "BEGIN";
   run.GTK $ fn gtk => do {
