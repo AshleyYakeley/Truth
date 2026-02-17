@@ -8,60 +8,59 @@ module Changes.World.GNOME.GI.Trace
 where
 
 import Changes.Debug
-import Data.GI.Base
-import GI.GObject
-import Shapes
 
 import Changes.World.GNOME.GI.GView
 import Changes.World.GNOME.GI.LockState
 import Changes.World.GNOME.GI.Type
+import Import
+import Import.GI qualified as GI
 
 gvTraceBracket :: String -> GView ls --> GView ls
 gvTraceBracket s = gvHoistView $ traceBracket s
 
-getTypeSignalIDs :: MonadIO m => GType -> m [Word32]
+getTypeSignalIDs :: MonadIO m => GI.GType -> m [Word32]
 getTypeSignalIDs t = do
-    gbadtype <- liftIO $ glibType @InitiallyUnowned
+    gbadtype <- liftIO $ GI.glibType @GI.InitiallyUnowned
     tt <- getTypeAncestry t
     sigidss <-
         for tt $ \t0 ->
             if t0 == gbadtype
                 then return []
-                else signalListIds t0
+                else GI.signalListIds t0
     return $ nub $ mconcat sigidss
 
-gvTraceSignal :: Word32 -> ([GValue] -> GView 'Locked ()) -> GView 'Locked ()
+gvTraceSignal :: Word32 -> ([GI.GValue] -> GView 'Locked ()) -> GView 'Locked ()
 gvTraceSignal sigid call = do
-    sq <- signalQuery sigid
-    sflags <- getSignalQuerySignalFlags sq
-    if elem SignalFlagsNoHooks sflags
+    sq <- GI.signalQuery sigid
+    sflags <- GI.getSignalQuerySignalFlags sq
+    if elem GI.SignalFlagsNoHooks sflags
         then return ()
         else do
             hookid <-
                 liftIOWithUnlift $ \unliftIO ->
-                    signalAddEmissionHook sigid 0 $ \_ vals _ -> do
+                    GI.signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                         unliftIO $ call vals
                         return True
-            gvOnClose $ gvLiftIO $ signalRemoveEmissionHook sigid hookid
+            gvOnClose $ gvLiftIO $ GI.signalRemoveEmissionHook sigid hookid
 
-gvObjectTraceSignal :: IsObject t => t -> Word32 -> GView 'Locked () -> GView 'Locked ()
+gvObjectTraceSignal :: GI.IsObject t => t -> Word32 -> GView 'Locked () -> GView 'Locked ()
 gvObjectTraceSignal t sigid call = do
-    obj <- toObject t
+    obj <- GI.toObject t
     gvTraceSignal sigid $ \case
         [] -> return ()
         sval : _ -> do
-            msobj <- fromGValue sval
+            msobj <- GI.fromGValue sval
             case msobj of
                 Just sobj
                     | sobj == obj -> call
                 _ -> return ()
 
-gvObjectTraceAllSignals :: IsObject t => t -> (Text -> GView 'Locked ()) -> GView 'Locked ()
+gvObjectTraceAllSignals :: GI.IsObject t => t -> (Text -> GView 'Locked ()) -> GView 'Locked ()
 gvObjectTraceAllSignals obj call = do
     t <- getObjectType obj
     sigids <- getTypeSignalIDs t
     for_ sigids $ \sigid -> do
-        msigname <- signalName sigid
+        msigname <- GI.signalName sigid
         case msigname of
             -- Just "event" -> return ()
             -- Just "event-after" -> return ()
@@ -69,6 +68,6 @@ gvObjectTraceAllSignals obj call = do
             Just signame -> gvObjectTraceSignal obj sigid $ call signame
             Nothing -> return ()
 
-gvObjectReportAllSignals :: IsObject t => Text -> t -> GView 'Locked ()
+gvObjectReportAllSignals :: GI.IsObject t => Text -> t -> GView 'Locked ()
 gvObjectReportAllSignals name obj =
     gvObjectTraceAllSignals obj $ \signame -> traceIOM $ "SIGNAL: " <> unpack name <> ": " <> show signame

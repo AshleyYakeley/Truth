@@ -4,49 +4,46 @@ module Changes.World.GNOME.GTK.Main
     )
 where
 
-import Changes.Core
-import GI.GLib as GI hiding (String)
-import GI.Gtk as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data RunState
     = RSRun
     | RSStop
 
-attachedIdleSource :: Maybe MainContext -> Lifecycle GI.Source
+attachedIdleSource :: Maybe GI.MainContext -> Lifecycle GI.Source
 attachedIdleSource mmc = do
-    source <- idleSourceNew
-    _ <- sourceAttach source $ mmc
-    lifecycleOnClose $ sourceDestroy source
+    source <- GI.idleSourceNew
+    _ <- GI.sourceAttach source $ mmc
+    lifecycleOnClose $ GI.sourceDestroy source
     return source
 
 mainLoop :: CallbackLock -> MVar RunState -> Lifecycle ()
 mainLoop uiLock runVar = do
-    shouldRun <- mVarRunStateT runVar Shapes.get
+    shouldRun <- mVarRunStateT runVar get
     case shouldRun of
         RSStop -> return ()
         RSRun -> do
-            mc <- mainContextDefault
+            mc <- GI.mainContextDefault
             source <- attachedIdleSource $ Just mc
-            sourceSetCallback source $ do
+            GI.sourceSetCallback source $ do
                 cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
-                return SOURCE_CONTINUE
+                return GI.SOURCE_CONTINUE
             let
                 mainloop :: IO ()
                 mainloop = do
-                    sr <- mVarRunStateT runVar Shapes.get
+                    sr <- mVarRunStateT runVar get
                     case sr of
                         RSRun -> do
-                            _ <- mainContextIteration (Just mc) True
+                            _ <- GI.mainContextIteration (Just mc) True
                             mainloop
                         RSStop -> return ()
             liftIO mainloop
 
 runGTK :: forall a. (GTKContext -> Lifecycle a) -> Lifecycle a
 runGTK call = do
-    _ <- GI.init Nothing
+    GI.init
     gtkcLock <- liftIO newCallbackLock
     runVar <- liftIO $ newMVar RSRun
     let

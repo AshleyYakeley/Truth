@@ -38,7 +38,6 @@ main = do
                             gvGetState
                                 $ createWindow
                                 $ let
-                                    wsPosition = WindowPositionCenter
                                     wsSize = (600, 600)
                                     wsCloseBoxAction :: GView 'Locked ()
                                     wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer

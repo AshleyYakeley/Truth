@@ -1,9 +1,7 @@
 module Changes.World.GNOME.GI.ViewLock where
 
-import Changes.Core
-import Shapes
-
 import Changes.World.GNOME.GI.LockState
+import Import
 
 viewOpenRunLocked :: CallbackLock -> View --> View
 viewOpenRunLocked lock = hoistIO $ cbRunLocked lock

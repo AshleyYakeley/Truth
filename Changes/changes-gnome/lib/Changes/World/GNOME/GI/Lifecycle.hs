@@ -1,49 +1,44 @@
 module Changes.World.GNOME.GI.Lifecycle where
 
-import Data.GI.Base
-import Data.GI.Base.Attributes
-import Data.GI.Base.Constructible
-import GI.GObject
-import Shapes
-
 import Changes.World.GNOME.GI.GView
 import Changes.World.GNOME.GI.LockState
+import Import
+import Import.GI qualified as GI
 
-gvAcquire :: IsObject a => a -> GView 'Locked ()
+gvAcquire :: GI.IsObject a => a -> GView 'Locked ()
 gvAcquire a = do
-    _ <- objectRef a
-    gvOnClose $ gvLiftIO $ objectUnref a
+    _ <- GI.objectRef a
+    gvOnClose $ gvLiftIO $ GI.objectUnref a
 
-gvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
+gvNew :: (GI.Constructible a tag, GI.IsObject a) => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
 gvNew cc attrs = do
-    a <- new cc attrs
+    a <- GI.new cc attrs
     gvAcquire a
     return a
 
 gvNewWidget ::
-    (Constructible a tag, IsObject a, IsWidget a) =>
-    (ManagedPtr a -> a) ->
-    [AttrOp a tag] ->
-    GView 'Locked (a, Widget)
+    (GI.Constructible a tag, GI.IsObject a, GI.IsWidget a) =>
+    (GI.ManagedPtr a -> a) ->
+    [GI.AttrOp a tag] ->
+    GView 'Locked (a, GI.Widget)
 gvNewWidget cc attrs = do
     a <- gvNew cc attrs
-    widget <- toWidget a
+    widget <- GI.toWidget a
     return (a, widget)
 
--- | Probably only use this for top-level widgets
-gvTopLevelNew ::
-    (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
-gvTopLevelNew cc attrs = do
+gvNewWindow ::
+    (GI.Constructible a tag, GI.IsObject a, GI.IsWindow a) => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
+gvNewWindow cc attrs = do
     a <- gvNew cc attrs
-    gvOnClose $ gvLiftIO $ widgetDestroy a
+    gvOnClose $ gvLiftIO $ GI.windowDestroy a
     return a
 
 gvSet ::
-    (AttrClearC info obj attr, AttrSetC info obj attr value) =>
+    (GI.AttrClearC info obj attr, GI.AttrSetC info obj attr value) =>
     obj ->
-    AttrLabelProxy attr ->
+    GI.AttrLabelProxy attr ->
     value ->
     GView 'Locked ()
 gvSet obj prop val = do
-    set obj [prop := val]
-    gvOnClose $ gvLiftIO $ clear obj prop
+    GI.set obj [prop GI.:= val]
+    gvOnClose $ gvLiftIO $ GI.clear obj prop

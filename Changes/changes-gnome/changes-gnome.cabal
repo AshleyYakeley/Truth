@@ -35,7 +35,11 @@ library
       Changes.World.GNOME.GTK
       Changes.World.GNOME.GTK.Test
   other-modules:
+      Import
+      Import.GI
       Changes.World.GNOME.GI.Error
+      Changes.World.GNOME.GI.Dynamic
+      Changes.World.GNOME.GI.Polymorphic
       Changes.World.GNOME.GI.Type
       Changes.World.GNOME.GI.Implement.Object
       Changes.World.GNOME.GI.Implement.Derived

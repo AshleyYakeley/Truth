@@ -5,13 +5,12 @@ module Changes.World.GNOME.GTK.Widget.Option
     )
 where
 
-import Changes.Core
-import Data.GI.Base.Attributes
-import Data.GI.Gtk
-import Shapes
+-- import Data.GI.Base.Attributes
 
 import Changes.World.GNOME.GI
 import Changes.World.GNOME.GTK.Widget.TextStyle
+import Import
+import Import.GI qualified as GI
 
 data ComboBoxCell = MkComboBoxCell
     { cbcText :: Text
@@ -32,14 +31,14 @@ listStoreView ::
     WRaised (GView 'Locked) (GView 'Locked) ->
     Model (ReadOnlyUpdate (OrderedListUpdate update)) ->
     EditSource ->
-    GView 'Unlocked (SeqStore (UpdateSubject update))
+    GView 'Unlocked (GI.SeqStore (UpdateSubject update))
 listStoreView (MkWRaised blockSignal) itemsModel esrc = let
-    initV :: GView 'Unlocked (SeqStore (UpdateSubject update))
+    initV :: GView 'Unlocked (GI.SeqStore (UpdateSubject update))
     initV = do
         subjects <- gvLiftView $ viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
         gvRunLocked $ seqStoreNew $ toList subjects
     recv ::
-        SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> GView 'Unlocked ()
+        GI.SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> GView 'Unlocked ()
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
@@ -64,7 +63,7 @@ listStoreView (MkWRaised blockSignal) itemsModel esrc = let
                 OrderedListUpdateClear -> gvRunLocked $ blockSignal $ seqStoreClear store
     in gvBindModel itemsModel (Just esrc) initV mempty recv
 
-comboBoxCellAttributes :: ComboBoxCell -> [AttrOp CellRendererText 'AttrSet]
+comboBoxCellAttributes :: ComboBoxCell -> [GI.AttrOp GI.CellRendererText 'GI.AttrSet]
 comboBoxCellAttributes MkComboBoxCell{..} = textCellAttributes cbcText cbcStyle
 
 cboxFromStore ::
@@ -72,8 +71,8 @@ cboxFromStore ::
     Eq t =>
     Model (WholeUpdate t) ->
     EditSource ->
-    SeqStore (t, ComboBoxCell) ->
-    GView 'Unlocked (WRaised (GView 'Locked) (GView 'Locked), Widget)
+    GI.SeqStore (t, ComboBoxCell) ->
+    GView 'Unlocked (WRaised (GView 'Locked) (GView 'Locked), GI.Widget)
 cboxFromStore whichModel esrc store =
     gvRunLockedThen $ do
         cbox <- comboBoxNewWithModel store
@@ -133,7 +132,7 @@ createComboBox ::
     ) =>
     Model (ReadOnlyUpdate (OrderedListUpdate update)) ->
     Model (WholeUpdate t) ->
-    GView 'Unlocked Widget
+    GView 'Unlocked GI.Widget
 createComboBox itemsModel whichModel = do
     esrc <- gvNewEditSource
     rec store <- listStoreView blockSignal itemsModel esrc

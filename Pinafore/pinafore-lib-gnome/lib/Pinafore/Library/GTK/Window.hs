@@ -55,7 +55,6 @@ openWindow lc (w, h) title (MkLangWidget widget) =
                     $ let
                         wsSize :: (Int32, Int32)
                         wsSize = (fromIntegral w, fromIntegral h)
-                        wsPosition = WindowPositionCenter
                         wsCloseBoxAction :: GView 'Locked ()
                         wsCloseBoxAction = gvRunUnlocked $ lwClose window
                         wsTitle :: Model (ROWUpdate Text)

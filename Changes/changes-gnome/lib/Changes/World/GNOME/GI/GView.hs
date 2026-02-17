@@ -11,7 +11,8 @@ module Changes.World.GNOME.GI.GView
     , gvGetContext
     , gvLiftView
     , gvLiftViewWithUnlift
-    , gvGetUnliftToView
+    , gvAskUnliftView
+    , gvAskUnliftLifecycle
     , gvHoistView
     , gvSubLifecycle
     , gvLiftIO
@@ -38,14 +39,13 @@ module Changes.World.GNOME.GI.GView
     , gvReplaceDynamicView
     , gvSwitch
     , gvInnerWholeView
+    , gvMkTask
     )
 where
 
-import Changes.Core
-import Shapes
-
 import Changes.World.GNOME.GI.LockState
 import Changes.World.GNOME.GI.ViewLock
+import Import
 
 data GTKContext = MkGTKContext
     { gtkcLock :: CallbackLock
@@ -130,10 +130,16 @@ gvLiftViewWithUnlift call = gvLiftViewWithUnliftNoUI $ \unlift -> call unlift
 gvLiftLifecycle :: Lifecycle --> GView 'Unlocked
 gvLiftLifecycle = gvLiftView . viewLiftLifecycle
 
-gvGetUnliftToView :: forall ls. GView ls (WRaised (GView 'Unlocked) View)
-gvGetUnliftToView = do
+gvAskUnliftView :: forall ls. GView ls (WRaised (GView 'Unlocked) View)
+gvAskUnliftView = do
     gtkc <- gvGetContext
     return $ MkWRaised $ runGView gtkc
+
+gvAskUnliftLifecycle :: GView 'Unlocked (WRaised (GView 'Unlocked) Lifecycle)
+gvAskUnliftLifecycle = do
+    gv <- gvAskUnliftView
+    vl <- gvLiftView viewAskUnliftLifecycle
+    return $ vl . gv
 
 gvHoistView :: (View a -> View b) -> GView ls a -> GView ls b
 gvHoistView f (MkGView gv) = MkGView $ monoHoist f gv
@@ -307,3 +313,8 @@ gvInnerWholeView ::
     GView 'Unlocked ()
 gvInnerWholeView model baseView seln =
     gvLiftViewWithUnlift $ \unlift -> viewInnerWholeView model (\fm -> unlift $ baseView fm) seln
+
+gvMkTask :: forall a. IO (a -> IO (),Task (GView 'Unlocked) a)
+gvMkTask = do
+    (report,task) <- mkTask
+    return (report, hoistTask gvLiftIONoUI task)

@@ -3,20 +3,19 @@ module Changes.World.GNOME.GTK.Widget.Scrolled
     )
 where
 
-import GI.Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-createScrolled :: Widget -> GView 'Unlocked Widget
+createScrolled :: GI.Widget -> GView 'Unlocked GI.Widget
 createScrolled content =
     gvRunLocked $ do
-        sw <- gvNew ScrolledWindow []
+        sw <- gvNew GI.ScrolledWindow []
         scrollable <- liftIO $ isScrollable content
         if scrollable
-            then #add sw content
+            then #setChild sw $ Just content
             else do
-                viewport <- gvNew Viewport []
-                #add viewport content
-                #add sw viewport
-        toWidget sw
+                viewport <- gvNew GI.Viewport []
+                #setChild viewport $ Just content
+                #setChild sw $ Just viewport
+        GI.toWidget sw

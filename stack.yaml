@@ -44,6 +44,7 @@ allow-newer-deps:
 
 extra-deps:
 # GTK
+- haskell-gi-base-0.26.8
 - gi-webkit-6.0.5
 
 # other

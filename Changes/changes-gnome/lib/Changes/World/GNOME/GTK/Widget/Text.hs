@@ -5,15 +5,13 @@ module Changes.World.GNOME.GTK.Widget.Text
     )
 where
 
-import Changes.Core
-import GI.Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
-replaceText :: TextBuffer -> SequenceRun -> Text -> GView 'Locked ()
+replaceText :: GI.TextBuffer -> SequenceRun -> Text -> GView 'Locked ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     startIter <- #getIterAtOffset buffer (fromIntegral start)
     if len > 0
@@ -25,23 +23,23 @@ replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len))
         then return ()
         else #insert buffer startIter text (-1)
 
-getSequencePoint :: TextIter -> GView 'Locked SequencePoint
+getSequencePoint :: GI.TextIter -> GView 'Locked SequencePoint
 getSequencePoint iter = do
     p <- #getOffset iter
     return $ MkSequencePoint $ fromIntegral p
 
-getSequenceRun :: TextIter -> TextIter -> GView 'Locked SequenceRun
+getSequenceRun :: GI.TextIter -> GI.TextIter -> GView 'Locked SequenceRun
 getSequenceRun iter1 iter2 = do
     p1 <- getSequencePoint iter1
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked TextBuffer
+createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked GI.TextBuffer
 createTextBuffer rmod (MkSelectNotify setsel) = do
     esrc <- gvNewEditSource
     (buffer, blockSignals) <-
         gvRunLocked $ do
-            buffer <- gvNew TextBuffer []
+            buffer <- gvNew GI.TextBuffer []
             insertSignal <-
                 gvOnSignal buffer #insertText $ \iter text _ -> do
                     p <- getSequencePoint iter
@@ -93,10 +91,10 @@ createTextBuffer rmod (MkSelectNotify setsel) = do
     gvBindModel rmod (Just esrc) initV mempty recvV
     return buffer
 
-createTextView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked Widget
+createTextView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked GI.Widget
 createTextView rmod seln = do
     buffer <- createTextBuffer rmod seln
     gvRunLocked $ do
-        widget <- gvNew TextView [#buffer := buffer]
-        textViewSetWrapMode widget WrapModeWordChar
-        toWidget widget
+        widget <- gvNew GI.TextView [#buffer GI.:= buffer]
+        GI.textViewSetWrapMode widget GI.WrapModeWordChar
+        GI.toWidget widget

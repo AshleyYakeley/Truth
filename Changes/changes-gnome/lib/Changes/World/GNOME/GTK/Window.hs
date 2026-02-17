@@ -9,18 +9,15 @@ module Changes.World.GNOME.GTK.Window
     )
 where
 
-import Changes.Core
-import GI.Gtk as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data WindowSpec = MkWindowSpec
-    { wsPosition :: WindowPosition
-    , wsSize :: (Int32, Int32)
+    { wsSize :: (Int32, Int32)
     , wsCloseBoxAction :: GView 'Locked ()
     , wsTitle :: Model (ROWUpdate Text)
-    , wsContent :: AccelGroup -> GView 'Unlocked Widget
+    , wsContent :: GI.AccelGroup -> GView 'Unlocked GI.Widget
     }
 
 data UIWindow = MkUIWindow
@@ -34,7 +31,7 @@ createWindow MkWindowSpec{..} = do
     window <-
         gvExitOnClosed
             $ gvRunLocked
-            $ gvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
+            $ gvNewWindow Window [#defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
     gvBindReadOnlyWholeModel wsTitle $ \title -> gvRunLocked $ set window [#title := title]
     ag <-
         gvRunLocked $ do

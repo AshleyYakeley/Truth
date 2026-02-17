@@ -5,14 +5,9 @@ module Changes.World.GNOME.GTK.Widget.WebView
     )
 where
 
-import Changes.Core
-import GI.Gio
-import GI.Gtk
-import GI.WebKit2
-import Network.URI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data WebViewOptions = MkWebViewOptions
     { wvoURISchemes :: [(Text, Text -> URI -> GView 'Locked (Maybe Media))]
@@ -24,7 +19,7 @@ defaultWebViewOptions =
         { wvoURISchemes = []
         }
 
-createWebView :: WebViewOptions -> Model (ROWUpdate Text) -> GView 'Unlocked Widget
+createWebView :: WebViewOptions -> Model (ROWUpdate Text) -> GView 'Unlocked GI.Widget
 createWebView MkWebViewOptions{..} lmod = do
     (wv, widget) <-
         gvRunLocked $ do
@@ -43,9 +38,9 @@ createWebView MkWebViewOptions{..} lmod = do
                         Nothing -> do
                             err <- gerrorNew 0 0 $ "bad URI: " <> uriText
                             uRISchemeRequestFinishError request err
-            webView <- webViewNewWithContext webContext
+            webView <- GI.webViewNewWithContext webContext
             gvAcquire webView
-            widget <- toWidget webView
+            widget <- GI.toWidget webView
             return (webView, widget)
-    gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ webViewLoadHtml wv text Nothing
+    gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ GI.webViewLoadHtml wv text Nothing
     return widget

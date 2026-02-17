@@ -32,12 +32,15 @@ createCalendar rmod = do
                 _ <- gvRunUnlocked $ gvSetWholeModel rmod esrc st
                 return ()
         sig1 <- gvOnSignal calendar #daySelected onChanged
-        sig2 <- gvOnSignal calendar #monthChanged onChanged
+        sig2 <- gvOnSignal calendar #prevMonth onChanged
+        sig3 <- gvOnSignal calendar #nextMonth onChanged
+        sig4 <- gvOnSignal calendar #prevYear onChanged
+        sig5 <- gvOnSignal calendar #nextYear onChanged
         return $ do
             gvBindWholeModel rmod (Just esrc) $ \newval ->
                 gvRunLocked $ do
                     oldval <- getDay
                     if oldval == newval
                         then return ()
-                        else withSignalsBlocked calendar [sig1, sig2] $ putDay newval
+                        else withSignalsBlocked calendar [sig1, sig2, sig3, sig4, sig5] $ putDay newval
             return widget

@@ -1,21 +1,21 @@
 module Changes.World.GNOME.GTK.Widget.Icon
     ( IconName
-    , IconSize
+    , GI.IconSize
     , createIcon
     )
 where
 
-import GI.Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text
 
-createIcon :: IconName -> IconSize -> GView 'Unlocked Widget
+createIcon :: IconName -> GI.IconSize -> GView 'Unlocked GI.Widget
 createIcon icon size =
     gvRunLocked $ do
-        image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum size)
+        image <- GI.imageNewFromIconName $ Just icon
         gvAcquire image
-        toWidget image
+        GI.set image [ #iconSize GI.:=  size ]
+        GI.toWidget image

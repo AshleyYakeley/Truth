@@ -1,38 +1,37 @@
 module Changes.World.GNOME.GTK.Widget.Scale where
 
-import Changes.Core
-import GI.Gtk as Gtk
-import Shapes hiding (get)
 import Shapes.Numeric
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-createScale :: GView 'Locked (Scale, Widget)
-createScale = gvNewWidget Scale []
+createScale :: GView 'Locked (GI.Scale, GI.Widget)
+createScale = gvNewWidget GI.Scale []
 
-attachScaleMarks :: Scale -> Model (ROWUpdate [(Double, Bool, Maybe Text)]) -> GView 'Unlocked ()
+attachScaleMarks :: GI.Scale -> Model (ROWUpdate [(Double, Bool, Maybe Text)]) -> GView 'Unlocked ()
 attachScaleMarks widget model =
     gvBindReadOnlyWholeModel model $ \marks ->
         gvRunLocked $ do
-            scaleClearMarks widget
+            GI.scaleClearMarks widget
             for_ marks $ \(v, p, mt) ->
-                scaleAddMark
+                GI.scaleAddMark
                     widget
                     v
                     ( if p
-                        then PositionTypeRight
-                        else PositionTypeLeft
+                        then GI.PositionTypeRight
+                        else GI.PositionTypeLeft
                     )
                     mt
 
-attachScaleHasOrigin :: Scale -> Model (ROWUpdate Bool) -> GView 'Unlocked ()
+attachScaleHasOrigin :: GI.Scale -> Model (ROWUpdate Bool) -> GView 'Unlocked ()
 attachScaleHasOrigin widget model =
-    gvBindReadOnlyWholeModel model $ \val -> gvRunLocked $ set widget [#hasOrigin := val]
+    gvBindReadOnlyWholeModel model $ \val -> gvRunLocked $ GI.set widget [#hasOrigin GI.:= val]
 
-attachScaleDrawValue :: Scale -> Model (ROWUpdate (Maybe (PositionType, Int32))) -> GView 'Unlocked ()
+attachScaleDrawValue :: GI.Scale -> Model (ROWUpdate (Maybe (GI.PositionType, Int32))) -> GView 'Unlocked ()
 attachScaleDrawValue widget model =
     gvBindReadOnlyWholeModel model $ \mval ->
         gvRunLocked
             $ case mval of
-                Nothing -> set widget [#drawValue := False]
-                Just (pos, digits) -> set widget [#drawValue := True, #valuePos := pos, #digits := digits]
+                Nothing -> GI.set widget [#drawValue GI.:= False]
+                Just (pos, digits) -> GI.set widget [#drawValue GI.:= True, #valuePos GI.:= pos, #digits GI.:= digits]

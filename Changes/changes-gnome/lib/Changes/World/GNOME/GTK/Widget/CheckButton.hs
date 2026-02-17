@@ -4,63 +4,60 @@ module Changes.World.GNOME.GTK.Widget.CheckButton
     )
 where
 
-import Changes.Core
-import GI.Gdk
-import GI.Gtk as Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> GView 'Unlocked Widget
+createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> GView 'Unlocked GI.Widget
 createCheckButton label rmod = do
     esrc <- gvNewEditSource
     initial <- gvLiftView $ viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     gvRunLockedThen $ do
-        (button, widget) <- gvNewWidget CheckButton [#active := initial]
+        (button, widget) <- gvNewWidget GI.CheckButton [#active GI.:= initial]
         changedSignal <-
-            gvOnSignal button #clicked $ do
-                st <- gvLiftIO $ Gtk.get button #active
+            gvOnSignal button #toggled $ do
+                st <- gvLiftIO $ GI.get button #active
                 _ <- gvRunUnlocked $ gvSetWholeModel rmod esrc st
                 return ()
         return $ do
-            gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set button [#label := val]
+            gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ GI.set button [#label GI.:= val]
             gvBindWholeModel rmod (Just esrc) $ \st ->
-                gvRunLocked $ withSignalBlocked button changedSignal $ set button [#active := st]
+                gvRunLocked $ withSignalBlocked button changedSignal $ GI.set button [#active GI.:= st]
             return widget
 
-createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> GView 'Unlocked Widget
+createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> GView 'Unlocked GI.Widget
 createMaybeCheckButton label rmod = do
     initial <- gvLiftView $ viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     gvRunLockedThen $ do
         (button, widget) <-
-            gvNewWidget CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
+            gvNewWidget GI.CheckButton [#active GI.:= initial == Just True, #inconsistent GI.:= initial == Nothing]
         let
             getWidgetState :: GView 'Locked (Maybe Bool)
             getWidgetState = do
-                active <- Gtk.get button #active
-                inconsistent <- Gtk.get button #inconsistent
+                active <- GI.get button #active
+                inconsistent <- GI.get button #inconsistent
                 return
                     $ if inconsistent
                         then Nothing
                         else Just active
             setWidgetState :: Maybe Bool -> GView 'Locked ()
-            setWidgetState st = set button [#active := st == Just True, #inconsistent := st == Nothing]
+            setWidgetState st = GI.set button [#active GI.:= st == Just True, #inconsistent GI.:= st == Nothing]
+        clickGesture <- gvNew GI.GestureClick []
+        #addController button clickGesture
         _ <-
-            gvOnSignal button #buttonPressEvent $ \event -> do
-                click <- Gtk.get event #type
-                case click of
-                    EventTypeButtonPress -> do
-                        modifiers <- Gtk.get event #state
-                        oldst <- getWidgetState
-                        let
-                            newst =
-                                if elem ModifierTypeShiftMask modifiers
-                                    then Nothing
-                                    else Just (oldst /= Just True)
-                        _ <- gvRunUnlocked $ gvSetWholeModel rmod noEditSource newst
-                        return True
-                    _ -> return False
+            gvOnSignal clickGesture #released $ \_ _ _ -> do
+                mevent <- #getCurrentEvent clickGesture
+                for_ mevent $ \event -> do
+                    modifiers <- #getModifierState event
+                    oldst <- getWidgetState
+                    let
+                        newst =
+                            if elem GI.ModifierTypeShiftMask modifiers
+                                then Nothing
+                                else Just (oldst /= Just True)
+                    _ <- gvRunUnlocked $ gvSetWholeModel rmod noEditSource newst
+                    return ()
         return $ do
-            gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set button [#label := val]
+            gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ GI.set button [#label GI.:= val]
             gvBindWholeModel rmod Nothing $ \mb -> gvRunLocked $ setWidgetState mb
             return widget
