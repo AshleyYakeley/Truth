@@ -5,7 +5,7 @@
       self.submodules = true;
       nixpkgs =
         {
-          follows = "haskellNix/nixpkgs-2411";
+          follows = "haskellNix/nixpkgs-2511";
         };
 
       flake-utils =

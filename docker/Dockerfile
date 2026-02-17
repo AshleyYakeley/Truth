@@ -1,4 +1,4 @@
-ARG RESOLVER="lts-24.6"
+ARG RESOLVER="lts-24.31"
 
 FROM ubuntu:jammy
 # FROM fpco/stack-build-small:${RESOLVER}

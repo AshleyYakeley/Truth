@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -109,12 +109,12 @@ library
     , changes-core
     , changes-media
     , gi-cairo-connector
-    , gi-gdk
+    , gi-gdk4
     , gi-gdkpixbuf
     , gi-gio
     , gi-glib
     , gi-gobject
-    , gi-gtk
+    , gi-gtk4
     , gi-pango
     , gi-webkit
     , haskell-gi-base
@@ -165,7 +165,7 @@ executable changes-cairo
     , changes-core
     , changes-gnome
     , changes-world
-    , gi-gtk
+    , gi-gtk4
     , shapes
     , time
   default-language: GHC2024

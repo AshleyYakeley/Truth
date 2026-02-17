@@ -33,7 +33,7 @@ packages:
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
-resolver: lts-24.6
+resolver: lts-24.31
 
 allow-newer: true
 allow-newer-deps:
@@ -44,12 +44,7 @@ allow-newer-deps:
 
 extra-deps:
 # GTK
-- gi-gdk-4.0.9
-- gi-gsk-4.0.8
-- gi-gtk-4.0.9
-- gi-soup-3.0.3
-- gi-javascriptcore-6.0.4
-- gi-webkit-6.0.3
+- gi-webkit-6.0.5
 
 # other
 - blake3-0.3

@@ -626,7 +626,7 @@
         "haskellNix": "haskellNix",
         "nixpkgs": [
           "haskellNix",
-          "nixpkgs-2411"
+          "nixpkgs-2511"
         ]
       }
     },

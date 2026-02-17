@@ -31,11 +31,11 @@ library:
       - gi-glib
       - gi-gio
       - gi-gobject
-      - gi-gdk
+      - gi-gdk4
       - gi-gdkpixbuf
       - gi-cairo-connector
       - gi-pango
-      - gi-gtk
+      - gi-gtk4
       - gi-webkit
       - thread-trace
       - shapes
@@ -197,6 +197,6 @@ executables:
           - changes-core
           - changes-world
           - changes-gnome
-          - gi-gtk
+          - gi-gtk4
         main: Main.hs
         ghc-options: -threaded
