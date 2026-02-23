@@ -142,9 +142,9 @@
           app = flake.apps."pinafore-app:exe:pinafore1".program;
           minscript = pkgs.writeText "minscript" "pure ()";
           importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
-          interpretFileCheck = pkgs.runCommand "interpretFileCheck" {} "${app} -n ${minscript} > $out";
-          runFileCheck = pkgs.runCommand "runFileCheck" {} "${app} ${minscript} > $out";
-          importFileCheck = pkgs.runCommand "importFileCheck" {} "${app} ${importscript} > $out";
+          interpretFileCheck = pkgs.runCommand "interpretFileCheck" { } "${app} -n ${minscript} > $out";
+          runFileCheck = pkgs.runCommand "runFileCheck" { } "${app} ${minscript} > $out";
+          importFileCheck = pkgs.runCommand "importFileCheck" { } "${app} ${importscript} > $out";
         in
         flake //
         {
@@ -175,32 +175,32 @@
             };
           formatter = pkgs.nixpkgs-fmt;
           devShells =
-          {
-            default = pkgs.pinaforeProject.shellFor
-              {
-                buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
-                packages = ps: with ps;
-                  [
-                    thread-trace
-                    shapes
-                    cairo-functional
-                    changes-core
-                    changes-media
-                    changes-world
-                    changes-gnome
+            {
+              default = pkgs.pinaforeProject.shellFor
+                {
+                  buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                  packages = ps: with ps;
+                    [
+                      thread-trace
+                      shapes
+                      cairo-functional
+                      changes-core
+                      changes-media
+                      changes-world
+                      changes-gnome
 
-                    polar-shim
-                    typed-expression
-                    pinafore-base
-                    pinafore-storage
-                    pinafore-syntax
-                    pinafore-language
-                    pinafore-lib-media
-                  ];
-                withHoogle = true;
-              };
-            haskell-nix = flake.devShells.default;
-          };
+                      polar-shim
+                      typed-expression
+                      pinafore-base
+                      pinafore-storage
+                      pinafore-syntax
+                      pinafore-language
+                      pinafore-lib-media
+                    ];
+                  withHoogle = true;
+                };
+              haskell-nix = flake.devShells.default;
+            };
         }
       );
 
