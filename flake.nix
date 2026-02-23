@@ -39,6 +39,15 @@
             haskellNix.overlay
             (final: prev:
               {
+                haskell-nix = prev.haskell-nix //
+                  {
+                    extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings //
+                      {
+                        "javascriptcoregtk-6.0" = [ "webkitgtk_6_0" ];
+                        "webkitgtk-6.0" = [ "webkitgtk_6_0" ];
+                        "webkitgtk-web-process-extension-6.0" = [ "webkitgtk_6_0" ];
+                      };
+                  };
                 pinaforeProject = final.haskell-nix.stackProject
                   {
                     src =
@@ -58,6 +67,10 @@
                                   configureFlags = [ "-f" "os-string" ];
                                 };
                               "directory" =
+                                {
+                                  configureFlags = [ "-f" "os-string" ];
+                                };
+                              "process" =
                                 {
                                   configureFlags = [ "-f" "os-string" ];
                                 };
