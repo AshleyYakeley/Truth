@@ -1,3 +1,13 @@
-#!/bin/sh -e
+#!/usr/bin/env -S bash -e
+
+if [[ -z "${DISPLAY:-}" ]]; then
+    echo "DISPLAY is not set. Start an X server (or XWayland) and export DISPLAY." >&2
+    exit 1
+fi
+
+if command -v xhost >/dev/null 2>&1; then
+    xhost +si:localuser:${USER}
+fi
+
 stack install changes-gnome
 stack --docker-env DISPLAY exec -- changes-cairo

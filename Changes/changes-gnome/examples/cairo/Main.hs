@@ -29,14 +29,22 @@ drawing tz t (fromIntegral -> w, fromIntegral -> h) = let
     in translate (w / 2, h / 2)
         $ scale (size, size)
         $ scale (-0.5, -0.5)
-        $ rotate (realToFrac s * pi / 30)
-        $ operatorOver
-        $ lineCapSquare
-        $ sourceRGB (0.3, 0, 1)
-        $ lineWidth 0.01
-        $ withShowPoint "P"
-        $ stroke
-        $ mconcat [moveTo (0, 0), lineTo (0, 1)]
+        $ mconcat
+            [ operatorOver
+                $ lineCapSquare
+                $ sourceRGB (1, 0.3, 0)
+                $ lineWidth 0.01
+                $ stroke
+                $ arc (0, 0) 1 0 (2 * pi)
+            , rotate (realToFrac s * pi / 30)
+                $ operatorOver
+                $ lineCapSquare
+                $ sourceRGB (0.3, 0, 1)
+                $ lineWidth 0.01
+                $ withShowPoint "P"
+                $ stroke
+                $ mconcat [moveTo (0, 0), lineTo (0, 1)]
+            ]
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
