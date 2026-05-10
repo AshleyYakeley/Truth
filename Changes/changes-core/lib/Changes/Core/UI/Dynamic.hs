@@ -9,22 +9,23 @@ import Changes.Core.Import
 import Changes.Core.Model
 import Changes.Core.Types
 import Changes.Core.UI.Selection
+import Changes.Core.UI.View.Semiview
 import Changes.Core.UI.View.View
 
-replaceDynamicView :: MonadIO m => m dvs -> (dvs -> IO ViewState) -> StateT dvs m ()
+replaceDynamicView :: View dvs -> (dvs -> View ViewState) -> StateT dvs View ()
 replaceDynamicView getNewDVS tovsCV = do
     olddvs <- get
-    liftIO $ do
+    newdvs <- lift $ do
         oldvs <- tovsCV olddvs
-        closeLifeState oldvs
-    newdvs <- lift getNewDVS
+        lift $ closeLifeState oldvs
+        getNewDVS
     put newdvs
 
 viewDynamic ::
     forall dvs update a.
     Model update ->
     View (dvs, a) ->
-    (dvs -> IO ViewState) ->
+    (dvs -> Semiview ViewState) ->
     Task IO () ->
     (a -> [update] -> StateT dvs View ()) ->
     View a
@@ -34,8 +35,8 @@ viewDynamic model initCV tovsCV taskCV recvCV = do
         initBind = do
             (firstdvs, a) <- initCV
             stateVar <- liftIO $ newMVar firstdvs
-            viewOnCloseIO $ do
-                lastdvs <- takeMVar stateVar
+            lifecycleOnClose $ do
+                lastdvs <- liftIO $ takeMVar stateVar
                 vs <- tovsCV lastdvs
                 closeLifeState vs
             return (stateVar, a)
@@ -70,7 +71,7 @@ viewInnerWholeView model baseView (MkSelectNotify notifyChange) = let
         firstfu <- readInner
         vs <- getWidgets firstfu
         return (vs, ())
-    tocvVS :: OneWholeViews f -> IO ViewState
+    tocvVS :: OneWholeViews f -> Semiview ViewState
     tocvVS (MkOneWholeViews _ vs) = return vs
     recvVS :: () -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) View ()
     recvVS () _ = do
@@ -79,5 +80,5 @@ viewInnerWholeView model baseView (MkSelectNotify notifyChange) = let
         case (retrieveInner oldfu, retrieveInner newfu) of
             (SuccessResult (), SuccessResult ()) -> return ()
             (FailureResult _, FailureResult _) -> put $ MkOneWholeViews newfu vs
-            _ -> replaceDynamicView (getWidgets newfu) tocvVS
+            _ -> replaceDynamicView (getWidgets newfu) $ lift . tocvVS
     in viewDynamic model initVS tocvVS mempty recvVS

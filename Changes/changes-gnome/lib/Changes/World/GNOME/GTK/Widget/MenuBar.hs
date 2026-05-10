@@ -9,14 +9,12 @@ module Changes.World.GNOME.GTK.Widget.MenuBar
     )
 where
 
-import Changes.Core
-import Data.GI.Base.Signals
 import Data.IORef
-import GI.Gdk
-import GI.Gtk hiding (MenuBar)
-import Shapes
+import Data.List qualified as List
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data KeyboardModifier
     = KMShift
@@ -29,41 +27,6 @@ data MenuAccelerator
     = MkMenuAccelerator
         [KeyboardModifier]
         KeyboardKey
-
-actionMenuItem ::
-    (IsMenuShell menushell, IsMenuItem menuitem, IsAccelGroup ag) =>
-    ag ->
-    menushell ->
-    GView 'Locked menuitem ->
-    Model (ROWUpdate (Text, Maybe MenuAccelerator)) ->
-    (menuitem -> GView 'Locked ()) ->
-    GView 'Unlocked (menuitem, SignalHandlerId)
-actionMenuItem ag ms mkitem rtext meaction = do
-    (item, menuitem, changedSignal) <-
-        gvRunLocked $ do
-            item <- mkitem
-            menuitem <- toMenuItem item
-            menuShellAppend ms item
-            changedSignal <- gvOnSignal menuitem #activate $ meaction item
-            return (item, menuitem, changedSignal)
-    gvBindReadOnlyWholeModel rtext $ \(label, maccel) ->
-        gvRunLocked $ do
-            set menuitem [#label := label] -- creates child if not present
-            mc <- binGetChild menuitem
-            for_ mc $ \c -> do
-                ml <- liftIO $ castTo AccelLabel c
-                for_ ml $ \l -> do
-                    case maccel of
-                        Nothing -> liftIO $ accelLabelSetAccel l 0 []
-                        Just (MkMenuAccelerator mods key) -> do
-                            let
-                                keyw :: Word32
-                                keyw = fromIntegral $ ord key
-                                gmods :: [ModifierType]
-                                gmods = fmap toModifierType mods
-                            liftIO $ accelLabelSetAccel l keyw gmods
-                            accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ meaction item
-    return (item, changedSignal)
 
 data MenuEntry
     = SeparatorMenuEntry
@@ -83,70 +46,180 @@ simpleActionMenuEntry :: Text -> Maybe MenuAccelerator -> GView 'Locked () -> Me
 simpleActionMenuEntry label maccel action =
     ActionMenuEntry (constantModel (label, maccel)) (constantModel $ Just action)
 
-toModifierType :: KeyboardModifier -> ModifierType
-toModifierType KMShift = ModifierTypeShiftMask
-toModifierType KMCtrl = ModifierTypeControlMask
-toModifierType KMAlt = ModifierTypeMod1Mask
+data MenuContext = MkMenuContext
+    { mcActionGroup :: GI.SimpleActionGroup
+    , mcShortcutController :: GI.ShortcutController
+    , mcNextActionId :: MVar Word
+    }
 
-accelGroupConnection ::
-    IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> GView 'Locked () -> GView 'Locked ()
-accelGroupConnection ag key mods flags action = do
-    closure <-
-        liftIOWithUnlift $ \unlift ->
-            genClosure_AccelGroupActivate $ \_ _ _ _ -> do
-                unlift action
-                return True
-    accelGroupConnect ag key mods flags closure
-    gvOnClose $ do
-        _ <- gvLiftIO $ accelGroupDisconnect ag $ Just closure
-        return ()
+nextActionName :: MenuContext -> GView 'Unlocked Text
+nextActionName MkMenuContext{..} =
+    gvLiftIOTrustMeNoUI $ do
+        i <- modifyMVar mcNextActionId $ \i -> return (succ i, i)
+        return $ "action-" <> pack (show i)
 
-attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Unlocked ()
-attachMenuEntry ag ms (ActionMenuEntry rtext raction) = do
-    aref <- gvLiftIONoUI $ newIORef Nothing
+separatorSplit :: [MenuEntry] -> [[MenuEntry]]
+separatorSplit [] = []
+separatorSplit entries =
     let
-        meaction :: GView 'Locked ()
-        meaction = do
-            maction <- liftIO $ readIORef aref
-            case maction of
-                Nothing -> return ()
-                Just action -> action
-    (item, _) <- actionMenuItem ag ms menuItemNew rtext $ \_ -> meaction
+        isSeparatorEntry SeparatorMenuEntry = True
+        isSeparatorEntry _ = False
+        (before, after) = List.break isSeparatorEntry entries
+        in case after of
+            [] -> [before | not $ null before]
+            (_ : rest) -> (if null before then [] else [before]) <> separatorSplit rest
+
+toModifierType :: KeyboardModifier -> GI.ModifierType
+toModifierType KMShift = GI.ModifierTypeShiftMask
+toModifierType KMCtrl = GI.ModifierTypeControlMask
+toModifierType KMAlt = GI.ModifierTypeAltMask
+
+acceleratorText :: MenuAccelerator -> Text
+acceleratorText (MkMenuAccelerator mods key) =
+    let
+        modifierText :: KeyboardModifier -> Text
+        modifierText KMShift = "<Shift>"
+        modifierText KMCtrl = "<Control>"
+        modifierText KMAlt = "<Alt>"
+        in mconcat (fmap modifierText mods) <> singleton key
+
+setMenuItemText :: GI.IsMenuItem item => item -> Text -> Maybe MenuAccelerator -> GView 'Locked ()
+setMenuItemText item label maccel = do
+    GI.menuItemSetLabel item $ Just label
+    maccelVariant <- liftIO $ traverse GI.toGVariant $ fmap acceleratorText maccel
+    GI.menuItemSetAttributeValue item "accel" maccelVariant
+
+setAcceleratorShortcut :: MenuContext -> Text -> IORef (Maybe GI.Shortcut) -> Maybe MenuAccelerator -> GView 'Locked ()
+setAcceleratorShortcut MkMenuContext{..} detailedActionName currentShortcutRef maccel = do
+    oldShortcut <- liftIO $ readIORef currentShortcutRef
+    for_ oldShortcut $ #removeShortcut mcShortcutController
+    newShortcut <- case maccel of
+        Nothing -> return Nothing
+        Just (MkMenuAccelerator mods key) -> do
+            keyval <- GI.unicodeToKeyval $ fromIntegral $ ord key
+            trigger <- GI.keyvalTriggerNew keyval $ fmap toModifierType mods
+            action <- GI.namedActionNew detailedActionName
+            shortcut <- GI.shortcutNew (Just trigger) (Just action)
+            gvBind shortcut
+            shortcut' <- gvDuplicateUnbound GI.Shortcut shortcut
+            #addShortcut mcShortcutController shortcut'
+            return $ Just shortcut
+    liftIO $ writeIORef currentShortcutRef newShortcut
+
+makeActionMenuItem :: MenuContext -> Model (ROWUpdate (Text, Maybe MenuAccelerator)) -> Model (ROWUpdate (Maybe (GView 'Locked ()))) -> GView 'Unlocked GI.MenuItem
+makeActionMenuItem mc@MkMenuContext{..} rtext raction = do
+    actionRef <- gvLiftIOTrustMeNoUI $ newIORef Nothing
+    shortcutRef <- gvLiftIOTrustMeNoUI $ newIORef Nothing
+    actionName <- nextActionName mc
+    let
+        detailedActionName = "menubar." <> actionName
+    (item, action) <-
+        gvRunLocked $ do
+            item <- GI.menuItemNew Nothing Nothing
+            GI.menuItemSetDetailedAction item detailedActionName
+            action <- GI.simpleActionNew actionName Nothing
+            GI.actionMapAddAction mcActionGroup action
+            return (item, action)
+    gvOnClose
+        $ gsvRunLocked
+        $ do
+            GI.actionMapRemoveAction mcActionGroup actionName
+            oldShortcut <- liftIO $ readIORef shortcutRef
+            for_ oldShortcut $ GI.shortcutControllerRemoveShortcut mcShortcutController
+    _ <-
+        gvRunLocked
+            $ gvOnSignal () action #activate
+            $ \_ -> do
+                maction <- liftIO $ readIORef actionRef
+                for_ maction id
     gvBindReadOnlyWholeModel raction $ \maction -> do
-        gvLiftIONoUI $ writeIORef aref maction
-        gvRunLocked $ set item [#sensitive := isJust maction]
-attachMenuEntry ag ms (CheckedMenuEntry rtext rchecked) = do
+        gvLiftIOTrustMeNoUI $ writeIORef actionRef maction
+        gvRunLocked $ GI.simpleActionSetEnabled action $ isJust maction
+    gvBindReadOnlyWholeModel rtext $ \(label, maccel) ->
+        gvRunLocked $ do
+            setMenuItemText item label maccel
+            setAcceleratorShortcut mc detailedActionName shortcutRef maccel
+    return item
+
+makeCheckedMenuItem :: MenuContext -> Model (ROWUpdate (Text, Maybe MenuAccelerator)) -> Model (WholeUpdate Bool) -> GView 'Unlocked GI.MenuItem
+makeCheckedMenuItem mc@MkMenuContext{..} rtext rchecked = do
     esrc <- gvNewEditSource
-    (item, changedSignal) <-
-        actionMenuItem ag ms checkMenuItemNew rtext $ \item -> do
-            checked <- checkMenuItemGetActive item
-            _ <- gvRunUnlocked $ gvSetWholeModel rchecked esrc checked
-            return ()
+    shortcutRef <- gvLiftIOTrustMeNoUI $ newIORef Nothing
+    actionName <- nextActionName mc
+    let
+        detailedActionName = "menubar." <> actionName
+    initialState <- gvLiftIOTrustMeNoUI $ GI.toGVariant False
+    (item, action, changedSignal) <-
+        gvRunLocked $ do
+            item <- GI.menuItemNew Nothing Nothing
+            GI.menuItemSetDetailedAction item detailedActionName
+            action <- GI.simpleActionNewStateful actionName Nothing initialState
+            GI.actionMapAddAction mcActionGroup action
+            changedSignal <-
+                gvOnSignal () action #changeState $ \mstate ->
+                    for_ mstate $ \vstate -> do
+                        mchecked <- liftIO $ GI.fromGVariant vstate
+                        for_ mchecked $ \checked -> do
+                            GI.simpleActionSetState action vstate
+                            _ <- gvRunUnlocked $ gvSetWholeModel rchecked esrc checked
+                            return ()
+            return (item, action, changedSignal)
+    gvOnClose
+        $ gsvRunLocked
+        $ do
+            GI.actionMapRemoveAction mcActionGroup actionName
+            oldShortcut <- liftIO $ readIORef shortcutRef
+            for_ oldShortcut $ GI.shortcutControllerRemoveShortcut mcShortcutController
     gvBindWholeModel rchecked (Just esrc) $ \checked ->
-        gvRunLocked $ withSignalBlocked item changedSignal $ set item [#active := checked]
-attachMenuEntry ag ms (SubMenuEntry name entries) = do
-    menu <-
+        gvRunLocked $ withSignalBlocked action changedSignal $ do
+            checkedState <- liftIO $ GI.toGVariant checked
+            GI.simpleActionSetState action checkedState
+    gvBindReadOnlyWholeModel rtext $ \(label, maccel) ->
         gvRunLocked $ do
-            item <- menuItemNewWithLabel name
-            menuShellAppend ms item
-            menu <- menuNew
-            menuItemSetSubmenu item $ Just menu
-            return menu
-    attachMenuEntries ag menu entries
-attachMenuEntry _ ms SeparatorMenuEntry =
+            setMenuItemText item label maccel
+            setAcceleratorShortcut mc detailedActionName shortcutRef maccel
+    return item
+
+appendMenuEntry :: MenuContext -> GI.Menu -> MenuEntry -> GView 'Unlocked ()
+appendMenuEntry _ _ SeparatorMenuEntry = return ()
+appendMenuEntry mc menu (ActionMenuEntry rtext raction) = do
+    item <- makeActionMenuItem mc rtext raction
+    gvRunLocked $ GI.menuAppendItem menu item
+appendMenuEntry mc menu (CheckedMenuEntry rtext rchecked) = do
+    item <- makeCheckedMenuItem mc rtext rchecked
+    gvRunLocked $ GI.menuAppendItem menu item
+appendMenuEntry mc menu (SubMenuEntry name entries) = do
+    submenu <- makeMenuModel mc entries
+    gvRunLocked $ GI.menuAppendSubmenu menu (Just name) submenu
+
+appendSection :: MenuContext -> GI.Menu -> [MenuEntry] -> GView 'Unlocked ()
+appendSection mc menu entries = do
+    section <- gvRunLocked GI.menuNew
+    for_ entries $ appendMenuEntry mc section
+    gvRunLocked $ GI.menuAppendSection menu Nothing section
+
+makeMenuModel :: MenuContext -> [MenuEntry] -> GView 'Unlocked GI.Menu
+makeMenuModel mc entries = do
+    menu <- gvRunLocked GI.menuNew
+    for_ (separatorSplit entries) $ appendSection mc menu
+    return menu
+
+createMenuBar :: MenuBar -> GView 'Unlocked GI.Widget
+createMenuBar menuEntries = do
+    actionGroup <- gvRunLocked GI.simpleActionGroupNew
+    shortcutController <-
+        gvRunLocked $ do
+            controller <- GI.shortcutControllerNew
+            gvBind controller
+            #setScope controller GI.ShortcutScopeGlobal
+            return controller
+    nextIdRef <- gvLiftIOTrustMeNoUI $ newMVar 0
+    let
+        mc = MkMenuContext{mcActionGroup = actionGroup, mcShortcutController = shortcutController, mcNextActionId = nextIdRef}
+    menuModel <- makeMenuModel mc menuEntries
     gvRunLocked $ do
-        item <- gvNew SeparatorMenuItem []
-        menuShellAppend ms item
-
-attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Unlocked ()
-attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
-
-createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Unlocked Widget
-createMenuBar ag menu = do
-    (mbar, widget) <-
-        gvRunLocked $ do
-            mbar <- menuBarNew
-            widget <- toWidget mbar
-            return (mbar, widget)
-    attachMenuEntries ag mbar menu
-    return widget
+        menubar <- GI.popoverMenuBarNewFromModel $ Just menuModel
+        #insertActionGroup menubar "menubar" $ Just actionGroup
+        shortcutController' <- gvDuplicateUnbound GI.ShortcutController shortcutController
+        #addController menubar shortcutController'
+        GI.toWidget menubar

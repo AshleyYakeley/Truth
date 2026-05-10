@@ -187,11 +187,15 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
-          devShells =
-            {
-              default = pkgs.pinaforeProject.shellFor
+          devShells = let
+            shellInputs =
                 {
                   buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                };
+            in {
+              default = pkgs.pinaforeProject.shellFor shellInputs;
+              haskell-nix = pkgs.pinaforeProject.shellFor (shellInputs //
+                {
                   packages = ps: with ps;
                     [
                       thread-trace
@@ -211,8 +215,7 @@
                       pinafore-lib-media
                     ];
                   withHoogle = true;
-                };
-              haskell-nix = flake.devShells.default;
+                });
             };
         }
       );

@@ -25,7 +25,7 @@ let {
                         action ap{("Redo" ,Just "Ctrl+Y")} ap{queueRedo.UndoHandler uh}
                     ]
                 ]
-        } open.Window gtk (400,600) title $ vertical.Widget [mbar, grow.Layout.Widget $ scrolled.Widget contents];
+        } open.Window gtk (400,700) title $ vertical.Widget [mbar, grow.Layout.Widget $ scrolled.Widget contents];
 
     ### People
 
@@ -224,7 +224,7 @@ let {
                                 width 0.01 $
                                 stroke $
                                 concat.Path [moveTo (0, 0), lineTo (0, 1)]
-                        };
+                        } empty.Handler;
             };
 
     window_list: Action Window =
@@ -263,11 +263,11 @@ let {
         let {
             dimensions: Natural *: Natural =
                 (400,400);
-            drawing: Natural *: Natural -> Drawing Handler =
+            drawing: Natural *: Natural -> Drawing None =
                 fn (w,h) =>
                 let {
                     size = lesser w h;
-                    square: Drawing Handler =
+                    square: Drawing None =
                         fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
                     squares: List ((Natural *: Natural) *: Colour) =
                         [
@@ -287,7 +287,7 @@ let {
                             ((1,3), ivory),
                             ((2,3), midnightblue)
                         ];
-                    block: Number -> Drawing Handler =
+                    block: Number -> Drawing None =
                         fn a => concat.Drawing [
                             concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkF.AlphaColour a c) $ square) squares,
                             width 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 * pi)
@@ -307,7 +307,7 @@ let {
         with Widget
         vertical [
             grow.Layout $
-                draw ap{drawing},
+                draw ap{drawing} empty.Handler,
             grow.Layout $
                 styleSheet ap{rule.CSSText "*" [("border","solid 5px black"),("padding","5px")]} $
                 image ap{toImage dimensions $ drawing dimensions}
@@ -372,6 +372,8 @@ let {
                         button.Widget ap{"Cairo Image"} ap{window_cairoimage},
                         button.Widget ap{"Menus"} ap{window_menus},
                         button.Widget ap{"Scale"} ap{window_scale},
+                        button.Widget ap{"Stop"} ap{stop},
+                        button.Widget ap{"Fail"} ap{fail.Action "\"Fail\" button click"},
                         grow.Layout.Widget $ blank.Widget
                     ];
             }

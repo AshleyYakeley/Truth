@@ -2,8 +2,6 @@
 
 module Data.Comparison where
 
-import Data.Reflection (Given (..), give)
-
 import Data.Coerce.Coercion
 import Data.Coerce.Role
 import Data.Givable

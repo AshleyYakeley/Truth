@@ -1,47 +1,38 @@
 module Changes.World.GNOME.GTK.Test where
 
-import Data.GI.Base.GValue
-import GI.GObject
-import GI.Gtk
-import Shapes hiding (get)
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-getAllWidgets :: Widget -> GView 'Locked [Widget]
+getAllWidgets :: GI.Widget -> GView 'Locked [GI.Widget]
 getAllWidgets w = do
-    mcont <- liftIO $ castTo Container w
-    case mcont of
-        Nothing -> return [w]
-        Just cont -> do
-            cc <- #getChildren cont
-            ww <- for cc getAllWidgets
-            return $ w : mconcat ww
+    cc <- gvLiftIO $ getWidgetChildren w
+    ww <- for cc getAllWidgets
+    return $ w : mconcat ww
 
 gobjectEmitClicked ::
     forall t.
-    GObject t =>
+    GI.GObject t =>
     t ->
     GView 'Locked ()
 gobjectEmitClicked obj = do
-    gtype <- liftIO $ glibType @t
-    (_, signalId, detail) <- signalParseName "clicked" gtype False
+    gtype <- liftIO $ GI.glibType @t
+    (_, signalId, detail) <- GI.signalParseName "clicked" gtype False
     liftIO
-        $ withManagedPtr obj
+        $ GI.withManagedPtr obj
         $ \entryPtr -> do
-            gvalObj <- buildGValue gtype set_object entryPtr
-            _ <- signalEmitv [gvalObj] signalId detail
+            gvalObj <- GI.buildGValue gtype GI.set_object entryPtr
+            _ <- GI.signalEmitv [gvalObj] signalId detail
             return ()
 
-getWindows :: GView 'Locked [Window]
-getWindows = do
-    ww <- windowListToplevels
-    forf ww $ \w -> liftIO $ castTo Window w
+getWindows :: GView 'Locked [GI.Window]
+getWindows = pure []
 
-getVisibleWindows :: GView 'Locked [Window]
+getVisibleWindows :: GView 'Locked [GI.Window]
 getVisibleWindows = do
     ww <- getWindows
     forf ww $ \w -> do
-        v <- liftIO $ get w #visible
+        v <- liftIO $ GI.get w #visible
         return
             $ if v
                 then Just w
@@ -52,9 +43,9 @@ clickOnlyWindowButton = do
     ww <- getVisibleWindows
     case ww of
         [w] -> do
-            w' <- toWidget w
+            w' <- GI.toWidget w
             cc <- getAllWidgets w'
-            bb <- forf cc $ \c -> liftIO $ castTo Button c
+            bb <- forf cc $ \c -> liftIO $ GI.castTo GI.Button c
             case bb of
                 [b] -> gobjectEmitClicked b
                 _ -> fail $ show (length bb) <> " Buttons"

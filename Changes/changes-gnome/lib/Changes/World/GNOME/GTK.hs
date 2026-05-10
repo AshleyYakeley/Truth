@@ -3,7 +3,7 @@ module Changes.World.GNOME.GTK
     )
 where
 
-import GI.Gtk as I (AccelGroup, GError, Widget)
+import GI.Gtk as I (GError, Widget, Window)
 
 import Changes.World.GNOME.GI as I
 import Changes.World.GNOME.GTK.ChooseFile as I

@@ -12,7 +12,6 @@ data SelectionModel
 
 data WidgetContext = MkWidgetContext
     { wcUnlift :: View --> IO
-    , wcAccelGroup :: AccelGroup
     , wcOtherContext :: OtherContext
     , wcSelectNotify :: SelectNotify SelectionModel
     }

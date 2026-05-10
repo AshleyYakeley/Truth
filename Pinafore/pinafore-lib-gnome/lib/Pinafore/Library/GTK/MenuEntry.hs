@@ -66,7 +66,7 @@ menuSubmenu name entries =
 
 uiMenuBar :: LangMenuBar -> LangWidget
 uiMenuBar lmb =
-    MkLangWidget $ \MkWidgetContext{..} -> createMenuBar wcAccelGroup $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
+    MkLangWidget $ \MkWidgetContext{..} -> createMenuBar $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
 
 menuEntryStuff :: LibraryStuff
 menuEntryStuff =

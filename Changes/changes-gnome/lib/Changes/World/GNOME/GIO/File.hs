@@ -3,13 +3,9 @@ module Changes.World.GNOME.GIO.File
     )
 where
 
-import Changes.Core
-import GI.GLib qualified as GI
-import GI.GObject qualified as GI
-import GI.Gio qualified as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 noCancellable :: Maybe GI.Cancellable
 noCancellable = Nothing

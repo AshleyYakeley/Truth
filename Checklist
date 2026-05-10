@@ -21,7 +21,7 @@ Before release:
     deb/changelog.m4
     support/vsc-extension/CHANGELOG.md
 
-5. Use latest LTS resolver
+5. Use latest LTS snapshot
 
     https://www.stackage.org/lts
     stack.yaml

@@ -114,7 +114,7 @@ instance TraceThing (Reference edit) where
 instance ShowableEdit edit => TraceArgThing (Reference edit) where
     traceArgThing prefix = traceReference prefix showEditShower
 
-instance TraceThing LifeState where
+instance TraceThing (LifeState mc) where
     traceThing _ ls = ls
 
 slowObject :: Int -> Reference edit -> Reference edit

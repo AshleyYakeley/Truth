@@ -82,7 +82,7 @@ soupReference dirpath = let
     lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
     in mapReference lens rawSoupReference
 
-soupWindow :: (WindowSpec -> GView 'Unlocked UIWindow) -> FilePath -> GView 'Unlocked ()
+soupWindow :: (WindowSpec -> GView 'Unlocked Window) -> FilePath -> GView 'Unlocked ()
 soupWindow newWindow dirpath = do
     smodel <- gvLiftLifecycle $ makeReflectingModel $ soupReference dirpath
     (selModel, selnotify) <- gvLiftLifecycle $ makeSharedModel makePremodelSelectNotify
@@ -116,7 +116,7 @@ soupWindow newWindow dirpath = do
                     viewRunResource smodel $ \samodel -> do
                         _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
                         return ()
-        mbar :: GViewState 'Unlocked -> UIWindow -> MenuBar
+        mbar :: GViewState -> Window -> MenuBar
         mbar cc _ =
             [ SubMenuEntry
                 "File"
@@ -140,14 +140,13 @@ soupWindow newWindow dirpath = do
                 rspec (SuccessResult s2) = noteEditSpec s2 mempty
                 rspec (FailureResult err) = createLabel $ constantModel err
             rec ~(subwin, subcloser) <-
-                    gvGetState $ let
-                        wsPosition = WindowPositionCenter
+                    lift $ gsvGetState $ let
                         wsSize = (300, 400)
                         wsCloseBoxAction = gvRunUnlocked $ gvCloseState subcloser
                         wsTitle = constantModel "item"
-                        wsContent :: AccelGroup -> GView 'Unlocked Widget
-                        wsContent ag = do
-                            mb <- createMenuBar ag $ mbar subcloser subwin
+                        wsContent :: GView 'Unlocked Widget
+                        wsContent = do
+                            mb <- createMenuBar $ mbar subcloser subwin
                             uic <- createOneWhole rowmodel rspec
                             createLayout
                                 OrientationVertical
@@ -155,7 +154,6 @@ soupWindow newWindow dirpath = do
                         in newWindow MkWindowSpec{..}
             return ()
     rec let
-            wsPosition = WindowPositionCenter
             wsSize = (300, 400)
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = constantModel $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
@@ -165,9 +163,9 @@ soupWindow newWindow dirpath = do
             createButton (constantModel "Selection") $ constantModel $ Just $ gvRunUnlocked $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify (\m -> gvRunUnlocked $ openItem m)
         let
-            wsContent :: AccelGroup -> GView 'Unlocked Widget
-            wsContent ag = do
-                mb <- createMenuBar ag $ mbar closer window
+            wsContent :: GView 'Unlocked Widget
+            wsContent = do
+                mb <- createMenuBar $ mbar closer window
                 uic <-
                     createLayout
                         OrientationVertical
@@ -175,5 +173,5 @@ soupWindow newWindow dirpath = do
                 createLayout
                     OrientationVertical
                     [(defaultLayoutOptions, mb), (defaultLayoutOptions{loGrow = True}, uic)]
-        (window, closer) <- gvGetState $ newWindow MkWindowSpec{..}
+        (window, closer) <- lift $ gsvGetState $ newWindow MkWindowSpec{..}
     return ()

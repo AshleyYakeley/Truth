@@ -1,49 +1,57 @@
 module Changes.World.GNOME.GI.Lifecycle where
 
-import Data.GI.Base
-import Data.GI.Base.Attributes
-import Data.GI.Base.Constructible
-import GI.GObject
-import Shapes
-
 import Changes.World.GNOME.GI.GView
-import Changes.World.GNOME.GI.LockState
+import Import
+import Import.GI qualified as GI
 
-gvAcquire :: IsObject a => a -> GView 'Locked ()
-gvAcquire a = do
-    _ <- objectRef a
-    gvOnClose $ gvLiftIO $ objectUnref a
+-- | Bind an object to a lifecycle, causing it to be deterministically disposed at the end of a lifecycle
+-- rather than on finalisation. Not strictly necessary for correctness, but improves determinism.
+gvBind :: GI.IsObject a => a -> GView 'Locked ()
+gvBind a =
+    gvOnClose
+        $ gsvLiftIO
+        $ do
+            GI.objectUnref a
+            _ <- GI.disownObject a
+            return ()
 
-gvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
+gvNewUnbound :: GI.Constructible a tag => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
+gvNewUnbound = GI.new
+
+gvNew :: (GI.Constructible a tag, GI.IsObject a) => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
 gvNew cc attrs = do
-    a <- new cc attrs
-    gvAcquire a
+    a <- gvNewUnbound cc attrs
+    gvBind a
     return a
 
+gvDuplicateUnbound :: GI.IsObject a => (GI.ManagedPtr a -> a) -> a -> GView 'Locked a
+gvDuplicateUnbound cc obj = do
+    obj' <- GI.objectRef obj
+    gvLiftIO $ GI.unsafeCastTo cc obj'
+
 gvNewWidget ::
-    (Constructible a tag, IsObject a, IsWidget a) =>
-    (ManagedPtr a -> a) ->
-    [AttrOp a tag] ->
-    GView 'Locked (a, Widget)
+    (GI.Constructible a tag, GI.IsObject a, GI.IsWidget a) =>
+    (GI.ManagedPtr a -> a) ->
+    [GI.AttrOp a tag] ->
+    GView 'Locked (a, GI.Widget)
 gvNewWidget cc attrs = do
     a <- gvNew cc attrs
-    widget <- toWidget a
+    widget <- GI.toWidget a
     return (a, widget)
 
--- | Probably only use this for top-level widgets
-gvTopLevelNew ::
-    (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
-gvTopLevelNew cc attrs = do
+gvNewWindow ::
+    (GI.Constructible a tag, GI.IsObject a, GI.IsWindow a) => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
+gvNewWindow cc attrs = do
     a <- gvNew cc attrs
-    gvOnClose $ gvLiftIO $ widgetDestroy a
+    gvOnClose $ gsvLiftIO $ GI.windowDestroy a
     return a
 
 gvSet ::
-    (AttrClearC info obj attr, AttrSetC info obj attr value) =>
+    (GI.AttrClearC info obj attr, GI.AttrSetC info obj attr value) =>
     obj ->
-    AttrLabelProxy attr ->
+    GI.AttrLabelProxy attr ->
     value ->
     GView 'Locked ()
 gvSet obj prop val = do
-    set obj [prop := val]
-    gvOnClose $ gvLiftIO $ clear obj prop
+    GI.set obj [prop GI.:= val]
+    gvOnClose $ gsvLiftIO $ GI.clear obj prop

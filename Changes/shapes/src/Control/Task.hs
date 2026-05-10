@@ -5,6 +5,7 @@ module Control.Task
     , execTask
     , ioTask
     , forkTask
+    , forkOSTask
     , mvarTask
     , mkTask
     , timeTask
@@ -15,6 +16,7 @@ module Control.Task
     , Cancelled (..)
     , forkEndlessInLifecycle
     , StoppableTask (..)
+    , hoistStoppableTask
     , forkStoppableTask
     , foreverStoppableTask
     , followStoppableTask
@@ -106,17 +108,32 @@ tunnelForkIO iou =
         tid <- forkIO $ iou unliftIO
         return $ pure tid
 
+tunnelForkOSIO :: MonadTunnelIO m => ((forall a. m a -> IO (TunnelIO m a)) -> IO ()) -> m ThreadId
+tunnelForkOSIO iou =
+    tunnelIO $ \unliftIO -> do
+        tid <- forkOS $ iou unliftIO
+        return $ pure tid
+
 liftTunnelIO :: MonadTunnelIO m => IO (TunnelIO m r) -> m r
 liftTunnelIO iomr = tunnelIO $ \_ -> iomr
 
-forkTask :: MonadTunnelIO m => m a -> m (Task m a)
+forkTask :: MonadTunnelIO m => m a -> m (Task m a, ThreadId)
 forkTask ma = do
     (putval, task) <- mkIOTask
-    _ <-
+    threadId <-
         tunnelForkIO $ \unliftIO -> do
             ra <- tryExc $ unliftIO ma
             putval ra
-    return $ execTask $ fmap (liftTunnelIO . fromResultExc) task
+    return (execTask $ fmap (liftTunnelIO . fromResultExc) task, threadId)
+
+forkOSTask :: MonadTunnelIO m => m a -> m (Task m a, ThreadId)
+forkOSTask ma = do
+    (putval, task) <- mkIOTask
+    threadId <-
+        tunnelForkOSIO $ \unliftIO -> do
+            ra <- tryExc $ unliftIO ma
+            putval ra
+    return (execTask $ fmap (liftTunnelIO . fromResultExc) task, threadId)
 
 timeTask :: UTCTime -> Task IO ()
 timeTask t = let
@@ -164,12 +181,12 @@ firstTask tt = do
 parallelFor :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m b) -> m (t b)
 parallelFor ta amb = do
     tasks <- for ta $ \a -> forkTask $ amb a
-    for tasks taskWait
+    for tasks $ taskWait . fst
 
 parallelFor_ :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m ()) -> m ()
 parallelFor_ ta amb = do
     tasks <- for ta $ \a -> forkTask $ amb a
-    for_ tasks taskWait
+    for_ tasks $ taskWait . fst
 
 data Cancelled
     = MkCancelled
@@ -201,6 +218,9 @@ instance (Applicative m, Semigroup a) => Semigroup (StoppableTask m a) where
 
 instance (Applicative m, Monoid a) => Monoid (StoppableTask m a) where
     mempty = pure mempty
+
+hoistStoppableTask :: (m1 --> m2) -> StoppableTask m1 --> StoppableTask m2
+hoistStoppableTask mm (MkStoppableTask t s) = MkStoppableTask (hoistTask mm t) (mm s)
 
 forkStoppableTask ::
     forall m a.
@@ -269,7 +289,7 @@ raceStoppableTasks ::
     m (StoppableTask m a)
 raceStoppableTasks stasks = do
     MkStoppableTask ftask stop <- firstStoppableTask stasks
-    rtask <-
+    (rtask, _) <-
         forkTask $ do
             ma <- taskWait ftask
             for_ stasks stoppableTaskStop

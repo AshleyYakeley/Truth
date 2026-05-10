@@ -5,6 +5,8 @@ PINAFOREVERSION := 0.6
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
+SNAPSHOT := lts-24.31
+
 ### Flags for stack
 
 ifeq ($(nodocker),1)
@@ -59,7 +61,7 @@ NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/
 docker-image:
 ifeq ($(nodocker),1)
 else
-	docker build -t local-build docker
+	docker build --build-arg SNAPSHOT=$(SNAPSHOT) -t local-build_$(SNAPSHOT) docker
 endif
 
 docker-shell: docker-image

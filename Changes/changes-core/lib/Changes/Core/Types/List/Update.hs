@@ -44,7 +44,7 @@ instance FullSubjectReader (UpdateReader update) => FullUpdate (ListUpdate updat
     replaceUpdate mr write = do
         write ListUpdateClear
         len <- mr ListReadLength
-        for_ [0 .. pred len] $ \i -> do
+        for_ (zltList len) $ \i -> do
             item <- readableToSubject $ knownItemReadFunction i mr
             write $ ListUpdateInsert i item
 

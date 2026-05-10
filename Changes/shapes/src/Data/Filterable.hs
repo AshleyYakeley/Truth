@@ -96,3 +96,6 @@ instance MonoFilterable StrictByteString where
 instance MonoFilterable Text where
     ofilter = Data.Sequences.filter
     ofilterM f = liftA fromList . ofilterM f . otoList
+
+class Contravariant f => ContraFilterable f where
+    contramapMaybe :: (a -> Maybe b) -> f b -> f a

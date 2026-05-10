@@ -45,6 +45,11 @@ newtype Action a = MkAction
         , RepresentationalRole
         )
 
+pattern ViewAction :: View (Know a) -> Action a
+pattern ViewAction ka = MkAction (MkComposeInner ka)
+
+{-# COMPLETE ViewAction #-}
+
 data ActionException = StopActionException | ExActionException SomeException
 
 instance MonadException Action where
@@ -56,6 +61,11 @@ instance MonadException Action where
         MkAction $ catchExc ma $ unAction . cc . \case
             Left () -> StopActionException
             Right se -> ExActionException se
+
+instance Show ActionException where
+    show = \case
+        StopActionException -> "stop"
+        ExActionException ex -> show ex
 
 unliftAction :: forall a. Action a -> View (Know a)
 unliftAction = unComposeInner . unAction
@@ -74,7 +84,7 @@ actionLiftView :: View --> Action
 actionLiftView va = MkAction $ lift va
 
 actionLiftViewKnow :: View (Know a) -> Action a
-actionLiftViewKnow va = MkAction $ MkComposeInner va
+actionLiftViewKnow va = ViewAction va
 
 actionLiftViewKnowWithUnlift :: ((forall r. Action r -> View (Know r)) -> View (Know a)) -> Action a
 actionLiftViewKnowWithUnlift call = actionLiftViewKnow $ call unliftAction
@@ -112,7 +122,7 @@ actionKnow (Known a) = pure a
 actionKnow Unknown = empty
 
 knowAction :: forall a. Action a -> Action (Know a)
-knowAction (MkAction ka) = MkAction $ MkComposeInner $ fmap Known $ unComposeInner ka
+knowAction (ViewAction ka) = ViewAction $ fmap Known ka
 
 actionOnClose :: Action () -> Action ()
 actionOnClose closer = do
@@ -123,14 +133,10 @@ actionOnClose closer = do
             _ <- unComposeInner $ unlift closer
             return ()
 
-actionEarlyCloser :: Action a -> Action (a, IO ())
-actionEarlyCloser ra = do
-    MkWRaised unlift <- actionGetCreateViewUnlift
-    MkAction
-        $ MkComposeInner
-        $ do
-            (ka, closer) <- viewGetCloser $ unComposeInner $ unlift ra
-            return $ fmap (\a -> (a, closer)) ka
+actionEarlyCloser :: Action a -> Action (a, Semiview ())
+actionEarlyCloser (ViewAction ra) = ViewAction $ do
+    (ka, closer) <- viewGetCloser ra
+    return $ fmap (\a -> (a, closer)) ka
 
 actionFloatMap ::
     forall f updateA updateB.

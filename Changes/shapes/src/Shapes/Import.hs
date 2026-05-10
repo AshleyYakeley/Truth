@@ -29,7 +29,7 @@ import Data.List as I (cycle, iterate, nub, nubBy, zip, (++), (\\))
 import Data.List qualified
 import Data.List.NonEmpty as I (NonEmpty (..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
-import Data.Monoid as I (Monoid (..))
+import Data.Monoid as I (Alt (..), Monoid (..))
 import Data.Ord as I
 import Data.Semigroup as I hiding (Product (..))
 import Data.String as I hiding (lines, unlines, unwords, words)
@@ -88,6 +88,9 @@ import Control.Comonad as I
 -- lattices
 import Algebra.Lattice as I
 
+-- reflection
+import Data.Reflection as I (Given (..), give)
+
 -- monadology
 import Control.Monad.Ology as I hiding (Lens', cont, shift, state)
 
@@ -98,6 +101,7 @@ import Data.Hashable as I (Hashable)
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.Map as I (Map)
 import Data.Map.Lazy qualified
+import Data.Set as I (Set)
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
@@ -151,6 +155,15 @@ import Data.Type.Witness as I
 -- open-witness
 import Data.Type.OpenWitness as I
 import Data.Type.OpenWitness.Witnessed as I
+
+geltList :: (Ord a, Enum a) => a -> a -> [a]
+geltList a b =
+    if a < b
+        then a : geltList (succ a) b
+        else []
+
+zltList :: (Num a, Ord a, Enum a) => a -> [a]
+zltList = geltList 0
 
 forn :: Applicative m => Int -> m a -> m [a]
 forn 0 _ = pure []
@@ -329,13 +342,14 @@ trimSpace ::
 trimSpace = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
 lifecycleOnAllDone ::
-    forall m.
-    MonadAskUnliftIO m =>
-    m () ->
-    m (LifecycleT m (), m ())
+    forall mc m.
+    (MonadTunnelIO mc, MonadIO m) =>
+    mc () ->
+    m (LifecycleT mc m (), mc ())
 lifecycleOnAllDone onzero = do
     var <- liftIO $ newMVar (0 :: Int)
     let
+        ondone :: LifecycleT mc m ()
         ondone = do
             liftIO
                 $ mVarRunStateT var
@@ -352,6 +366,7 @@ lifecycleOnAllDone onzero = do
                 if iszero
                     then onzero
                     else return ()
+        checkdone :: mc ()
         checkdone = do
             iszero <-
                 mVarRunStateT var $ do

@@ -1,8 +1,10 @@
-ARG RESOLVER="lts-24.31"
+ARG SNAPSHOT
 
 FROM ubuntu:jammy
-# FROM fpco/stack-build-small:${RESOLVER}
-RUN echo 2026-02-16 > /container.date
+# FROM fpco/stack-build-small:${SNAPSHOT}
+ARG SNAPSHOT
+RUN : "${SNAPSHOT:?SNAPSHOT is required}"
+RUN echo 2026-03-01 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -32,8 +34,8 @@ RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # stack
 RUN curl -sSL https://get.haskellstack.org/ | sh
-ARG RESOLVER
-RUN stack setup --resolver ${RESOLVER}
+ARG SNAPSHOT
+RUN stack setup --snapshot ${SNAPSHOT}
 
 # GNOME stuff
 RUN apt-get install -y \

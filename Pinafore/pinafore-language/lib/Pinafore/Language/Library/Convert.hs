@@ -13,6 +13,10 @@ import Pinafore.Language.Type
 instance HasQType QPolyShim 'Positive a => HasQType QPolyShim 'Positive (IO a) where
     qType = mapPosShimWit (functionToShim "liftIO" $ liftIO @Action) qType
 
+-- Subview
+instance HasQType QPolyShim 'Positive a => HasQType QPolyShim 'Positive (Semiview a) where
+    qType = mapPosShimWit (functionToShim "actionLiftView . lift" $ actionLiftView . lift) qType
+
 -- View
 instance HasQType QPolyShim 'Positive a => HasQType QPolyShim 'Positive (View a) where
     qType = mapPosShimWit (functionToShim "actionLiftView" actionLiftView) qType

@@ -1,8 +1,7 @@
 module Changes.World.GNOME.GTK.Widget.TextStyle where
 
-import Data.GI.Base.Attributes
-import GI.Pango
-import Shapes
+import Import
+import Import.GI qualified as GI
 
 data TextStyle = MkTextStyle
     { tsItalic :: Bool
@@ -14,11 +13,11 @@ plainTextStyle = let
     tsItalic = False
     in MkTextStyle{..}
 
-textCellAttributes :: Text -> TextStyle -> [AttrOp CellRendererText 'AttrSet]
+textCellAttributes :: Text -> TextStyle -> [GI.AttrOp GI.CellRendererText 'GI.AttrSet]
 textCellAttributes text MkTextStyle{..} =
-    [ #text := text
+    [ #text GI.:= text
     , #style
-        := if tsItalic
-            then StyleItalic
-            else StyleNormal
+        GI.:= if tsItalic
+            then GI.StyleItalic
+            else GI.StyleNormal
     ]

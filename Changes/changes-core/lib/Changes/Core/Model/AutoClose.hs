@@ -2,7 +2,7 @@ module Changes.Core.Model.AutoClose where
 
 import Changes.Core.Import
 
-type AutoCloseT key t = StateT (Map key (t, LifeState))
+type AutoCloseT key t = StateT (Map key (t, LifeState IO))
 
 runAutoClose :: Ord key => Unlift MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do

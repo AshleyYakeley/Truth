@@ -6,13 +6,12 @@ module Changes.Core.UI.View.View
     , viewOnCloseIO
     , viewGetCloser
     , viewLiftLifecycle
-    , viewLiftLifecycleWithUnlift
+    -- , viewLiftLifecycleWithUnlift
     , viewAskUnliftLifecycle
-    , viewHoistLifecycle
     , viewSubLifecycle
     , viewGetViewState
     , viewAddViewState
-    , viewWithUnliftAsync
+    , viewAskUnliftIOAsync
     , viewRunResource
     , viewRunResourceLifecycle
     , viewRunResourceContext
@@ -35,68 +34,42 @@ import Changes.Core.Model
 import Changes.Core.Resource
 import Changes.Core.Types
 import Changes.Core.UI.View.Context
+import Changes.Core.UI.View.Semiview
 
-type ViewState = LifeState
+type ViewState = LifeState Semiview
 
-newtype View a = MkView
-    { unView :: ReaderT ViewContext Lifecycle a
-    }
-    deriving newtype
-        ( Functor
-        , Applicative
-        , Monad
-        , MonadFix
-        , MonadFail
-        , MonadIO
-        , MonadException
-        , MonadThrow e
-        , MonadCatch e
-        , MonadHoistIO
-        , MonadTunnelIO
-        , MonadUnliftIO
-        , RepresentationalRole
-        )
+type View = LifecycleT Semiview Semiview
 
 viewOnCloseIO :: IO () -> View ()
-viewOnCloseIO closer = viewLiftLifecycle $ lifecycleOnClose closer
+viewOnCloseIO closer = lifecycleOnClose $ liftIO closer
 
 viewOnClose :: View () -> View ()
-viewOnClose closer = do
-    vc <- MkView ask
-    viewOnCloseIO $ runLifecycle $ runViewFromContext vc closer
+viewOnClose closer = lifecycleOnClose $ runLifecycle closer
 
-viewGetCloser :: forall a. View a -> View (a, IO ())
-viewGetCloser (MkView ma) =
-    MkView $ do
-        MkWUnlift unlift <- askUnlift
-        lift $ lifecycleGetCloser $ unlift ma
+viewGetCloser :: forall a. View a -> View (a, Semiview ())
+viewGetCloser = lifecycleGetCloser
 
 viewGetViewState :: View a -> View (a, ViewState)
-viewGetViewState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> lift $ getLifeState $ unlift ma
+viewGetViewState ma = lift $ getLifeState ma
 
 viewAddViewState :: ViewState -> View ()
-viewAddViewState vs = viewLiftLifecycle $ addLifeState vs
+viewAddViewState = addLifeState
 
 viewLiftLifecycle :: Lifecycle --> View
-viewLiftLifecycle la = MkView $ lift la
+viewLiftLifecycle = hoistLifecycleBoth liftIO
 
 viewAskUnliftLifecycle :: View (WRaised View Lifecycle)
-viewAskUnliftLifecycle = MkView $ do
-    MkWUnlift unlift <- askUnlift
-    return $ MkWRaised $ unlift . unView
-
-viewLiftLifecycleWithUnlift :: ((View --> Lifecycle) -> Lifecycle a) -> View a
-viewLiftLifecycleWithUnlift call = MkView $ liftWithUnlift $ \unlift -> call $ unlift . unView
-
-viewHoistLifecycle :: (Lifecycle --> Lifecycle) -> View --> View
-viewHoistLifecycle f (MkView la) = MkView $ hoist f la
+viewAskUnliftLifecycle = do
+    MkWRaised unliftIO <- lift askUnliftIO
+    return $ MkWRaised $ hoistLifecycleBoth unliftIO
 
 viewSubLifecycle :: View --> View
-viewSubLifecycle = viewHoistLifecycle $ lift . runLifecycle
+viewSubLifecycle ma = lift $ runLifecycle ma
 
-viewWithUnliftAsync :: forall a. ((View --> IO) -> View a) -> View a
-viewWithUnliftAsync call =
-    liftIOWithUnlift $ \unlift -> unlift $ call $ unlift . viewLocalResourceContext emptyResourceContext
+viewAskUnliftIOAsync :: View (WRaised View IO)
+viewAskUnliftIOAsync = do
+    MkWRaised unliftIO <- askUnliftIO
+    return $ MkWRaised $ unliftIO . viewLocalResourceContext emptyResourceContext
 
 viewRunResource ::
     forall f r.
@@ -129,10 +102,12 @@ viewRunResourceContext resource call = do
     runResourceContext rc resource $ \rc' unlift ftt -> viewLocalResourceContext rc' $ call unlift ftt
 
 viewWithContext :: (ViewContext -> ViewContext) -> View --> View
-viewWithContext f (MkView ma) = MkView $ withReaderT f ma
+viewWithContext f ma = hoist (semiviewWithContext f) ma
 
 viewGetResourceContext :: View ResourceContext
-viewGetResourceContext = MkView $ asks vcResourceContext
+viewGetResourceContext = do
+    vc <- lift semiviewGetContext
+    return $ vcResourceContext vc
 
 viewLocalResourceContext :: ResourceContext -> View --> View
 viewLocalResourceContext rc = viewWithContext (\vc -> vc{vcResourceContext = rc})
@@ -141,7 +116,7 @@ viewWaitUpdates :: Model update -> View ()
 viewWaitUpdates model = liftIO $ taskWait $ modelUpdatesTask model
 
 runViewFromContext :: ViewContext -> View --> Lifecycle
-runViewFromContext vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> unlift $ view vc
+runViewFromContext vc ma = hoistLifecycleBoth (runSemiview vc) ma
 
 runView :: View --> Lifecycle
 runView = let

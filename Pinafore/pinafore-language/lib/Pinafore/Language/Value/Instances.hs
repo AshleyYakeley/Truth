@@ -28,6 +28,12 @@ instance MaybeRepresentational Know where
 instance HasVariance Know where
     type VarianceOf Know = 'Covariance
 
+instance MaybeRepresentational Semiview where
+    maybeRepresentational = Just Dict
+
+instance HasVariance Semiview where
+    type VarianceOf Semiview = 'Covariance
+
 instance MaybeRepresentational Action where
     maybeRepresentational = Just Dict
 

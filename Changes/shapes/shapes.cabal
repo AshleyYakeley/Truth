@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -68,7 +68,10 @@ library
       Control.Stream.Sink
       Control.Stream.Source
       Control.Stream
-      Control.CallbackLock
+      Control.Lock.IsLock
+      Control.Lock.LockableT
+      Control.Lock.Callback
+      Control.Lock.SingleThread
       Control.AsyncRunner
       Unsafe.Type
       Unsafe.IO

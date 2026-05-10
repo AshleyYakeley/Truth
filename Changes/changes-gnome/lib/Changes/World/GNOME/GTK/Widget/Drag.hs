@@ -4,8 +4,8 @@ module Changes.World.GNOME.GTK.Widget.Drag
 where
 
 {-
-import Shapes
-import GI.Gtk;
+import Import
+import Import.GI qualified as GI
 import Changes.Core
 import Changes.World.GNOME.GTK.Widget.GView
 

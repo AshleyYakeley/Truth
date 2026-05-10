@@ -16,7 +16,7 @@ asyncIORunner _ = do
         pushVal job =
             mVarRunStateT var $ do
                 oldTask <- get
-                newTask <-
+                (newTask, _) <-
                     lift
                         $ forkTask
                         $ do

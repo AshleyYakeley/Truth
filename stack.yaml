@@ -33,6 +33,7 @@ packages:
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
+# Haskell.nix does not recognise "snapshot"
 resolver: lts-24.31
 
 allow-newer: true
@@ -68,7 +69,10 @@ flags:
 
 docker:
     enable: true
-    image: "local-build"
+    image: "local-build_lts-24.31"
+    env:
+    - "LIBGL_ALWAYS_SOFTWARE=1"  # don't attempt to use DRM
+    - "GTK_A11Y=none"  # don't complain about lack of accessibility bus
 
 notify-if-nix-on-path: false
 recommend-stack-upgrade: false

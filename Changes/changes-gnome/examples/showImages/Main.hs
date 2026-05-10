@@ -29,16 +29,16 @@ main = do
                 $ do
                     -- fileReference :: FilePath -> Reference ByteStringEdit
                     imageRef <-
-                        gvLiftIONoUI
+                        gvLiftIOTrustMeNoUI
                             $ makeMemoryReference (Just $ MkSomeFor NoAlphaTrue8PixelType $ blankImage (100, 100) black)
                             $ \_ ->
                                 True
                     model <- gvLiftLifecycle $ makeReflectingModel imageRef
                     rec (_, closer) <-
-                            gvGetState
+                            lift
+                                $ gsvGetState
                                 $ createWindow
                                 $ let
-                                    wsPosition = WindowPositionCenter
                                     wsSize = (600, 600)
                                     wsCloseBoxAction :: GView 'Locked ()
                                     wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
@@ -66,9 +66,9 @@ main = do
                                                                 $ Just
                                                                 $ MkSomeFor NoAlphaTrue8PixelType image
                                                         return ()
-                                    wsContent :: AccelGroup -> GView 'Unlocked Widget
-                                    wsContent ag = do
-                                        mb <- createMenuBar ag $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
+                                    wsContent :: GView 'Unlocked Widget
+                                    wsContent = do
+                                        mb <- createMenuBar $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
                                         uic <- createImage $ mapModel toReadOnlyChangeLens model
                                         createLayout
                                             OrientationVertical

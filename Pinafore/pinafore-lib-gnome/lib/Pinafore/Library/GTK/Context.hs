@@ -8,11 +8,11 @@ import Pinafore.API
 import Shapes
 
 data OtherContext = MkOtherContext
-    { ocClipboard :: Model (WholeUpdate (Maybe Clip))
+    { ocClipboard :: Model (WholeUpdate [Media])
     }
 
 data LangContext = MkLangContext
-    { lcGTKContext :: GTKContext
+    { lcGTKContext :: GTKContext 'Unlocked
     , lcOtherContext :: OtherContext
     }
 

@@ -1,68 +1,119 @@
 module Changes.World.GNOME.GTK.Main
     ( runGTK
-    , runGTKView
+    -- , runGTKAsync
+    -- , runGTKAsyncView
     )
 where
 
-import Changes.Core
-import GI.GLib as GI hiding (String)
-import GI.Gtk as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data RunState
     = RSRun
-    | RSStop
+    | RSExit
+    | RSException SomeException
 
-attachedIdleSource :: Maybe MainContext -> Lifecycle GI.Source
-attachedIdleSource mmc = do
-    source <- idleSourceNew
-    _ <- sourceAttach source $ mmc
-    lifecycleOnClose $ sourceDestroy source
-    return source
+runInIdle :: Maybe GI.MainContext -> IO () -> IO ()
+runInIdle mmc call = do
+    source <- GI.idleSourceNew
+    GI.sourceSetPriority source GI.PRIORITY_DEFAULT_IDLE
+    GI.sourceSetCallback source $ do
+        call
+        return GI.SOURCE_REMOVE
+    _ <- GI.sourceAttach source $ mmc
+    return ()
 
-mainLoop :: CallbackLock -> MVar RunState -> Lifecycle ()
-mainLoop uiLock runVar = do
-    shouldRun <- mVarRunStateT runVar Shapes.get
+runVal :: (IO () -> IO ()) -> (IO --> IO)
+runVal run ioa = do
+    var <- newEmptyMVar
+    run $ do
+        a <- ioa
+        putMVar var a
+    takeMVar var
+
+runSafe :: (IO --> IO) -> (IO --> IO)
+runSafe run ioa = do
+    ra <- run $ tryExc ioa
+    fromResultExc ra
+
+mainLoop :: Maybe GI.MainContext -> MVar RunState -> IO ()
+mainLoop mmc runVar = do
+    shouldRun <- mVarRunStateT runVar get
     case shouldRun of
-        RSStop -> return ()
+        RSExit -> return ()
+        RSException ex -> throwExc ex
         RSRun -> do
-            mc <- mainContextDefault
-            source <- attachedIdleSource $ Just mc
-            sourceSetCallback source $ do
-                cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
-                return SOURCE_CONTINUE
             let
-                mainloop :: IO ()
-                mainloop = do
-                    sr <- mVarRunStateT runVar Shapes.get
+                go :: IO ()
+                go = do
+                    sr <- mVarRunStateT runVar get
                     case sr of
                         RSRun -> do
-                            _ <- mainContextIteration (Just mc) True
-                            mainloop
-                        RSStop -> return ()
-            liftIO mainloop
+                            _ <- GI.mainContextIteration mmc True
+                            go
+                        RSExit -> return ()
+                        RSException ex -> throwExc ex
+            go
 
-runGTK :: forall a. (GTKContext -> Lifecycle a) -> Lifecycle a
+runGTK :: MonadIO m => (GTKContext 'Unlocked -> m a) -> m a
 runGTK call = do
-    _ <- GI.init Nothing
-    gtkcLock <- liftIO newCallbackLock
+    (gtkContext, after) <- liftIO $ do
+        runVar <- newMVar RSRun
+        GI.init
+        mc <- GI.mainContextDefault
+        let
+            mmc = Just mc
+
+            runInThread :: IO --> IO
+            runInThread = runSafe $ runVal $ runInIdle mmc
+
+            gtkcExit :: IO ()
+            gtkcExit = mVarRunStateT runVar $ put RSExit
+
+            gtkcThrow :: SomeException -> IO ()
+            gtkcThrow ex = mVarRunStateT runVar $ put $ RSException ex
+        gtkcLock :: SingleThreadLock 'Unlocked <- liftIO $ newSingleThreadLock runInThread
+        (ondone, checkDone) <- lifecycleOnAllDone gtkcExit
+        let
+            gtkcExitOnClosed :: View ()
+            gtkcExitOnClosed = viewLiftLifecycle ondone
+
+            gtkContext :: GTKContext 'Unlocked
+            gtkContext = MkGTKContext{..}
+
+            after :: IO ()
+            after = do
+                checkDone
+                mainLoop mmc runVar
+        return (gtkContext, after)
+    a <- call gtkContext
+    liftIO after
+    return a
+
+{-
+runGTKAsync :: Lifecycle (GTKContext 'Unlocked)
+runGTKAsync = do
+    gtkcLock <- liftIO $ newSingleThreadLock runInThread
     runVar <- liftIO $ newMVar RSRun
     let
         gtkcExit :: IO ()
-        gtkcExit = mVarRunStateT runVar $ put RSStop
-    (ondone, checkdone) <- liftIO $ lifecycleOnAllDone gtkcExit
+        gtkcExit = mVarRunStateT runVar $ put RSExit
+        gtkcThrow :: SomeException -> IO ()
+        gtkcThrow ex = mVarRunStateT runVar $ put $ RSException ex
+    (ondone, _checkdone) <- liftIO $ lifecycleOnAllDone gtkcExit
     let
-        gtkcExitOnClosed :: View --> View
-        gtkcExitOnClosed ma = do
-            viewLiftLifecycle ondone
-            ma
-    hoistIO (cbRunLocked gtkcLock) $ do
-        a <- hoistIO (cbRunUnlocked gtkcLock) $ call MkGTKContext{..}
-        liftIO checkdone
-        mainLoop gtkcLock runVar
-        return a
+        gtkcExitOnClosed :: View ()
+        gtkcExitOnClosed = viewLiftLifecycle ondone
+    initDoneVar <- liftIO newEmptyMVar
+    (task, _threadId) <- forkOSTask $ runLocked gtkcLock $ \lock' -> do
+        GI.init
+        liftIO $ putMVar initDoneVar ()
+        mainLoop lock' runVar
+    liftIO $ takeMVar initDoneVar
+    lifecycleOnClose $ runLifecycle $ taskWait task
+    return MkGTKContext{..}
 
-runGTKView :: forall a. (GTKContext -> View a) -> View a
-runGTKView call = viewLiftLifecycleWithUnlift $ \unlift -> runGTK $ \gtkc -> unlift $ call gtkc
+runGTKAsyncView :: View (GTKContext 'Unlocked)
+runGTKAsyncView = viewLiftLifecycle runGTKAsync
+-}
