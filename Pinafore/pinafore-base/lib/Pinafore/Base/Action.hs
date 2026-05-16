@@ -12,7 +12,7 @@ module Pinafore.Base.Action
     , actionLiftLifecycle
     , actionGetCreateViewUnlift
     , actionResourceContext
-    , actionModelGet
+    , actionModelRead
     , actionModelPush
     , actionKnow
     , knowAction
@@ -91,10 +91,10 @@ actionGetCreateViewUnlift = return $ MkWRaised $ \(MkAction ra) -> ra
 actionResourceContext :: Action ResourceContext
 actionResourceContext = actionLiftView viewGetResourceContext
 
-actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Action t
-actionModelGet model rm = do
+actionModelRead :: WModel update -> ReadM (UpdateReader update) t -> Action t
+actionModelRead model rm = do
     rc <- actionResourceContext
-    liftIO $ wModelGet rc model rm
+    liftIO $ wModelRead rc model rm
 
 actionModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> Action ()
 actionModelPush model edits = do
