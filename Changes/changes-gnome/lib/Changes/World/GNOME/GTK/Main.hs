@@ -24,19 +24,6 @@ runInIdle mmc call = do
     _ <- GI.sourceAttach source $ mmc
     return ()
 
-runVal :: (IO () -> IO ()) -> (IO --> IO)
-runVal run ioa = do
-    var <- newEmptyMVar
-    run $ do
-        a <- ioa
-        putMVar var a
-    takeMVar var
-
-runSafe :: (IO --> IO) -> (IO --> IO)
-runSafe run ioa = do
-    ra <- run $ tryExc ioa
-    fromResultExc ra
-
 mainLoop :: Maybe GI.MainContext -> MVar RunState -> IO ()
 mainLoop mmc runVar = do
     shouldRun <- mVarRunStateT runVar get
@@ -66,7 +53,7 @@ runGTK call = do
             mmc = Just mc
 
             runInThread :: IO --> IO
-            runInThread = runSafe $ runVal $ runInIdle mmc
+            runInThread = pusherWait $ runInIdle mmc
 
             gtkcExit :: IO ()
             gtkcExit = mVarRunStateT runVar $ put RSExit

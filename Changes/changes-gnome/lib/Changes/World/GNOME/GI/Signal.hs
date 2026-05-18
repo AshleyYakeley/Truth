@@ -23,7 +23,7 @@ withSignalsBlocked obj (c : cc) = withSignalBlocked obj c . withSignalsBlocked o
 class GTKCallbackType t where
     type CallbackReturn t :: Type
     type CallbackViewLifted t :: Type
-    gCallbackUnlift :: GTKAsyncUnlift (CallbackReturn t) -> CallbackViewLifted t -> t
+    gCallbackUnlift :: GTKCallbackUnlift (CallbackReturn t) -> CallbackViewLifted t -> t
 
 instance GTKCallbackType (IO r) where
     type CallbackReturn (IO r) = r
@@ -55,7 +55,7 @@ gvOnSignal ::
     CallbackViewLifted (GI.HaskellCallbackType info) ->
     GView 'Locked GI.SignalHandlerId
 gvOnSignal defaultVal object signal call = do
-    shid <- gvWithUnliftLockedAsync defaultVal $ \unlift -> GI.on object signal $ gCallbackUnlift unlift call
+    shid <- gvWithCallbackUnlift defaultVal $ \unlift -> GI.on object signal $ gCallbackUnlift unlift call
     gvOnCloseDisconnectSignal object shid
     return shid
 
@@ -67,6 +67,6 @@ gvAfterSignal ::
     CallbackViewLifted (GI.HaskellCallbackType info) ->
     GView 'Locked GI.SignalHandlerId
 gvAfterSignal defaultVal object signal call = do
-    shid <- gvWithUnliftLockedAsync defaultVal $ \unlift -> GI.after object signal $ gCallbackUnlift unlift call
+    shid <- gvWithCallbackUnlift defaultVal $ \unlift -> GI.after object signal $ gCallbackUnlift unlift call
     gvOnCloseDisconnectSignal object shid
     return shid

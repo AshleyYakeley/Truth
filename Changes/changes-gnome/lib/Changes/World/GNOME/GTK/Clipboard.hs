@@ -35,12 +35,12 @@ getProviderContentsTask provider mimeType = do
     (putVal, cancellable, stask) <- mkCancellableTask
     stream <- GI.memoryOutputStreamNewResizable
     let
-        callback :: GTKAsyncUnlift () -> GI.AsyncReadyCallback
+        callback :: GTKCallbackUnlift () -> GI.AsyncReadyCallback
         callback unlift _ result = unlift $ do
             GI.contentProviderWriteMimeTypeFinish provider result
             bs <- memoryOutputStreamGetByteString stream
             putVal bs
-    gvWithUnliftLockedAsync () $ \unlift -> GI.contentProviderWriteMimeTypeAsync provider mimeType stream 0 (Just cancellable) (Just $ callback unlift)
+    gvWithCallbackUnlift () $ \unlift -> GI.contentProviderWriteMimeTypeAsync provider mimeType stream 0 (Just cancellable) (Just $ callback unlift)
     return stask
 
 getProviderContents ::

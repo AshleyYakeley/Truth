@@ -1,6 +1,7 @@
 module Control.Lock.LockableT
     ( LockableT
     , runLockableT
+    , mkLockableT
     , lockableTGetLock
     , lockableTRunLocked
     , lockableTRunUnlocked
@@ -42,6 +43,9 @@ instance MonadTransUnlift (LockableT lock ls) where
 
 runLockableT :: lock ls -> LockableT lock ls m a -> m a
 runLockableT lock (MkLockableT rma) = runReaderT rma lock
+
+mkLockableT :: (lock ls -> m a) -> LockableT lock ls m a
+mkLockableT rma = MkLockableT $ ReaderT rma
 
 lockableTGetLock :: forall lock ls m. Monad m => LockableT lock ls m (lock ls)
 lockableTGetLock = MkLockableT ask

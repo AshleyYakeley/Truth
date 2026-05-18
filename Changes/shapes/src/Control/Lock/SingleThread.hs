@@ -1,5 +1,7 @@
-module Control.Lock.SingleThread (SingleThreadLock, newSingleThreadLock) where
+module Control.Lock.SingleThread (SingleThreadLock, newSingleThreadLock, runUnlockedIOAllowAsync) where
 
+import Control.AsyncRunner
+import Control.AsyncRunner.ThreadBound
 import Control.Lock.IsLock
 import Shapes.Import
 
@@ -26,3 +28,15 @@ newSingleThreadLock :: (IO --> IO) -> IO (SingleThreadLock 'Unlocked)
 newSingleThreadLock runInThread = do
     thisThread <- myThreadId
     return $ MkUnlockedSingleTheadLock runInThread thisThread
+
+runUnlockedIOAllowAsync :: forall a. SingleThreadLock 'Locked -> (SingleThreadLock 'Unlocked -> IO a) -> IO a
+runUnlockedIOAllowAsync (MkLockedSingleTheadLock _) call = do
+    thisThread <- myThreadId
+    asyncIORunnerThreadBound $ \pusher ->
+        let
+            runInThread :: IO --> IO
+            runInThread = pusherWait pusher
+
+            newLock :: SingleThreadLock 'Unlocked
+            newLock = MkUnlockedSingleTheadLock runInThread thisThread
+            in call newLock

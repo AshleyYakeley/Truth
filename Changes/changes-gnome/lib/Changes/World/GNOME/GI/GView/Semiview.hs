@@ -10,13 +10,12 @@ module Changes.World.GNOME.GI.GView.Semiview
     , gsvLiftIOTrustMeNoUI
     , gsvRunLocked
     , gsvRunUnlocked
+    , gsvRunUnlockedAllowAsync
     , gsvRelock
     , gsvGetContext
     , gsvLiftSemiviewAny
     , gsvLiftSemiview
     , gsvLiftSemiviewWithUnlift
-    , gsvLiftRelock
-    , gsvUnliftRelock
     , gsvSleep
     )
 where
@@ -54,6 +53,9 @@ runGSemiviewOnGTKThread ctx (MkGSemiview ma) = runLockableT ctx ma
 runGSemiview :: GTKContext 'Unlocked -> GSemiview 'Unlocked --> Semiview
 runGSemiview = runGSemiviewOnGTKThread
 
+mkGSemiView :: (GTKContext ls -> Semiview a) -> GSemiview ls a
+mkGSemiView rma = MkGSemiview $ mkLockableT rma
+
 gsvLiftIO :: IO --> GSemiview 'Locked
 gsvLiftIO = liftIO
 
@@ -65,6 +67,12 @@ gsvRunLocked (MkGSemiview ma) = MkGSemiview $ lockableTRunLocked ma
 
 gsvRunUnlocked :: GSemiview 'Unlocked --> GSemiview 'Locked
 gsvRunUnlocked (MkGSemiview ma) = MkGSemiview $ lockableTRunUnlocked ma
+
+gsvRunUnlockedAllowAsync :: GSemiview 'Unlocked --> GSemiview 'Locked
+gsvRunUnlockedAllowAsync gsva = mkGSemiView $ \lockedContext ->
+    tunnelIO $ \tun ->
+        runUnlockedIOAllowAsync (gtkcLock lockedContext) $ \unlockedSTL ->
+            tun $ runGSemiview (gtkContextSetLock unlockedSTL lockedContext) gsva
 
 gsvRelock ::
     forall lsfrom lsto.
@@ -91,18 +99,6 @@ gsvLiftSemiview = gsvLiftSemiviewAny
 -- | Lift unlocked, because Semiview may be run by any thread.
 gsvLiftSemiviewWithUnlift :: forall a. ((GSemiview 'Unlocked --> Semiview) -> Semiview a) -> GSemiview 'Unlocked a
 gsvLiftSemiviewWithUnlift call = MkGSemiview $ liftWithUnlift $ \unlift -> call $ unlift . unGSemiview
-
-gsvLiftRelock ::
-    forall lsfrom lsto.
-    (Is LockStateType lsfrom, Is LockStateType lsto) =>
-    Semiview --> GSemiview lsto
-gsvLiftRelock = gsvRelock @lsfrom @lsto . gsvLiftSemiviewAny @lsfrom
-
-gsvUnliftRelock ::
-    forall lsfrom lsto.
-    (Is LockStateType lsfrom, Is LockStateType lsto) =>
-    GTKContext lsto -> GSemiview lsfrom --> Semiview
-gsvUnliftRelock ctx = runGSemiviewOnGTKThread ctx . gsvRelock @lsfrom @lsto
 
 gsvSleep :: Int -> GSemiview ls ()
 gsvSleep mus = gsvLiftIOTrustMeNoUI $ threadDelay mus

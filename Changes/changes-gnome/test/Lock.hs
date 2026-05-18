@@ -67,14 +67,15 @@ lockTests =
             "lock-unlock-onclose-unlocked-lock"
             (gvRunLocked $ gvRunUnlocked $ gvOnClose $ gsvRunLocked $ return ())
             noAction
-        , let
+        , testMARK $ let
             setup :: GView 'Unlocked ()
             setup = do
                 var <- gvLiftIOTrustMeNoUI newEmptyMVar
                 gtkc <- gvGetContext
                 _tid <-
                     gvRunLocked
-                        $ gvWithUnliftLockedAsync ()
+                        $ gvRunUnlockedAllowAsync
+                        $ gvWithAsyncUnlift ()
                         $ \unlift -> gvLiftIOTrustMeNoUI
                             $ forkIO
                             $ runLockedIO gtkc
@@ -84,24 +85,6 @@ lockTests =
                                     $ putMVar var ()
                 gvLiftIOTrustMeNoUI $ takeMVar var
             in lockTest "on" setup noAction
-        , let
-            setup :: GView 'Unlocked ()
-            setup = do
-                var <- gvLiftIOTrustMeNoUI newEmptyMVar
-                gtkc <- gvGetContext
-                _tid <-
-                    gvRunLocked
-                        $ gvWithUnliftLockedAsync ()
-                        $ \unlift -> gvLiftIOTrustMeNoUI
-                            $ forkIO
-                            $ runLockedIO gtkc
-                            $ \_ ->
-                                unlift
-                                    $ gvRunUnlocked
-                                    $ gvLiftIOTrustMeNoUI
-                                    $ putMVar var ()
-                gvLiftIOTrustMeNoUI $ takeMVar var
-            in lockTest "on-unlock" setup noAction
         , let
             setup :: GView 'Unlocked (GSemiview 'Unlocked ())
             setup =

@@ -1,7 +1,6 @@
 module Changes.World.GNOME.GI.GView.Context
     ( GTKContext (..)
-    --    , gtkContextToLocked
-    --    , gtkContextRelock
+    , gtkContextSetLock
     )
 where
 
@@ -14,31 +13,22 @@ data GTKContext (ls :: LockState) = MkGTKContext
     , gtkcExitOnClosed :: View ()
     }
 
+gtkContextSetLock :: SingleThreadLock lsb -> GTKContext lsa -> GTKContext lsb
+gtkContextSetLock lock gtc =
+    MkGTKContext
+        { gtkcLock = lock
+        , gtkcExit = gtkcExit gtc
+        , gtkcThrow = gtkcThrow gtc
+        , gtkcExitOnClosed = gtkcExitOnClosed gtc
+        }
+
 instance IsLock GTKContext where
     runLockedIO gtc call =
-        runLockedIO (gtkcLock gtc) $ \lock' ->
-            call
-                $ MkGTKContext
-                    { gtkcLock = lock'
-                    , gtkcExit = gtkcExit gtc
-                    , gtkcThrow = gtkcThrow gtc
-                    , gtkcExitOnClosed = gtkcExitOnClosed gtc
-                    }
+        runLockedIO (gtkcLock gtc) $ \lock ->
+            call $ gtkContextSetLock lock gtc
     runUnlockedIO gtc call =
-        runUnlockedIO (gtkcLock gtc) $ \lock' ->
-            call
-                $ MkGTKContext
-                    { gtkcLock = lock'
-                    , gtkcExit = gtkcExit gtc
-                    , gtkcThrow = gtkcThrow gtc
-                    , gtkcExitOnClosed = gtkcExitOnClosed gtc
-                    }
+        runUnlockedIO (gtkcLock gtc) $ \lock ->
+            call $ gtkContextSetLock lock gtc
     provideUnlockedIO gtc = do
-        lock' <- provideUnlockedIO $ gtkcLock gtc
-        return
-            $ MkGTKContext
-                { gtkcLock = lock'
-                , gtkcExit = gtkcExit gtc
-                , gtkcThrow = gtkcThrow gtc
-                , gtkcExitOnClosed = gtkcExitOnClosed gtc
-                }
+        lock <- provideUnlockedIO $ gtkcLock gtc
+        return $ gtkContextSetLock lock gtc

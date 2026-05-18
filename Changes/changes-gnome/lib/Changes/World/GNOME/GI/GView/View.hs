@@ -21,12 +21,15 @@ module Changes.World.GNOME.GI.GView.View
     , gvLiftLifecycle
     , gvRunLocked
     , gvRunUnlocked
+    , gvRunUnlockedAllowAsync
     , gvRunLocked'
     , gvRunLockedThen
     , gvExitUI
     , gvExitOnClosed
+    , GTKCallbackUnlift
+    , gvWithCallbackUnlift
     , GTKAsyncUnlift
-    , gvWithUnliftLockedAsync
+    , gvWithAsyncUnlift
     , gvNewEditSource
     , gvBindModelUpdates
     , gvBindModel
@@ -90,6 +93,11 @@ gvGetCloser gv = trustMeNoUI @ls $ trustMeNoUI @'Unlocked $ lifecycleGetCloser g
 runGView :: GTKContext 'Unlocked -> GView 'Unlocked --> View
 runGView ctx = hoistLifecycleBoth $ runGSemiview ctx
 
+runGViewOnGTKThread :: GTKContext 'Locked -> GView 'Locked --> View
+runGViewOnGTKThread ctxl gvl = do
+    ctxu <- provideUnlocked ctxl
+    hoist (runGSemiviewOnGTKThread ctxl) $ hoistLifecycleClose (runGSemiview ctxu) gvl
+
 gvLiftIO :: IO --> GView 'Locked
 gvLiftIO = liftIO
 
@@ -151,6 +159,9 @@ gvRunLocked = hoist gsvRunLocked
 gvRunUnlocked :: GView 'Unlocked --> GView 'Locked
 gvRunUnlocked = hoist gsvRunUnlocked
 
+gvRunUnlockedAllowAsync :: GView 'Unlocked --> GView 'Locked
+gvRunUnlockedAllowAsync = hoist gsvRunUnlockedAllowAsync
+
 gvRunLocked' ::
     forall ls.
     Is LockStateType ls =>
@@ -165,25 +176,37 @@ gvRunLockedThen mma = do
     ma <- gvRunLocked mma
     ma
 
-type GTKAsyncUnlift def = GView 'Locked def -> IO def
+type GTKCallbackUnlift a = GView 'Locked a -> IO a
 
-gvUnliftRelock ::
-    GTKContext 'Locked ->
-    GView 'Locked --> View
-gvUnliftRelock ctx = hoist (gsvUnliftRelock ctx) . hoistLifecycleClose (gsvUnliftRelock ctx)
-
-gvWithUnliftLockedAsync ::
+gvWithCallbackUnlift ::
     forall def a.
     def ->
-    (GTKAsyncUnlift def -> GView 'Locked a) ->
+    (GTKCallbackUnlift def -> GView 'Locked a) ->
     GView 'Locked a
-gvWithUnliftLockedAsync defaultVal call = do
+gvWithCallbackUnlift defaultVal call = do
+    ctxl <- gvGetContext
+    MkWRaised unlift <- gvLiftViewAny viewAskUnliftIOAsync
+    call
+        $ handleExc (\ex -> gtkcThrow ctxl ex >> return defaultVal)
+        . unlift
+        . runGViewOnGTKThread ctxl
+
+type GTKAsyncUnlift a = GView 'Unlocked a -> IO a
+
+gvWithAsyncUnlift ::
+    forall ls def a.
+    Is LockStateType ls =>
+    def ->
+    (GTKAsyncUnlift def -> GView ls a) ->
+    GView ls a
+gvWithAsyncUnlift defaultVal call = do
     ctx <- gvGetContext
+    ctxu <- trustMeNoUI @ls $ provideUnlocked ctx
     MkWRaised unlift <- gvLiftViewAny viewAskUnliftIOAsync
     call
         $ handleExc (\ex -> gtkcThrow ctx ex >> return defaultVal)
         . unlift
-        . gvUnliftRelock ctx
+        . runGView ctxu
 
 gvNewEditSource :: GView ls EditSource
 gvNewEditSource = gvLiftIOTrustMeNoUI newEditSource
