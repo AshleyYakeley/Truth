@@ -64,10 +64,10 @@ finiteSetChangeLens eqv subj = let
         m [WholeUpdate Bool]
     clUpdate (KeyUpdateItem _ update) _ = never update
     clUpdate (KeyUpdateDelete key) _
-        | equivalent eqv key subj = return [MkWholeReaderUpdate False]
+        | getEquivalence eqv key subj = return [MkWholeReaderUpdate False]
     clUpdate (KeyUpdateDelete _) _ = return []
     clUpdate (KeyUpdateInsertReplace key) _
-        | equivalent eqv key subj = return [MkWholeReaderUpdate True]
+        | getEquivalence eqv key subj = return [MkWholeReaderUpdate True]
     clUpdate (KeyUpdateInsertReplace _) _ = return []
     clUpdate KeyUpdateClear _ = return [MkWholeReaderUpdate False]
     clPutEdit ::

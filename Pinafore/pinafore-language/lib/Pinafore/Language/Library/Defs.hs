@@ -392,7 +392,7 @@ equivalenceEntries ::
     Equivalence a ->
     [LibraryStuff]
 equivalenceEntries equiv =
-    [headingBDS "Eq" "" [valBDS "==" "Equal." $ equivalent equiv, valBDS "/=" "Not equal." $ notEquivalent equiv]]
+    [headingBDS "Eq" "" [valBDS "==" "Equal." $ getEquivalence equiv, valBDS "/=" "Not equal." $ notEquivalent equiv]]
 
 eqEntries ::
     forall (a :: Type).

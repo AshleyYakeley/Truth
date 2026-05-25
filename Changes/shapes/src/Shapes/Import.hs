@@ -21,6 +21,7 @@ import Data.Either as I
 import Data.Eq as I
 import Data.Foldable as I hiding (find)
 import Data.Functor.Compose as I
+import Data.Functor.Contravariant as I hiding (Predicate (..))
 import Data.Functor.Identity as I
 import Data.Functor.Product as I
 import Data.Int as I
@@ -78,9 +79,6 @@ import Data.Constraint as I (Dict (..), withDict, (:-) (..))
 import Data.Containers as I
 import Data.MonoTraversable as I
 import Data.Sequences as I hiding (catMaybes, filter, filterM)
-
--- contravariant
-import Data.Functor.Contravariant as I (Contravariant (..))
 
 -- comonad
 import Control.Comonad as I

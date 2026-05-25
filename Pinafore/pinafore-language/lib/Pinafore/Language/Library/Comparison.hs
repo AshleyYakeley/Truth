@@ -20,14 +20,14 @@ comparisonLibSection =
                 "Equivalence"
                 ""
                 (qSomeGroundType @_ @Equivalence)
-                [valPatBDS "Mk" "" (MkEquivalence @A) $ PureFunction $ pure $ \(MkEquivalence @A o) -> (o, ())]
+                [valPatBDS "Mk" "" (Equivalence @A) $ PureFunction $ pure $ \(Equivalence @A o) -> (o, ())]
             , namespaceBDS "Equivalence"
                 $ monoidEntries @(Equivalence A)
                 <> [ valBDS
                         "map"
                         "Map an equivalence by a function"
                         (contramap :: (B -> A) -> Equivalence A -> Equivalence B)
-                   , addNameInRootBDS $ valBDS "eqBy" "Equivalent." $ equivalent @A
+                   , addNameInRootBDS $ valBDS "eqBy" "Equivalent." $ getEquivalence @A
                    , addNameInRootBDS $ valBDS "neBy" "Not equivalent." $ notEquivalent @A
                    ]
             ]

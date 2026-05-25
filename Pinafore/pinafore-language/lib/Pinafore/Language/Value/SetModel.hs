@@ -19,7 +19,7 @@ instance Contravariant LangSetModel where
     contramap :: forall a b. (a -> b) -> LangSetModel b -> LangSetModel a
     contramap ab (MkLangSetModel eqb sv) = let
         eqa = contramap ab eqb
-        matchba b a = equivalent eqb b (ab a)
+        matchba b a = getEquivalence eqb b (ab a)
         mapset :: ReaderSet (SetReader b) -> ReaderSet (SetReader a)
         mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
             rset $ MkTupleUpdateReader (MkFunctionSelector $ ab a) ReadWhole
@@ -134,7 +134,7 @@ langSetModelMember (MkLangSetModel eq sv) aref = let
             return
                 $ case ka of
                     Known a'
-                        | equivalent eq a a' -> pure $ MkWholeUpdate $ Known b
+                        | getEquivalence eq a a' -> pure $ MkWholeUpdate $ Known b
                     _ -> []
         clUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
             ka <- getArg mr
