@@ -30,7 +30,7 @@ import Data.List as I (cycle, iterate, nub, nubBy, zip, (++), (\\))
 import Data.List qualified
 import Data.List.NonEmpty as I (NonEmpty (..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
-import Data.Monoid as I (Alt (..), Monoid (..))
+import Data.Monoid as I (Alt (..), Ap (..), Monoid (..))
 import Data.Ord as I
 import Data.Semigroup as I hiding (Product (..))
 import Data.String as I hiding (lines, unlines, unwords, words)
