@@ -8,8 +8,14 @@ newtype PushPull m a = MkPushPull (PairType (Op (Ap m ())) (Ap m) a)
 ppPush :: PushPull m a -> a -> m ()
 ppPush (MkPushPull (MkPairType (Op am) _)) a = getAp $ am a
 
+ppMaybePush :: Alternative m => PushPull m a -> a -> m ()
+ppMaybePush pp a = ppPush pp a <|> pure ()
+
 ppPull :: PushPull m a -> m a
 ppPull (MkPushPull (MkPairType _ (Ap ma))) = ma
+
+ppMaybePull :: Alternative m => PushPull m a -> m (Maybe a)
+ppMaybePull pp = fmap Just (ppPull pp) <|> pure Nothing
 
 mkPushPull :: (a -> m ()) -> m a -> PushPull m a
 mkPushPull push pull = MkPushPull $ MkPairType (Op $ \a -> Ap $ push a) (Ap pull)

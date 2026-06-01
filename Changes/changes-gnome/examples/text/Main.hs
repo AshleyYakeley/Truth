@@ -123,7 +123,7 @@ main = do
                                         $ gvRunUnlocked
                                         $ gvCloseState closer
                                     , SeparatorMenuEntry
-                                    , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                    , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                                     ]
                                 ]
                             extraUI :: SaveActions -> UndoHandler -> AppUI
@@ -151,7 +151,7 @@ main = do
                                             $ gvRunUnlocked
                                             $ gvCloseState closer
                                         , SeparatorMenuEntry
-                                        , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                        , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                                         ]
                                    , SubMenuEntry
                                         "Edit"

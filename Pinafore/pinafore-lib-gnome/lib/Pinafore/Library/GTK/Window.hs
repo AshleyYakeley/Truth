@@ -69,8 +69,10 @@ openWindow lc (w, h) title (MkLangWidget widget) =
                                     }
                         in MkWindowSpec{..}
 
-exitUI :: LangContext -> View ()
-exitUI lc = runGView (lcGTKContext lc) $ gvExitUI
+exitUI :: LangContext -> ActionException -> View ()
+exitUI lc aex = runGView (lcGTKContext lc) $ gvExitUI $ case aex of
+    ExActionException ex -> FailureResult ex
+    StopActionException -> SuccessResult ()
 
 showWindow :: LangWindow -> View ()
 showWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ #present lwWindow
@@ -87,15 +89,6 @@ run call =
                 $ call
                 $ MkLangContext{lcGTKContext = gtkc, lcOtherContext = MkOtherContext{ocClipboard = clipboard}}
 
-{-
-runAsync :: Action LangContext
-runAsync =
-    actionLiftView $ do
-        gtkc <- runGTKAsyncView
-        clipboard <- runGView gtkc getTheClipboardModel
-        pure $ MkLangContext{lcGTKContext = gtkc, lcOtherContext = MkOtherContext{ocClipboard = clipboard}}
--}
-
 windowStuff :: LibraryStuff
 windowStuff =
     headingBDS
@@ -104,15 +97,9 @@ windowStuff =
         [ typeBDS "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
         , valBDS
             "run"
-            "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed."
+            "Run GTK with the provided function, then wait until all windows are closed or `exit` is called."
             $ run @A
-        , {-
-                  , valBDS
-                      "runAsync"
-                      "Run the GTK event loop in a separate thread until all windows are closed."
-                      runAsync
-          -}
-          typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
+        , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
             "Window"
             [ valBDS "open" "Open a new window with this size, title and widget." openWindow

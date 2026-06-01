@@ -6,10 +6,12 @@ where
 -- shapes
 import Control.Applicative.Wrapped as I
 import Control.AsyncRunner as I
+import Control.AsyncRunner.ThreadBound as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
 import Control.Category.Lifted as I
 import Control.Clock as I
+import Control.Concurrent.TPieceVar as I
 import Control.FixIO as I
 import Control.Lock.Callback as I
 import Control.Lock.IsLock as I

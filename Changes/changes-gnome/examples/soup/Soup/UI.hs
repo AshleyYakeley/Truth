@@ -123,7 +123,7 @@ soupWindow newWindow dirpath = do
                 [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W')
                     $ gvRunUnlocked
                     $ gvCloseState cc
-                , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                 ]
             , SubMenuEntry
                 "Item"

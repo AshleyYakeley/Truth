@@ -8,8 +8,8 @@ import Import
 
 data GTKContext (ls :: LockState) = MkGTKContext
     { gtkcLock :: SingleThreadLock ls
-    , gtkcExit :: IO ()
-    , gtkcThrow :: SomeException -> IO ()
+    , gtkcExit :: Result (Exc IO) () -> IO ()
+    , gtkcWaitForExit :: IO (Result (Exc IO) ())
     , gtkcExitOnClosed :: View ()
     }
 
@@ -18,7 +18,7 @@ gtkContextSetLock lock gtc =
     MkGTKContext
         { gtkcLock = lock
         , gtkcExit = gtkcExit gtc
-        , gtkcThrow = gtkcThrow gtc
+        , gtkcWaitForExit = gtkcWaitForExit gtc
         , gtkcExitOnClosed = gtkcExitOnClosed gtc
         }
 

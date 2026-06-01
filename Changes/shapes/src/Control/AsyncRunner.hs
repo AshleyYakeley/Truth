@@ -1,5 +1,7 @@
 module Control.AsyncRunner
     ( Pusher
+    , forkIOPusher
+    , forkOSPusher
     , pusherWait
     , asyncWaitRunner
     , asyncRunner
@@ -12,6 +14,12 @@ import Control.Task
 import Shapes.Import
 
 type Pusher = IO () -> IO ()
+
+forkIOPusher :: Pusher
+forkIOPusher iou = void $ forkIO iou
+
+forkOSPusher :: Pusher
+forkOSPusher iou = void $ forkOS iou
 
 pusherWaitRaw :: Pusher -> (IO --> IO)
 pusherWaitRaw run ioa = do

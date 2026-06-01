@@ -26,7 +26,12 @@ gobjectEmitClicked obj = do
             return ()
 
 getWindows :: GView 'Locked [GI.Window]
-getWindows = pure []
+getWindows = gvLiftIO $ do
+    lmodel <- GI.windowGetToplevels
+    n <- GI.listModelGetNItems lmodel
+    forf (zltList n) $ \i -> do
+        mobj <- GI.listModelGetItem lmodel i
+        forf mobj $ \obj -> GI.castTo GI.Window obj
 
 getVisibleWindows :: GView 'Locked [GI.Window]
 getVisibleWindows = do

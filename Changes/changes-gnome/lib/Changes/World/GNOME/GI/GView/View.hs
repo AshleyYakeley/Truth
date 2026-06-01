@@ -140,10 +140,10 @@ gvAskUnliftLifecycle = do
     vl <- gvLiftView viewAskUnliftLifecycle
     return $ vl . gv
 
-gvExitUI :: GView ls ()
-gvExitUI = do
+gvExitUI :: Result (Exc IO) () -> GView ls ()
+gvExitUI ra = do
     gtkc <- gvGetContext
-    gvLiftIOTrustMeNoUI $ gtkcExit gtkc
+    gvLiftIOTrustMeNoUI $ gtkcExit gtkc ra
 
 gvExitOnClosed :: GView 'Unlocked ()
 gvExitOnClosed = do
@@ -187,7 +187,7 @@ gvWithCallbackUnlift defaultVal call = do
     ctxl <- gvGetContext
     MkWRaised unlift <- gvLiftViewAny viewAskUnliftIOAsync
     call
-        $ handleExc (\ex -> gtkcThrow ctxl ex >> return defaultVal)
+        $ handleExc (\ex -> gtkcExit ctxl (FailureResult ex) >> return defaultVal)
         . unlift
         . runGViewOnGTKThread ctxl
 
@@ -204,7 +204,7 @@ gvWithAsyncUnlift defaultVal call = do
     ctxu <- trustMeNoUI @ls $ provideUnlocked ctx
     MkWRaised unlift <- gvLiftViewAny viewAskUnliftIOAsync
     call
-        $ handleExc (\ex -> gtkcThrow ctx ex >> return defaultVal)
+        $ handleExc (\ex -> gtkcExit ctx (FailureResult ex) >> return defaultVal)
         . unlift
         . runGView ctxu
 

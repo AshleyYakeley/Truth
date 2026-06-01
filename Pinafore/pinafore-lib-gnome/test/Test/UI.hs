@@ -32,8 +32,8 @@ runUIAction testaction script =
                                 $ runGView (lcGTKContext lc)
                                 $ do
                                     lift $ gsvSleep 50000
-                                    testaction
-                                    gvExitUI
+                                    ra <- tryExc testaction
+                                    gvExitUI ra
                                     gvLiftIOTrustMeNoUI $ putMVar donevar ()
                     return ()
             liftIO $ takeMVar donevar
