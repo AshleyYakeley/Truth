@@ -21,8 +21,8 @@ instance EditApplicative WReference where
 instance FloatingEditApplicative WReference where
     eaFloatMap rc flens (MkWReference ref) = liftIO $ fmap MkWReference $ floatMapReference rc flens ref
 
-wReferenceGet :: ResourceContext -> WReference update -> ReadM (UpdateReader update) t -> IO t
-wReferenceGet rc (MkWReference ref) readm = runResource rc ref $ \asub -> unReadM readm $ refRead asub
+wReferenceRead :: ResourceContext -> WReference update -> ReadM (UpdateReader update) t -> IO t
+wReferenceRead rc (MkWReference ref) readm = runResource rc ref $ \asub -> unReadM readm $ refRead asub
 
 wReferencePush :: ResourceContext -> WReference update -> NonEmpty (UpdateEdit update) -> IO Bool
 wReferencePush rc (MkWReference ref) edits = runResource rc ref $ \asub -> pushEdit noEditSource $ refEdit asub edits

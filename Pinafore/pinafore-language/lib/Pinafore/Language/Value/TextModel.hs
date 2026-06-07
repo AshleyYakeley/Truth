@@ -4,8 +4,9 @@ import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 
-newtype LangTextModel
-    = MkLangTextModel (WModel (StringUpdate Text))
+newtype LangTextModel = MkLangTextModel
+    { unLangTextModel :: WModel (StringUpdate Text)
+    }
 
 instance IsInvertibleModel LangTextModel where
     invertibleModelLens f (MkLangTextModel model) = fmap MkLangTextModel $ wInvertibleModelLens f model
@@ -28,16 +29,16 @@ langTextModelToWholeModel (MkLangTextModel model) =
     MutableLangWholeModel $ eaMap (biToKnowWhole . singleBiChangeLens . convertChangeLens) model
 
 langTextModelGetLength :: LangTextModel -> Action SequencePoint
-langTextModelGetLength (MkLangTextModel model) = actionModelGet model $ readM StringReadLength
+langTextModelGetLength (MkLangTextModel model) = actionModelRead model $ readM StringReadLength
 
 langTextModelGet :: LangTextModel -> Action Text
-langTextModelGet (MkLangTextModel model) = actionModelGet model $ readableToSubject readM
+langTextModelGet (MkLangTextModel model) = actionModelRead model $ readableToSubject readM
 
 langTextModelSet :: Text -> LangTextModel -> Action ()
 langTextModelSet t (MkLangTextModel model) = actionModelPush model $ pure $ StringReplaceWhole t
 
 langTextModelGetSection :: SequenceRun -> LangTextModel -> Action Text
-langTextModelGetSection run (MkLangTextModel model) = actionModelGet model $ readM $ StringReadSection run
+langTextModelGetSection run (MkLangTextModel model) = actionModelRead model $ readM $ StringReadSection run
 
 langTextModelSetSection :: SequenceRun -> Text -> LangTextModel -> Action ()
 langTextModelSetSection run t (MkLangTextModel model) = actionModelPush model $ pure $ StringReplaceSection run t
