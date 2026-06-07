@@ -191,6 +191,9 @@
             shellInputs =
                 {
                   buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                  shellHook = ''
+                    export PATH="$PWD/bin:$PATH"
+                  '';
                 };
             in {
               default = pkgs.pinaforeProject.shellFor shellInputs;
