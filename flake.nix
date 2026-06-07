@@ -5,7 +5,7 @@
       self.submodules = true;
       nixpkgs =
         {
-          follows = "haskellNix/nixpkgs-2411";
+          follows = "haskellNix/nixpkgs-2511";
         };
 
       flake-utils =
@@ -39,6 +39,15 @@
             haskellNix.overlay
             (final: prev:
               {
+                haskell-nix = prev.haskell-nix //
+                  {
+                    extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings //
+                      {
+                        "javascriptcoregtk-6.0" = [ "webkitgtk_6_0" ];
+                        "webkitgtk-6.0" = [ "webkitgtk_6_0" ];
+                        "webkitgtk-web-process-extension-6.0" = [ "webkitgtk_6_0" ];
+                      };
+                  };
                 pinaforeProject = final.haskell-nix.stackProject
                   {
                     src =
@@ -58,6 +67,10 @@
                                   configureFlags = [ "-f" "os-string" ];
                                 };
                               "directory" =
+                                {
+                                  configureFlags = [ "-f" "os-string" ];
+                                };
+                              "process" =
                                 {
                                   configureFlags = [ "-f" "os-string" ];
                                 };
@@ -142,9 +155,9 @@
           app = flake.apps."pinafore-app:exe:pinafore1".program;
           minscript = pkgs.writeText "minscript" "pure ()";
           importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
-          interpretFileCheck = pkgs.runCommand "interpretFileCheck" {} "${app} -n ${minscript} > $out";
-          runFileCheck = pkgs.runCommand "runFileCheck" {} "${app} ${minscript} > $out";
-          importFileCheck = pkgs.runCommand "importFileCheck" {} "${app} ${importscript} > $out";
+          interpretFileCheck = pkgs.runCommand "interpretFileCheck" { } "${app} -n ${minscript} > $out";
+          runFileCheck = pkgs.runCommand "runFileCheck" { } "${app} ${minscript} > $out";
+          importFileCheck = pkgs.runCommand "importFileCheck" { } "${app} ${importscript} > $out";
         in
         flake //
         {
@@ -174,17 +187,39 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
-          devShells =
-          {
-            default = pkgs.mkShell
-              {
-                buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
-                shellHook = ''
-                  export PATH="$PWD/bin:$PATH"
-                '';
-              };
-            haskell-nix = flake.devShells.default;
-          };
+          devShells = let
+            shellInputs =
+                {
+                  buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                  shellHook = ''
+                    export PATH="$PWD/bin:$PATH"
+                  '';
+                };
+            in {
+              default = pkgs.pinaforeProject.shellFor shellInputs;
+              haskell-nix = pkgs.pinaforeProject.shellFor (shellInputs //
+                {
+                  packages = ps: with ps;
+                    [
+                      thread-trace
+                      shapes
+                      cairo-functional
+                      changes-core
+                      changes-media
+                      changes-world
+                      changes-gnome
+
+                      polar-shim
+                      typed-expression
+                      pinafore-base
+                      pinafore-storage
+                      pinafore-syntax
+                      pinafore-language
+                      pinafore-lib-media
+                    ];
+                  withHoogle = true;
+                });
+            };
         }
       );
 

@@ -19,7 +19,7 @@ liftTask task = MkLangTask $ hoistTask liftIO task
 
 langAsync :: Action a -> Action (LangTask a)
 langAsync pa = do
-    task <- forkTask pa
+    (task, _) <- forkTask pa
     actionOnClose $ do
         _ <- taskWait task
         return ()

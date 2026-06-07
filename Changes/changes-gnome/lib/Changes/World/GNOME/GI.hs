@@ -3,12 +3,13 @@ module Changes.World.GNOME.GI
     )
 where
 
+import Changes.World.GNOME.GI.Dynamic as I ()
 import Changes.World.GNOME.GI.Error as I
 import Changes.World.GNOME.GI.GView as I
 import Changes.World.GNOME.GI.Implement.Derived as I
 import Changes.World.GNOME.GI.Implement.Object as I
 import Changes.World.GNOME.GI.Lifecycle as I
-import Changes.World.GNOME.GI.LockState as I
+import Changes.World.GNOME.GI.Polymorphic as I
 import Changes.World.GNOME.GI.Signal as I
 import Changes.World.GNOME.GI.Type as I
 import Changes.World.GNOME.GI.Widget as I

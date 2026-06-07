@@ -55,5 +55,5 @@ let {
                     rotate (m * pi / 30) minuteHand,
                     rotate (s * pi / 30) secondHand
                 ]
-        }
+        } empty.Handler.GTK
 }

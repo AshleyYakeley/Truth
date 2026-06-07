@@ -13,41 +13,47 @@ import Shapes.Numeric
 
 import Changes.World.GNOME.GTK
 
-showPoint :: String -> UIDrawing
-showPoint t =
-    onMouseEvent $ \p _ -> do
-        liftIO $ putStrLn $ t <> ": " <> show p
-        return True
+type UIDrawing a = Drawing (PixelPoint -> Alt Maybe a)
 
-withShowPoint :: String -> UIDrawing -> UIDrawing
-withShowPoint s d = mappend (fallThrough $ showPoint s) d
+createUIDrawing :: forall a. Model (ROWUpdate ((Int32, Int32) -> UIDrawing a)) -> InputHandler a -> GView 'Unlocked GI.Widget
+createUIDrawing model iActions = createCairo model $ contramapMaybe getAlt iActions
 
-drawing :: TimeZone -> UTCTime -> (Int32, Int32) -> UIDrawing
-drawing tz t (fromIntegral -> w, fromIntegral -> h) = let
-    size = min w h
-    LocalTime _ (TimeOfDay _ _ s) = utcToLocalTime tz t
-    in translate (w / 2, h / 2)
-        $ scale (size, size)
-        $ scale (-0.5, -0.5)
-        $ mconcat
-            [ operatorOver
-                $ lineCapSquare
-                $ sourceRGB (1, 0.3, 0)
-                $ lineWidth 0.01
-                $ stroke
-                $ arc (0, 0) 1 0 (2 * pi)
-            , rotate (realToFrac s * pi / 30)
-                $ operatorOver
-                $ lineCapSquare
-                $ sourceRGB (0.3, 0, 1)
-                $ lineWidth 0.01
-                $ withShowPoint "P"
-                $ stroke
-                $ mconcat [moveTo (0, 0), lineTo (0, 1)]
-            ]
+pointUIDrawing :: ((Double, Double) -> a) -> UIDrawing a
+pointUIDrawing f = fmap (fmap pure) $ pointDrawing f
+
+clickInputAction :: InputHandler (IO ())
+clickInputAction = inputAction ClickInputType $ \(_, _, ioa) -> Just $ gvLiftIO ioa
+
+showPoint :: String -> (Double, Double) -> IO ()
+showPoint t p = putStrLn $ t <> ": " <> show p
+
+withShowPoint :: String -> UIDrawing (IO ()) -> UIDrawing (IO ())
+withShowPoint s d = mappend (pointUIDrawing $ showPoint s) d
+
+drawing :: TimeZone -> UTCTime -> (Int32, Int32) -> UIDrawing (IO ())
+drawing tz t (fromIntegral -> w, fromIntegral -> h) =
+    let
+        size = min w h
+        LocalTime _ (TimeOfDay _ _ s) = utcToLocalTime tz t
+        in translate (w / 2, h / 2)
+            $ scale (size, size)
+            $ scale (-0.5, -0.5)
+            $ operatorOver
+            $ lineCapSquare
+            $ lineWidth 0.01
+            $ mconcat
+                [ sourceRGB (1, 0.3, 0)
+                    $ stroke
+                    $ arc (0, 0) 1 0 (2 * pi)
+                , sourceRGB (0.3, 0, 1)
+                    $ rotate (realToFrac s * pi / 30)
+                    $ withShowPoint "P"
+                    $ stroke
+                    $ mconcat [moveTo (0, 0), lineTo (0, 1)]
+                ]
 
 zeroTime :: UTCTime
-zeroTime = UTCTime (fromGregorian 2000 1 1) 0
+zeroTime = UTCTime (YearMonthDay 2000 1 1) 0
 
 main :: IO ()
 main = do
@@ -59,21 +65,21 @@ main = do
                 $ do
                     (clockModel, ()) <-
                         gvLiftLifecycle $ makeSharedModel $ regularClockPremodel zeroTime $ secondsToNominalDiffTime 1
-                    tz <- gvLiftIONoUI getCurrentTimeZone
+                    tz <- gvLiftIOTrustMeNoUI getCurrentTimeZone
                     rec (_, closer) <-
-                            gvGetState
+                            lift
+                                $ gsvGetState
                                 $ createWindow
                                 $ let
-                                    wsPosition = WindowPositionCenter
                                     wsSize = (600, 600)
                                     wsCloseBoxAction :: GView 'Locked ()
                                     wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
                                     wsTitle :: Model (ROWUpdate Text)
                                     wsTitle = constantModel "Cairo"
-                                    wsContent :: AccelGroup -> GView 'Unlocked Widget
-                                    wsContent _ = do
+                                    wsContent :: GView 'Unlocked Widget
+                                    wsContent = do
                                         w1 <- createButton (constantModel "Button") (constantModel Nothing)
-                                        w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
+                                        w2 <- createUIDrawing (mapModel (funcChangeLens $ drawing tz) clockModel) clickInputAction
                                         gvRunLocked $ GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
                                         createLayout
                                             OrientationHorizontal

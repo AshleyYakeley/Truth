@@ -219,11 +219,16 @@ uiExec pui =
             Known (MkLangWidget ui) -> ui ec
             Unknown -> createBlank
 
-uiStyleSheet :: ImmutableWholeModel CSSText -> LangWidget -> LangWidget
-uiStyleSheet cssmodel (MkLangWidget mw) =
+uiStyleSheetParams :: ListType QDocSignature '[Word32]
+uiStyleSheetParams =
+    ConsListType (mkValueDocSignature "priority" "CSS priority" $ Just $ fromIntegral GI.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        $ NilListType
+
+uiStyleSheet :: ListProduct '[Word32] -> ImmutableWholeModel CSSText -> LangWidget -> LangWidget
+uiStyleSheet (priority, ()) cssmodel (MkLangWidget mw) =
     MkLangWidget $ \ec -> do
         widget <- mw ec
-        bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty $ fmap unCSSText cssmodel) widget
+        bindCSS priority (unWModel $ immutableWholeModelValue mempty $ fmap unCSSText cssmodel) widget
         return widget
 
 uiName :: Text -> LangWidget -> LangWidget
@@ -395,10 +400,11 @@ widgetStuff =
                 "styleClass"
                 "A widget with CSS class set. You can use something like `.text` to refer to all widgets in this class in the CSS style-sheet."
                 uiStyleClass
-            , valBDS
+            , recordValueBDS
                 "styleSheet"
                 "A widget with a CSS style-sheet (applied to the whole tree of widgets). \
                 \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
+                uiStyleSheetParams
                 uiStyleSheet
             ]
         ]

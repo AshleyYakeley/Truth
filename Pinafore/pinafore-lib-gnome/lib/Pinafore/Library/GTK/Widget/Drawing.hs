@@ -5,73 +5,70 @@ where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import GI.Gdk as GI
+import Data.Shim
 import Pinafore.API
 import Pinafore.Library.Media
 import Shapes
 
 import Pinafore.Library.GTK.Context
-import Pinafore.Library.GTK.Widget.Context
+import Pinafore.Library.GTK.Widget
 
-newtype LangHandler
-    = MkLangHandler (EventButton -> Action Bool)
+newtype LangHandler a
+    = MkLangHandler ((View --> IO) -> InputHandler a)
+    deriving newtype (Semigroup, Monoid)
 
-instance Semigroup LangHandler where
-    MkLangHandler evta <> MkLangHandler evtb =
-        MkLangHandler $ \et -> do
-            sa <- evta et
-            if sa
-                then return True
-                else evtb et
+instance Contravariant LangHandler where
+    contramap f (MkLangHandler h) = MkLangHandler $ \unlift -> contramap f $ h unlift
 
-instance Monoid LangHandler where
-    mempty = MkLangHandler $ \_ -> return False
+instance ContraFilterable LangHandler where
+    contramapMaybe f (MkLangHandler h) = MkLangHandler $ \unlift -> contramapMaybe f $ h unlift
 
-handlerGroundType :: QGroundType '[] LangHandler
-handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHandler)|]) "Handler.GTK."
+instance MaybeRepresentational LangHandler where
+    maybeRepresentational = Nothing
 
-instance HasQGroundType '[] LangHandler where
-    qGroundType = handlerGroundType
+instance HasVariance LangHandler where
+    type VarianceOf LangHandler = 'Contravariance
 
-runLangHandler :: WidgetContext -> LangHandler -> UIEvents
-runLangHandler ec (MkLangHandler action) =
-    MkUIEvents $ \eb -> gvRunUnlocked $ gvLiftView $ viewRunActionDefault (wcUnlift ec) True $ action eb
+instance HasQGroundType '[ContraCCRVariance] LangHandler where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHandler)|]) "Handler.GTK."
 
-langOnClick :: Action () -> LangHandler
-langOnClick action =
-    MkLangHandler $ \event -> do
-        click <- GI.get event #type
-        case click of
-            EventTypeButtonPress -> do
-                action
-                return True
-            _ -> return False
+langOnClick :: LangHandler (Action ())
+langOnClick = MkLangHandler $ \unlift ->
+    clickAction $ \_ _ action -> Just $ gvRunUnlocked $ gvLiftView $ viewRunAction unlift action
 
-handlerFallThrough :: LangHandler -> LangHandler
-handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
+handlerFallThrough :: LangHandler A -> LangHandler A
+handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> inputFallThrough $ uie evt
 
-uiDraw :: ImmutableWholeModel ((Natural, Natural) -> LangDrawing LangHandler) -> LangWidget
-uiDraw model =
-    MkLangWidget $ \ec ->
+uiDraw :: ImmutableWholeModel ((Natural, Natural) -> LangDrawing A) -> LangHandler A -> LangWidget
+uiDraw model (MkLangHandler handler) =
+    MkLangWidget $ \wc ->
         createCairo
-            $ unWModel
-            $ immutableWholeModelValue mempty
-            $ fmap
-                ( \d (w, h) ->
-                    fmap (\f pp -> runLangHandler ec $ mconcat $ f pp)
-                        $ unLangDrawing (d (toNaturalForce w, toNaturalForce h))
-                )
-                model
+            ( unWModel
+                $ immutableWholeModelValue mempty
+                $ fmap
+                    ( \d (w, h) ->
+                        unLangDrawing
+                            $ d (toNaturalForce w, toNaturalForce h)
+                    )
+                    model
+            )
+            $ contramapMaybe listToMaybe
+            $ handler
+            $ wcUnlift wc
+
+cofilterHandler :: (B -> Maybe A) -> LangHandler A -> LangHandler B
+cofilterHandler = contramapMaybe
 
 drawingStuff :: LibraryStuff
 drawingStuff =
     headingBDS
         "Drawing"
         ""
-        [ typeBDS "Handler" "Response to button-clicked events" (MkSomeGroundType handlerGroundType) []
+        [ typeBDS "Handler" "Response to button-clicked events" (qSomeGroundType @_ @LangHandler) []
         , namespaceBDS "Handler"
-            $ monoidEntries @LangHandler
-            <> [ valBDS "onClick" "Action to perform on click" langOnClick
+            $ monoidEntries @(LangHandler A)
+            <> [ valBDS "cofilter" "" cofilterHandler
+               , valBDS "onClick" "Action to perform on click" langOnClick
                , valBDS "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
                ]
         , namespaceBDS "Widget" [valBDS "draw" "Drawable widget" uiDraw]

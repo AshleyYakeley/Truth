@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,12 +35,17 @@ library
       Changes.World.GNOME.GTK
       Changes.World.GNOME.GTK.Test
   other-modules:
+      Import
+      Import.GI
       Changes.World.GNOME.GI.Error
+      Changes.World.GNOME.GI.Dynamic
+      Changes.World.GNOME.GI.Polymorphic
       Changes.World.GNOME.GI.Type
       Changes.World.GNOME.GI.Implement.Object
       Changes.World.GNOME.GI.Implement.Derived
-      Changes.World.GNOME.GI.ViewLock
-      Changes.World.GNOME.GI.LockState
+      Changes.World.GNOME.GI.GView.Context
+      Changes.World.GNOME.GI.GView.Semiview
+      Changes.World.GNOME.GI.GView.View
       Changes.World.GNOME.GI.GView
       Changes.World.GNOME.GI.Lifecycle
       Changes.World.GNOME.GI.Signal
@@ -109,15 +114,14 @@ library
     , changes-core
     , changes-media
     , gi-cairo-connector
-    , gi-gdk
+    , gi-gdk4
     , gi-gdkpixbuf
     , gi-gio
     , gi-glib
     , gi-gobject
-    , gi-gtk
-    , gi-gtk-hs
+    , gi-gtk4
     , gi-pango
-    , gi-webkit2
+    , gi-webkit
     , haskell-gi-base
     , network-uri
     , shapes
@@ -166,7 +170,7 @@ executable changes-cairo
     , changes-core
     , changes-gnome
     , changes-world
-    , gi-gtk
+    , gi-gtk4
     , shapes
     , time
   default-language: GHC2024

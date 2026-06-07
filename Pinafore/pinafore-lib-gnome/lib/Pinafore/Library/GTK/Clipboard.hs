@@ -4,21 +4,21 @@ module Pinafore.Library.GTK.Clipboard
 where
 
 import Changes.Core
-import Changes.World.GNOME.GTK
 import Pinafore.API
 import Shapes
 
 import Pinafore.Library.GTK.Context
 
-clipBijection :: Bijection (Maybe Clip) (Know Literal)
+clipBijection :: Bijection [Media] (Know Literal)
 clipBijection = let
-    isoForwards :: Maybe Clip -> Know Literal
-    isoForwards (Just (TextClip t)) = Known $ toLiteral t
+    isoForwards :: [Media] -> Know Literal
+    isoForwards (MkMedia (MkMediaType "text" "plain" _) bs : _) =
+        maybe Unknown (Known . toLiteral) $ resultToMaybe $ decode utf8Codec bs
     isoForwards _ = Unknown
-    isoBackwards :: Know Literal -> Maybe Clip
+    isoBackwards :: Know Literal -> [Media]
     isoBackwards (Known l)
-        | Just t <- fromLiteral l = Just $ TextClip t
-    isoBackwards _ = Nothing
+        | Just t <- fromLiteral l = [MkMedia (MkMediaType "text" "plain" []) $ encode utf8Codec t]
+    isoBackwards _ = []
     in MkIsomorphism{..}
 
 langClipboard :: LangContext -> LangWholeModel '(Literal, Literal)

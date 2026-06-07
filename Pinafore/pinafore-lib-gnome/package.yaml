@@ -18,8 +18,8 @@ library:
       - time
       - network-uri
       - gi-gio
-      - gi-gdk
-      - gi-gtk
+      - gi-gdk4
+      - gi-gtk4
       - thread-trace
       - changes-core
       - changes-world

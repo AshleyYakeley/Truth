@@ -88,7 +88,7 @@ runResourceLifecycle ::
     (MapResource f, MonadCoroutine m, MonadAskUnliftIO m) =>
     ResourceContext ->
     Resource f ->
-    LifecycleT m (f '[])
+    LifecycleT m m (f '[])
 runResourceLifecycle rc resource = lifecycleWith $ runResourceUnlift rc resource
 
 runResourceContext ::
@@ -108,7 +108,7 @@ exclusiveResource ::
     (MapResource f, MonadCoroutine m, MonadAskUnliftIO m) =>
     ResourceContext ->
     Resource f ->
-    LifecycleT m (Resource f)
+    LifecycleT m m (Resource f)
 exclusiveResource rc (MkResource trun f) = do
     Dict <- return $ resourceRunnerUnliftDict trun
     trun' <- exclusiveResourceRunner rc trun

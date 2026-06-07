@@ -20,12 +20,12 @@ textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textC
 optParser :: O.Parser ([FilePath], Bool, Bool, Bool)
 optParser =
     (,,,)
-        <$> (O.many $ O.strArgument mempty)
+        <$> (O.many $ O.strArgument $ O.metavar "FILENAME")
         <*> O.switch (O.short '2')
         <*> O.switch (O.long "seltest")
         <*> O.switch (O.long "save")
 
-type AppUI = GViewState 'Unlocked -> MenuBar
+type AppUI = GViewState -> MenuBar
 
 main :: IO ()
 main = do
@@ -92,21 +92,21 @@ main = do
                                 Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) ->
                                 Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text))) ->
                                 AppUI ->
-                                GView 'Unlocked UIWindow
+                                GView 'Unlocked Window
                             makeWindow title sub msub2 appui = do
                                 rec (window, closer) <-
-                                        gvGetState
+                                        lift
+                                            $ gsvGetState
                                             $ createWindow
                                             $ let
-                                                wsPosition = WindowPositionCenter
                                                 wsSize = (300, 400)
                                                 wsCloseBoxAction :: GView 'Locked ()
                                                 wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
                                                 wsTitle :: Model (ROWUpdate Text)
                                                 wsTitle = constantModel title
-                                                wsContent :: AccelGroup -> GView 'Unlocked Widget
-                                                wsContent ag = do
-                                                    mb <- createMenuBar ag $ appui closer
+                                                wsContent :: GView 'Unlocked Widget
+                                                wsContent = do
+                                                    mb <- createMenuBar $ appui closer
                                                     uic <- ui sub msub2 appui
                                                     createLayout
                                                         OrientationVertical
@@ -123,7 +123,7 @@ main = do
                                         $ gvRunUnlocked
                                         $ gvCloseState closer
                                     , SeparatorMenuEntry
-                                    , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                    , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                                     ]
                                 ]
                             extraUI :: SaveActions -> UndoHandler -> AppUI
@@ -151,7 +151,7 @@ main = do
                                             $ gvRunUnlocked
                                             $ gvCloseState closer
                                         , SeparatorMenuEntry
-                                        , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                        , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                                         ]
                                    , SubMenuEntry
                                         "Edit"
@@ -172,7 +172,7 @@ main = do
                                         gvLiftLifecycle
                                             $ makeSharedModel
                                             $ saveBufferReference emptyResourceContext wholeTextObj
-                                    uh <- gvLiftIONoUI newUndoHandler
+                                    uh <- gvLiftIOTrustMeNoUI newUndoHandler
                                     return (undoHandlerModel uh bufferSub, extraUI saveActions uh)
                                 else do
                                     textSub <- gvLiftLifecycle $ makeReflectingModel $ convertReference wholeTextObj
@@ -181,7 +181,7 @@ main = do
                             case selTest of
                                 False -> return Nothing
                                 True -> do
-                                    bsObj2 <- gvLiftIONoUI $ makeMemoryReference mempty $ \_ -> True
+                                    bsObj2 <- gvLiftIOTrustMeNoUI $ makeMemoryReference mempty $ \_ -> True
                                     textSub2 <-
                                         gvLiftLifecycle
                                             $ makeReflectingModel

@@ -209,7 +209,7 @@ exclusiveResourceRunner ::
     (MonadCoroutine m, MonadAskUnliftIO m) =>
     ResourceContext ->
     ResourceRunner tt ->
-    LifecycleT m (ResourceRunner '[StackT tt])
+    LifecycleT m m (ResourceRunner '[StackT tt])
 exclusiveResourceRunner rc rr = do
     Dict <- return $ resourceRunnerUnliftDict rr
     iow <- liftIO $ newIOWitness

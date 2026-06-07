@@ -108,6 +108,6 @@ instance (FullSubjectReader (EditReader edit), ApplicableEdit edit, SubjectMapEd
     replaceEdit mr write = do
         write ListEditClear
         len <- mr ListReadLength
-        for_ [0 .. pred len] $ \i -> do
+        for_ (zltList len) $ \i -> do
             item <- readableToSubject $ knownItemReadFunction i mr
             write $ ListEditInsert i item

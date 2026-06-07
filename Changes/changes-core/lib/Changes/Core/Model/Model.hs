@@ -63,7 +63,7 @@ type Model update = Resource (AModel update)
 data UpdateStoreEntry update = MkUpdateStoreEntry
     { useUpdate :: NonEmpty update -> EditContext -> IO ()
     , useTask :: Task IO ()
-    , useLifeState :: LifeState
+    , useLifeState :: LifeState IO
     }
 
 type UpdateStore update = Store (UpdateStoreEntry update)

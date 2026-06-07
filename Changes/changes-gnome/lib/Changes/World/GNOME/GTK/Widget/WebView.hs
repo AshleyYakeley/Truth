@@ -5,14 +5,11 @@ module Changes.World.GNOME.GTK.Widget.WebView
     )
 where
 
-import Changes.Core
-import GI.Gio
-import GI.Gtk
-import GI.WebKit2
-import Network.URI
-import Shapes
+import Network.URI (URI)
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data WebViewOptions = MkWebViewOptions
     { wvoURISchemes :: [(Text, Text -> URI -> GView 'Locked (Maybe Media))]
@@ -24,28 +21,14 @@ defaultWebViewOptions =
         { wvoURISchemes = []
         }
 
-createWebView :: WebViewOptions -> Model (ROWUpdate Text) -> GView 'Unlocked Widget
+createWebView :: WebViewOptions -> Model (ROWUpdate Text) -> GView 'Unlocked GI.Widget
 createWebView MkWebViewOptions{..} lmod = do
     (wv, widget) <-
         gvRunLocked $ do
-            webContext <- webContextNewEphemeral
-            gvAcquire webContext
-            for_ wvoURISchemes $ \(name, call) ->
-                gvWithUnliftLockedAsync $ \unlift -> webContextRegisterUriScheme webContext name $ \request -> do
-                    method <- uRISchemeRequestGetHttpMethod request
-                    uriText <- uRISchemeRequestGetUri request
-                    case parseURIReference (unpack uriText) of
-                        Just uri -> do
-                            mMedia <- unlift $ call method uri
-                            for_ mMedia $ \(MkMedia mt bs) -> do
-                                stream <- memoryInputStreamNewFromData bs Nothing
-                                uRISchemeRequestFinish request stream (fromIntegral $ olength bs) $ Just $ encode textMediaTypeCodec mt
-                        Nothing -> do
-                            err <- gerrorNew 0 0 $ "bad URI: " <> uriText
-                            uRISchemeRequestFinishError request err
-            webView <- webViewNewWithContext webContext
-            gvAcquire webView
-            widget <- toWidget webView
+            let _ = wvoURISchemes
+            webView <- gvNew GI.WebView []
+            gvBind webView
+            widget <- GI.toWidget webView
             return (webView, widget)
-    gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ webViewLoadHtml wv text Nothing
+    gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ GI.webViewLoadHtml wv text Nothing
     return widget

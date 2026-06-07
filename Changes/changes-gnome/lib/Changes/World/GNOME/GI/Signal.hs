@@ -6,66 +6,67 @@ module Changes.World.GNOME.GI.Signal
     )
 where
 
-import Data.GI.Base
-import Data.GI.Base.Signals
-import GI.GObject
-import Shapes
-
 import Changes.World.GNOME.GI.GView
-import Changes.World.GNOME.GI.LockState
+import Import
+import Import.GI qualified as GI
 
-withSignalBlocked :: (Is LockStateType ls, IsObject obj) => obj -> SignalHandlerId -> GView ls --> GView ls
+withSignalBlocked :: (Is LockStateType ls, GI.IsObject obj) => obj -> GI.SignalHandlerId -> GView ls --> GView ls
 withSignalBlocked obj conn =
     bracketNoMask_
-        (gvRunLocked' $ gvLiftIO $ signalHandlerBlock obj conn)
-        (gvRunLocked' $ gvLiftIO $ signalHandlerUnblock obj conn)
+        (gvRunLocked' $ gvLiftIO $ GI.signalHandlerBlock obj conn)
+        (gvRunLocked' $ gvLiftIO $ GI.signalHandlerUnblock obj conn)
 
-withSignalsBlocked :: (Is LockStateType ls, IsObject obj) => obj -> [SignalHandlerId] -> GView ls --> GView ls
+withSignalsBlocked :: (Is LockStateType ls, GI.IsObject obj) => obj -> [GI.SignalHandlerId] -> GView ls --> GView ls
 withSignalsBlocked _obj [] = id
 withSignalsBlocked obj (c : cc) = withSignalBlocked obj c . withSignalsBlocked obj cc
 
 class GTKCallbackType t where
+    type CallbackReturn t :: Type
     type CallbackViewLifted t :: Type
-    gCallbackUnlift :: (GView 'Locked --> IO) -> CallbackViewLifted t -> t
+    gCallbackUnlift :: GTKCallbackUnlift (CallbackReturn t) -> CallbackViewLifted t -> t
 
 instance GTKCallbackType (IO r) where
+    type CallbackReturn (IO r) = r
     type CallbackViewLifted (IO r) = GView 'Locked r
     gCallbackUnlift mf v = mf v
 
 instance GTKCallbackType r => GTKCallbackType (a -> r) where
+    type CallbackReturn (a -> r) = CallbackReturn r
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
     gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
 
-gvOnCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> GView 'Locked ()
+gvOnCloseDisconnectSignal :: GI.IsObject object => object -> GI.SignalHandlerId -> GView 'Locked ()
 gvOnCloseDisconnectSignal object shid =
     gvOnClose
-        $ gvLiftIO
+        $ gsvLiftIO
         $ do
             -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
             -- So we need to check.
-            isConnected <- signalHandlerIsConnected object shid
+            isConnected <- GI.signalHandlerIsConnected object shid
             if isConnected
-                then liftIO $ disconnectSignalHandler object shid
+                then liftIO $ GI.disconnectSignalHandler object shid
                 else return ()
 
 gvOnSignal ::
-    (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info)) =>
+    (GI.IsObject object, GI.SignalInfo info, GTKCallbackType (GI.HaskellCallbackType info)) =>
+    CallbackReturn (GI.HaskellCallbackType info) ->
     object ->
-    SignalProxy object info ->
-    CallbackViewLifted (HaskellCallbackType info) ->
-    GView 'Locked SignalHandlerId
-gvOnSignal object signal call = do
-    shid <- gvWithUnliftLockedAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
+    GI.SignalProxy object info ->
+    CallbackViewLifted (GI.HaskellCallbackType info) ->
+    GView 'Locked GI.SignalHandlerId
+gvOnSignal defaultVal object signal call = do
+    shid <- gvWithCallbackUnlift defaultVal $ \unlift -> GI.on object signal $ gCallbackUnlift unlift call
     gvOnCloseDisconnectSignal object shid
     return shid
 
 gvAfterSignal ::
-    (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info)) =>
+    (GI.IsObject object, GI.SignalInfo info, GTKCallbackType (GI.HaskellCallbackType info)) =>
+    CallbackReturn (GI.HaskellCallbackType info) ->
     object ->
-    SignalProxy object info ->
-    CallbackViewLifted (HaskellCallbackType info) ->
-    GView 'Locked SignalHandlerId
-gvAfterSignal object signal call = do
-    shid <- gvWithUnliftLockedAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
+    GI.SignalProxy object info ->
+    CallbackViewLifted (GI.HaskellCallbackType info) ->
+    GView 'Locked GI.SignalHandlerId
+gvAfterSignal defaultVal object signal call = do
+    shid <- gvWithCallbackUnlift defaultVal $ \unlift -> GI.after object signal $ gCallbackUnlift unlift call
     gvOnCloseDisconnectSignal object shid
     return shid

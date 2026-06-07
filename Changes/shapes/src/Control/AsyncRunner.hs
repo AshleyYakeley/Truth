@@ -1,22 +1,59 @@
 module Control.AsyncRunner
-    ( asyncWaitRunner
+    ( Pusher
+    , forkIOPusher
+    , forkOSPusher
+    , pusherWait
+    , asyncWaitRunner
     , asyncRunner
     , asyncIORunner
+    , pusherTask
     )
 where
 
 import Control.Task
 import Shapes.Import
 
-asyncIORunner :: Text -> Lifecycle (IO () -> IO (), Task IO ())
+type Pusher = IO () -> IO ()
+
+forkIOPusher :: Pusher
+forkIOPusher iou = void $ forkIO iou
+
+forkOSPusher :: Pusher
+forkOSPusher iou = void $ forkOS iou
+
+pusherWaitRaw :: Pusher -> (IO --> IO)
+pusherWaitRaw run ioa = do
+    var <- newEmptyMVar
+    run $ do
+        a <- ioa
+        putMVar var a
+    takeMVar var
+
+runSafe :: (IO --> IO) -> (IO --> IO)
+runSafe run ioa = do
+    ra <- run $ tryExc ioa
+    fromResultExc ra
+
+pusherWait :: Pusher -> (IO --> IO)
+pusherWait ioa = runSafe $ pusherWaitRaw ioa
+
+pusherTask :: forall a. Pusher -> (IO a -> IO (Task IO a))
+pusherTask pushVal ma = do
+    (report, task) <- mkTask
+    pushVal $ do
+        a <- ma
+        report a
+    pure task
+
+asyncIORunner :: Text -> Lifecycle (Pusher, Task IO ())
 asyncIORunner _ = do
     var <- liftIO $ newMVar mempty
     let
-        pushVal :: IO () -> IO ()
+        pushVal :: Pusher
         pushVal job =
             mVarRunStateT var $ do
                 oldTask <- get
-                newTask <-
+                (newTask, _) <-
                     lift
                         $ forkTask
                         $ do
@@ -54,15 +91,9 @@ putSemigroupQueue (MkSemigroupQueue var) t =
                 put $ Just t
                 return True
 
-asyncRunner ::
-    forall t.
-    Semigroup t =>
-    Text ->
-    (t -> IO ()) ->
-    Lifecycle (t -> IO (), Task IO ())
-asyncRunner name doit = do
-    sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
-    (ioio, utask) <- asyncIORunner name
+semigroupPusher :: Semigroup t => Pusher -> (t -> IO ()) -> IO (t -> IO ())
+semigroupPusher pushVal doit = do
+    sq :: SemigroupQueue t <- newSemigroupQueue
     let
         action :: IO ()
         action = do
@@ -74,8 +105,40 @@ asyncRunner name doit = do
         tio t = do
             b <- putSemigroupQueue sq t
             if b
-                then ioio action
+                then pushVal action
                 else return ()
+    return tio
+
+semigroupWaitPusher :: Semigroup t => Pusher -> Int -> (t -> IO ()) -> IO (Maybe t -> IO ())
+semigroupWaitPusher pushVal mus doit = do
+    sq :: SemigroupQueue t <- newSemigroupQueue
+    let
+        action :: IO ()
+        action = do
+            mt <- takeSemigroupQueue sq
+            case mt of
+                Just t -> doit t
+                Nothing -> return ()
+        mtio :: Maybe t -> IO ()
+        mtio (Just t) = do
+            b <- putSemigroupQueue sq t
+            if b
+                then pushVal $ do
+                    threadDelay mus
+                    action
+                else return ()
+        mtio Nothing = pushVal action
+    return mtio
+
+asyncRunner ::
+    forall t.
+    Semigroup t =>
+    Text ->
+    (t -> IO ()) ->
+    Lifecycle (t -> IO (), Task IO ())
+asyncRunner name doit = do
+    (pushVal, utask) <- asyncIORunner name
+    tio <- liftIO $ semigroupPusher pushVal doit
     return (tio, utask)
 
 asyncWaitRunner ::
@@ -86,22 +149,6 @@ asyncWaitRunner ::
     (t -> IO ()) ->
     Lifecycle (Maybe t -> IO (), Task IO ())
 asyncWaitRunner name mus doit = do
-    sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
-    (ioio, utask) <- asyncIORunner name
-    let
-        action :: IO ()
-        action = do
-            mt <- takeSemigroupQueue sq
-            case mt of
-                Just t -> doit t
-                Nothing -> return ()
-        tio :: Maybe t -> IO ()
-        tio (Just t) = do
-            b <- putSemigroupQueue sq t
-            if b
-                then ioio $ do
-                    threadDelay mus
-                    action
-                else return ()
-        tio Nothing = ioio action
-    return (tio, utask)
+    (pushVal, utask) <- asyncIORunner name
+    mtio <- liftIO $ semigroupWaitPusher pushVal mus doit
+    return (mtio, utask)

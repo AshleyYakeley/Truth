@@ -89,7 +89,7 @@ namespace UILib {
         Mk.Command {
           name = "Exit";
           defaultKeyBinding = Just "Ctrl+Q";
-          action = fn Mk.Context => exit.GTK gtk;
+          action = fn Mk.Context => exit.GTK gtk Mk.Stop;
         };
     };
   };

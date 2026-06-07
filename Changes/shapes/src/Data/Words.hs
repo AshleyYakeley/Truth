@@ -2,7 +2,7 @@ module Data.Words where
 
 import Shapes.Import
 
-class PairWords single double | single -> double, double -> single where
+class (FiniteBits single, FiniteBits double) => PairWords single double | single -> double, double -> single where
     hi :: double -> single
     lo :: double -> single
     hilo :: single -> single -> double
@@ -24,3 +24,8 @@ instance PairWords Word16 Word32 where
     hi w = fromIntegral $ shiftR w 16
     lo w = fromIntegral w
     hilo h l = shiftL (fromIntegral h) 16 + fromIntegral l
+
+instance PairWords Word32 Word64 where
+    hi w = fromIntegral $ shiftR w 32
+    lo w = fromIntegral w
+    hilo h l = shiftL (fromIntegral h) 32 + fromIntegral l

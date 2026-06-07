@@ -1,0 +1,22 @@
+#!/usr/bin/env pinafore1
+# bin/testpinafore --build Pinafore/pinafore-app/test/script/gtk-threads
+import "media", "gnome"
+with GTK.
+run $ fn gtk =>
+let {
+    inNewThread: Action a -> Action a
+        = fn action => do {
+                task <- async.Task action;
+                wait.Task task;
+            };
+    buttonWindow: Text -> Action Unit -> Action Unit
+        = fn title, action => do {
+            _ <- open.Window gtk (400,600) ap{title} $ button.Widget ap{"Click"} ap{action};
+            pure ();
+        }
+}
+# inNewThread $
+buttonWindow "Main" $
+inNewThread $
+buttonWindow "Sub" $
+pure ()

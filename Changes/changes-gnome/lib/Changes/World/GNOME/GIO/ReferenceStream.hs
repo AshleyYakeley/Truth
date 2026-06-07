@@ -4,16 +4,13 @@ module Changes.World.GNOME.GIO.ReferenceStream
     )
 where
 
-import Changes.Core
 import Data.ByteString.Unsafe (unsafeUseAsCString)
 import Data.IORef
 import Foreign
-import GI.GLib qualified as GI
-import GI.GObject qualified as GI
-import GI.Gio qualified as GI
-import Shapes
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data Private = MkPrivate
     { privReadable :: Readable IO ByteStringReader
@@ -99,9 +96,13 @@ instance IsGIDerived Private where
 
 byteStringReferenceInputStream :: Reference ByteStringEdit -> View ReferenceInputStream
 byteStringReferenceInputStream ref = do
-    (aref, privClose) <- viewGetCloser $ viewRunResourceLifecycle ref
+    (aref, privCloseView) <- viewGetCloser $ viewRunResourceLifecycle ref
+    MkWRaised unliftIO <- lift askUnliftIO
     let
         privReadable :: Readable IO ByteStringReader
         privReadable = refRead aref
+
+        privClose :: IO ()
+        privClose = unliftIO privCloseView
     privOffset <- liftIO $ newIORef 0
     liftIO $ createDerivedGIObject $ MkPrivate{..}

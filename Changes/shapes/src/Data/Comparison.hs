@@ -2,59 +2,29 @@
 
 module Data.Comparison where
 
-import Data.Reflection (Given (..), give)
-
 import Data.Coerce.Coercion
 import Data.Coerce.Role
 import Data.Givable
 import Data.Wrappable
 import Shapes.Import
 
-newtype Equivalence a = MkEquivalence
-    { equivalent :: a -> a -> Bool
-    }
-
 notEquivalent :: Equivalence a -> a -> a -> Bool
-notEquivalent equiv p q = not $ equivalent equiv p q
+notEquivalent equiv p q = not $ getEquivalence equiv p q
 
 eqEquivalence ::
     forall a.
     Eq a =>
     Equivalence a
-eqEquivalence = MkEquivalence (==)
+eqEquivalence = Equivalence (==)
 
 nubByEquivalence :: forall a. Equivalence a -> [a] -> [a]
-nubByEquivalence eqv = nubBy $ equivalent eqv
+nubByEquivalence eqv = nubBy $ getEquivalence eqv
 
 instance RepresentationalRole Equivalence where
     representationalCoercion MkCoercion = MkCoercion
 
-instance Contravariant Equivalence where
-    contramap ba (MkEquivalence o) = MkEquivalence $ \p q -> o (ba p) (ba q)
-
-instance Invariant Equivalence where
-    invmap _ qp = contramap qp
-
-instance Summable Equivalence where
-    rVoid = MkEquivalence $ \p -> never p
-    MkEquivalence a <+++> MkEquivalence b = let
-        ab (Left p) (Left q) = a p q
-        ab (Right p) (Right q) = b p q
-        ab _ _ = False
-        in MkEquivalence ab
-
-instance Productable Equivalence where
-    rUnit = MkEquivalence $ \_ _ -> True
-    MkEquivalence oa <***> MkEquivalence ob = MkEquivalence $ \(pa, pb) (qa, qb) -> oa pa qa && ob pb qb
-
-instance Semigroup (Equivalence a) where
-    oa <> ob = contramap (\a -> (a, a)) $ oa <***> ob
-
-instance Monoid (Equivalence a) where
-    mempty = contramap (\_ -> ()) rUnit
-
 instance Given (Equivalence a) => Eq (Wrapper Type a) where
-    (==) = coerce $ equivalent (given :: Equivalence a)
+    (==) = coerce $ getEquivalence (given :: Equivalence a)
 
 instance Givable Equivalence where
     type GivableConstraint Equivalence = Eq
@@ -68,10 +38,10 @@ instance Invariant Preorder where
     invmap _ qp = contramap qp
 
 preorderEquivalence :: forall a. Preorder a -> Equivalence a
-preorderEquivalence (MkPreorder o) = MkEquivalence $ \p q -> o p q == Just EQ
+preorderEquivalence (MkPreorder o) = Equivalence $ \p q -> o p q == Just EQ
 
 equivalencePreorder :: forall a. Equivalence a -> Preorder a
-equivalencePreorder (MkEquivalence o) =
+equivalencePreorder (Equivalence o) =
     MkPreorder $ \p q ->
         if o p q
             then Just EQ
@@ -126,7 +96,7 @@ orderPreorder :: forall a. Order a -> Preorder a
 orderPreorder (MkOrder o) = MkPreorder $ \p q -> Just $ o p q
 
 orderEquivalence :: forall a. Order a -> Equivalence a
-orderEquivalence (MkOrder o) = MkEquivalence $ \p q -> o p q == EQ
+orderEquivalence (MkOrder o) = Equivalence $ \p q -> o p q == EQ
 
 joinOrderings :: Ordering -> Ordering -> Ordering
 joinOrderings EQ ob = ob

@@ -27,8 +27,9 @@ module Shapes.Test
 
       -- * Unit
     , Assertion
-    , assertEqual
     , assertFailure
+    , assertBool
+    , assertEqual
     , assertThrowsException
     , assertThrowsAnyException
 

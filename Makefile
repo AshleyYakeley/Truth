@@ -5,6 +5,8 @@ PINAFOREVERSION := 0.6
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
+SNAPSHOT := lts-24.31
+
 ### Flags for stack
 
 ifeq ($(nodocker),1)
@@ -25,9 +27,7 @@ else
 STACKROOTFLAGS :=
 endif
 
-STACKFLAGS := $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
-
-STACKEXEC := stack $(STACKFLAGS) exec
+STACK := stack $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
@@ -50,7 +50,7 @@ endif
 ifeq ($(nix-docker),1)
 BINPATH := /binpath
 else
-BINPATH := $(shell stack $(STACKFLAGS) path --local-bin)
+BINPATH := $(shell $(STACK) path --local-bin)
 endif
 
 NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/'
@@ -61,30 +61,30 @@ NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/
 docker-image:
 ifeq ($(nodocker),1)
 else
-	docker build -t local-build docker
+	docker build --build-arg SNAPSHOT=$(SNAPSHOT) -t local-build_$(SNAPSHOT) docker
 endif
 
 docker-shell: docker-image
-	$(STACKEXEC) -- bash
+	$(STACK) exec -- bash
 
 ### Formatting
 
 ${BINPATH}/fourmolu: docker-image
-	stack $(STACKFLAGS) install fourmolu
+	$(STACK) install fourmolu
 
 .PHONY: fourmolu
 fourmolu: ${BINPATH}/fourmolu
 
 .PHONY: format
 format: ${BINPATH}/fourmolu
-	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/format-all
+	env BINPATH=${BINPATH} $(STACK) --docker-env BINPATH exec -- bin/format-all
 
 
 ### Python
 
 .build/python: docker-image
-	$(STACKEXEC) -- python3 -m venv $@
-	$(STACKEXEC) -- $@/bin/pip install -U setuptools wheel build sphinx myst-parser sphinx-rtd-theme pygments scour
+	$(STACK) exec -- python3 -m venv $@
+	$(STACK) exec -- $@/bin/pip install -U setuptools wheel build sphinx myst-parser sphinx-rtd-theme pygments scour
 
 
 ### Licensing info
@@ -107,23 +107,16 @@ dep-info: out/licensing out/dependencies
 .PHONY: haddock
 haddock:
 	mkdir -p stackpath
-	ln -sf $(shell stack $(STACKFLAGS) path --snapshot-doc-root) stackpath/snapshot-doc-root
-	ln -sf $(shell stack $(STACKFLAGS) path --local-doc-root) stackpath/local-doc-root
-	stack $(STACKFLAGS) haddock
+	ln -sf $(shell $(STACK) path --snapshot-doc-root) stackpath/snapshot-doc-root
+	ln -sf $(shell $(STACK) path --local-doc-root) stackpath/local-doc-root
+	$(STACK) haddock
 
 
 ### Watch-Building for development
 
 .PHONY: watch-build
 watch-build: out docker-image
-	stack --docker-env DISPLAY $(STACKFLAGS) build --file-watch --fast
-
-
-### Hoogle
-
-.PHONY: hoogle
-hoogle: docker-image
-	stack --docker-env DISPLAY $(STACKFLAGS) hoogle --server
+	$(STACK) build --file-watch --fast
 
 
 ### Executables
@@ -137,17 +130,17 @@ ifeq ($(haddock),1)
 endif
 endif
 	xhost +si:localuser:$${USER}
-	stack --docker-env DISPLAY $(STACKFLAGS) install --ghc-options="-j" --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	$(STACK) install --ghc-options="-j" --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 	strip --remove-section=.comment ${BINPATH}/pinafore1
 	strip --remove-section=.comment ${BINPATH}/pinadoc
 ifeq ($(nodocker),1)
 else
 ifeq ($(haddock),1)
-	cp -r `stack $(STACKFLAGS) path --local-doc-root` out/haddock
+	cp -r `$(STACK) path --local-doc-root` out/haddock
 endif
 endif
 ifeq ($(bench),1)
-	test -n "$$(git status -s)" || ($(STACKEXEC) -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
+	test -n "$$(git status -s)" || ($(STACK) exec -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
 
 .PHONY: exe
@@ -186,7 +179,7 @@ LIBMODULEFILES := \
 	for i in $(LIBMODULEFILES); do cp Pinafore/pinafore-lib-script/data/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
-	$(STACKEXEC) -- \
+	$(STACK) exec -- \
 		m4 \
 		-D PACKAGENAME="$(PACKAGENAME)" \
 		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
@@ -195,18 +188,18 @@ LIBMODULEFILES := \
 		-D RELEASEDATE="$$(date -R)" \
 		deb/changelog.m4 | gzip -9 > $(PACKAGEDIR)/usr/share/doc/pinafore/changelog.Debian.gz
 	mkdir -p $(PACKAGEDIR)/usr/share/bash-completion/completions/
-	$(STACKEXEC) -- $< --bash-completion-script /usr/bin/pinafore1 > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
+	$(STACK) exec -- $< --bash-completion-script /usr/bin/pinafore1 > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
 	mkdir -p $(PACKAGEDIR)/DEBIAN
-	$(STACKEXEC) -- \
+	$(STACK) exec -- \
 		m4 \
 		-D PACKAGENAME="$(PACKAGENAME)" \
 		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
 		-D PACKAGEREVISION="$(PACKAGEREVISION)" \
 		deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
-	$(STACKEXEC) --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
+	$(STACK) exec --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
 	chmod -R g-w $(PACKAGEDIR)
-	$(STACKEXEC) --cwd .build/deb -- dpkg-deb --root-owner-group --build -Zxz $(PACKAGEFULLNAME)
-	$(STACKEXEC) -- \
+	$(STACK) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build -Zxz $(PACKAGEFULLNAME)
+	$(STACK) exec -- \
 		lintian \
 		--tag-display-limit 0 \
 		--display-info \
@@ -251,7 +244,7 @@ nix/docker/flake.lock: flake.lock
 	cp $< $@
 
 nix/docker/stack.yaml: stack.yaml
-	$(STACKEXEC) -- yq '.packages=[]' $< > $@
+	$(STACK) exec -- yq '.packages=[]' $< > $@
 
 nix/docker/stack.yaml.lock: stack.yaml.lock
 	cp $< $@
@@ -274,7 +267,7 @@ out/support:
 	mkdir -p $@
 
 out/support/syntax-data.json: ${BINPATH}/pinadata out/support
-	$(STACKEXEC) -- $< --syntax-data > $@
+	$(STACK) exec -- $< --syntax-data > $@
 
 
 ### Pygments lexer
@@ -290,7 +283,7 @@ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz: \
  support/pygments-lexer/pinafore_lexer/__init__.py \
  support/pygments-lexer/pinafore_lexer/syntax-data.json
 	echo $(PYGLEXERVERSION) > support/pygments-lexer/VERSION
-	$(STACKEXEC) -- .build/python/bin/python3 -m build -o out/support/ support/pygments-lexer/
+	$(STACK) exec -- .build/python/bin/python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
 pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
@@ -306,19 +299,19 @@ LIBMODULEDOCS := \
 
 support/website/library/%.md: ${BINPATH}/pinadoc
 	mkdir -p support/website/library
-	$(STACKEXEC) -- $< $(subst .,/,$*) --include Pinafore/pinafore-lib-script/data > $@
+	$(STACK) exec -- $< $(subst .,/,$*) --include Pinafore/pinafore-lib-script/data > $@
 
 support/website/generated/infix.md: ${BINPATH}/pinadata
 	mkdir -p support/website/generated
-	$(STACKEXEC) -- $< --infix > $@
+	$(STACK) exec -- $< --infix > $@
 
 support/website/generated/type-infix.md: ${BINPATH}/pinadata
 	mkdir -p support/website/generated
-	$(STACKEXEC) -- $< --infix-type > $@
+	$(STACK) exec -- $< --infix-type > $@
 
 .PHONY: scour
 scour: support/website/img/information.svg docker-image
-	$(STACKEXEC) -- scour $< | $(STACKEXEC) -- sponge $<
+	$(STACK) exec -- scour $< | $(STACK) exec -- sponge $<
 
 support/website/generated/img/information.png: support/website/img/information.png
 	mkdir -p support/website/generated/img
@@ -326,14 +319,14 @@ support/website/generated/img/information.png: support/website/img/information.p
 
 support/website/generated/img/logo.png: support/branding/logo.svg
 	mkdir -p support/website/generated/img
-	$(STACKEXEC) -- rsvg-convert -w 200 -h 200 $< -o $@
+	$(STACK) exec -- rsvg-convert -w 200 -h 200 $< -o $@
 
 support/website/generated/img/favicon.png: support/branding/logo.svg
 	mkdir -p support/website/generated/img
-	$(STACKEXEC) -- rsvg-convert -w 32 -h 32 $< -o $@
+	$(STACK) exec -- rsvg-convert -w 32 -h 32 $< -o $@
 
 %.ico: %.png
-	$(STACKEXEC) -- convert $< -background transparent $@
+	$(STACK) exec -- convert $< -background transparent $@
 
 .PHONY: docs
 docs: \
@@ -348,16 +341,16 @@ docs: \
  out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	mkdir -p support/website/generated/examples
 	cp Pinafore/pinafore-app/examples/* support/website/generated/examples/
-	$(STACKEXEC) -- .build/python/bin/pip install out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
+	$(STACK) exec -- .build/python/bin/pip install out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/support/website
 	mkdir -p out/support/website
-	$(STACKEXEC) -- .build/python/bin/sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
+	$(STACK) exec -- .build/python/bin/sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
 .PHONY: check-snippets
 check-snippets: ${BINPATH}/pinafore1
 	mkdir -p out/support/website/snippets
 	rm -f out/support/website/snippets/*
-	$(STACKEXEC) --docker-env BINPATH=${BINPATH} -- support/website/check-snippets
+	$(STACK) exec --docker-env BINPATH=${BINPATH} -- support/website/check-snippets
 
 ### VSCode extension
 
@@ -366,11 +359,11 @@ VSCXVERSION := $(PINAFOREVERSIONABC)
 VSCXDIR := support/vsc-extension/vsce
 
 $(VSCXDIR)/%.json: $(VSCXDIR)/%.yaml out/support/syntax-data.json
-	$(STACKEXEC) -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
+	$(STACK) exec -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
 $(VSCXDIR)/images/logo.png: support/branding/logo.svg
 	mkdir -p $(VSCXDIR)/images
-	$(STACKEXEC) -- rsvg-convert -w 256 -h 256 $< -o $@
+	$(STACK) exec -- rsvg-convert -w 256 -h 256 $< -o $@
 
 out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  $(VSCXDIR)/package.json \
@@ -380,7 +373,7 @@ out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  $(VSCXDIR)/language-configuration.json \
  $(VSCXDIR)/images/logo.png \
  $(VSCXDIR)/syntaxes/pinafore.tmLanguage.json
-	cd $(VSCXDIR) && $(STACKEXEC) -- vsce package -o ../../../$@
+	cd $(VSCXDIR) && $(STACK) exec -- vsce package -o ../../../$@
 
 .PHONY: vsc-extension
 vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
@@ -390,11 +383,11 @@ vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
 
 Changes/changes-gnome/examples/showImages/images/%.RGB.jpeg: Changes/changes-gnome/examples/showImages/%.jpeg
 	mkdir -p Changes/changes-gnome/examples/showImages/images
-	$(STACKEXEC) -- convert $< -colorspace RGB $@
+	$(STACK) exec -- convert $< -colorspace RGB $@
 
 Changes/changes-gnome/examples/showImages/images/%.YCbCr.jpeg: Changes/changes-gnome/examples/showImages/%.jpeg
 	mkdir -p Changes/changes-gnome/examples/showImages/images
-	$(STACKEXEC) -- convert $< -colorspace YCbCr $@
+	$(STACK) exec -- convert $< -colorspace YCbCr $@
 
 .PHONY: testimages
 testimages: docker-image \
@@ -447,9 +440,6 @@ update-locks: docker-image
 
 top-format:
 	make format
-
-top-hoogle:
-	make hoogle
 
 top-watch-build:
 	make watch-build

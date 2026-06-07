@@ -79,7 +79,7 @@ instance FullSubjectReader (UpdateReader update) => FullUpdate (OrderedListUpdat
     replaceUpdate rd push = do
         push OrderedListUpdateClear
         len <- rd ListReadLength
-        for_ [0 .. pred len] $ \i -> do
+        for_ (zltList len) $ \i -> do
             msubj <- unComposeInner $ readableToSubject $ itemReadFunction i rd
             case msubj of
                 Just subj -> push $ OrderedListUpdateInsert i $ subj

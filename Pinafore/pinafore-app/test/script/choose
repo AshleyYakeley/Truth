@@ -1,13 +1,16 @@
 #!/usr/bin/env pinafore1
 import "media", "gnome"
 run.GTK $ fn gtk =>
+async.StoppableTask $ fn _ =>
 let rec {
     showFile: Action Unit =
         do {
-            file <- chooseExistingFile.GTK gtk $ fn {
-                Just ("image",_) => True;
-                _ => False;
-            };
+            owner <- open.Window.GTK gtk (300, 100) ap{"Choose File"} blank.Widget.GTK;
+            task <- chooseExistingFile.GTK gtk owner [[["Image"]]];
+            sleep $ Seconds 4;
+            mfile <- wait.Task task;
+            close.Window.GTK owner;
+            file <- orStop mfile;
             ref <- makeRef.File.GIO file;
             media <- get ref;
             jpeg <- orStop $ decode asMedia.JPEG.Image media;

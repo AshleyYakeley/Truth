@@ -1,6 +1,14 @@
-module Changes.World.GNOME.GI.LockState where
+module Control.Lock.IsLock
+    ( LockState (..)
+    , LockStateType (..)
+    , lockStateType
+    , IsLock (..)
+    , runLocked
+    , runUnlocked
+    )
+where
 
-import Shapes
+import Shapes.Import
 
 data LockState
     = Locked
@@ -35,3 +43,21 @@ lockStateType ::
     Is LockStateType ls =>
     LockStateType ls
 lockStateType = representative @_ @_ @ls
+
+class IsLock (lock :: Type) where
+    runLockedIO :: lock -> IO --> IO
+    runUnlockedIO :: lock -> IO --> IO
+
+runLocked :: forall lock m. (IsLock lock, MonadHoistIO m) => lock -> m --> m
+runLocked lock = hoistIO $ runLockedIO lock
+
+runUnlocked :: forall lock m. (IsLock lock, MonadHoistIO m) => lock -> m --> m
+runUnlocked lock = hoistIO $ runUnlockedIO lock
+
+instance IsLock () where
+    runLockedIO () = id
+    runUnlockedIO () = id
+
+instance (IsLock p, IsLock q) => IsLock (p, q) where
+    runLockedIO (pl, ql) = runLockedIO pl . runLockedIO ql
+    runUnlockedIO (pl, ql) = runUnlockedIO ql . runUnlockedIO pl

@@ -17,20 +17,20 @@ let {
         Done;
     };
 
-    drawing: WholeModel Progress -> WholeModel +(Drawing Handler) =
+    drawing: WholeModel Progress -> WholeModel +(Drawing (Action Unit)) =
     fn ref => ap{
         with Drawing
         scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat [
             source navy $ %(toMaybe.WholeModel ref) >- fn {
-                    Nothing => pure $ onClick.Handler $ ref := Partial.Progress;
-                    Just No.Progress => pure $ onClick.Handler $ ref := Partial.Progress;
+                    Nothing => pure $ ref := Partial.Progress;
+                    Just No.Progress => pure $ ref := Partial.Progress;
                     Just Partial.Progress => concat [
                             with Path fill $ concat [arc (0,0) 1 0 pi, close],
-                            pure $ onClick.Handler $ ref := Done.Progress
+                            pure $ ref := Done.Progress
                         ];
                     Just Done.Progress => concat [
                             with Path fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
-                            pure $ onClick.Handler $ ref := No.Progress
+                            pure $ ref := No.Progress
                         ];
             },
             with Path stroke $ concat [
@@ -43,7 +43,7 @@ let {
 } run $ fn gtk => do {
     ref <- newMem.WholeModel;
     open.Window gtk (300,400) ap{"Drawing"} $ vertical.Widget [
-            grow.Layout.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
-            grow.Layout.Widget $ draw.Widget $ scaleDrawing $ drawing ref
+            grow.Layout.Widget $ draw.Widget (scaleDrawing $ drawing ref) onClick.Handler,
+            grow.Layout.Widget $ draw.Widget (scaleDrawing $ drawing ref) onClick.Handler
     ];
 }

@@ -99,8 +99,13 @@ library:
       - Control.Stream.Sink
       - Control.Stream.Source
       - Control.Stream
-      - Control.CallbackLock
+      - Control.Lock.IsLock
+      - Control.Lock.LockableT
+      - Control.Lock.Callback
+      - Control.Lock.SingleThread
+      - Control.Concurrent.TPieceVar
       - Control.AsyncRunner
+      - Control.AsyncRunner.ThreadBound
       - Unsafe.Type
       - Unsafe.IO
       - Shapes

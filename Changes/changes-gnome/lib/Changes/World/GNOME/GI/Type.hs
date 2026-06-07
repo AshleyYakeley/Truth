@@ -1,10 +1,7 @@
 module Changes.World.GNOME.GI.Type where
 
-import Data.GI.Base
-import Data.GI.Base.GObject
-import Data.GI.Base.GType
-import GI.GObject
-import Shapes
+import Import
+import Import.GI qualified as GI
 
 -- workaround for GNOME version hell
 class GIToText a where
@@ -16,21 +13,21 @@ instance GIToText Text where
 instance GIToText (Maybe Text) where
     giToText mt = fromMaybe "" mt
 
-getObjectType :: (MonadIO m, GObject a) => a -> m GType
-getObjectType v = liftIO $ gtypeFromInstance v
+getObjectType :: (MonadIO m, GI.GObject a) => a -> m GI.GType
+getObjectType v = liftIO $ GI.gtypeFromInstance v
 
-getTypeParent :: MonadIO m => GType -> m (Maybe GType)
+getTypeParent :: MonadIO m => GI.GType -> m (Maybe GI.GType)
 getTypeParent t = do
-    p <- typeParent t
+    p <- GI.typeParent t
     return
-        $ if p == gtypeInvalid
+        $ if p == GI.gtypeInvalid
             then Nothing
             else Just p
 
-getTypeName :: MonadIO m => GType -> m Text
-getTypeName t = fmap giToText $ typeName t
+getTypeName :: MonadIO m => GI.GType -> m Text
+getTypeName t = fmap giToText $ GI.typeName t
 
-getTypeAncestry :: MonadIO m => GType -> m [GType]
+getTypeAncestry :: MonadIO m => GI.GType -> m [GI.GType]
 getTypeAncestry t = do
     mp <- getTypeParent t
     case mp of
@@ -39,12 +36,12 @@ getTypeAncestry t = do
             rest <- getTypeAncestry p
             return $ t : rest
 
-getObjectTypeAncestry :: (MonadIO m, GObject a) => a -> m [GType]
+getObjectTypeAncestry :: (MonadIO m, GI.GObject a) => a -> m [GI.GType]
 getObjectTypeAncestry v = do
     t <- getObjectType v
     getTypeAncestry t
 
-getObjectTypeName :: (MonadIO m, GObject a) => a -> m Text
+getObjectTypeName :: (MonadIO m, GI.GObject a) => a -> m Text
 getObjectTypeName a = do
     t <- getObjectType a
     getTypeName t

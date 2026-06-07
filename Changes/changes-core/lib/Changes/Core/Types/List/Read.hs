@@ -26,5 +26,5 @@ instance forall reader. SubjectReader reader => SubjectReader (ListReader reader
 instance forall reader. FullSubjectReader reader => FullSubjectReader (ListReader reader) where
     readableToSubject mr = do
         len <- mr ListReadLength
-        list <- for [0 .. pred len] $ \i -> readableToSubject $ knownItemReadFunction i mr
+        list <- for (zltList len) $ \i -> readableToSubject $ knownItemReadFunction i mr
         return $ fromList list

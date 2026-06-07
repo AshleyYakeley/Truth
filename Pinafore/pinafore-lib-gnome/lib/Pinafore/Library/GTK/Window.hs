@@ -9,7 +9,7 @@ where
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
-import GI.Gtk as GI hiding (Action)
+import GI.Gtk (FileChooserAction (..))
 import Pinafore.API
 import Shapes
 
@@ -20,8 +20,8 @@ import Pinafore.Library.GTK.Widget
 -- LangWindow
 data LangWindow = MkLangWindow
     { lwContext :: LangContext
-    , lwClose :: GView 'Unlocked ()
-    , lwWindow :: UIWindow
+    , lwClose :: GSemiview 'Unlocked ()
+    , lwWindow :: Window
     }
 
 windowGroundType :: QGroundType '[] LangWindow
@@ -30,8 +30,8 @@ windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 instance HasQGroundType '[] LangWindow where
     qGroundType = windowGroundType
 
--- UIWindow
-instance HasQType QPolyShim 'Negative UIWindow where
+-- Window
+instance HasQType QPolyShim 'Negative Window where
     qType = mapNegShimWit (functionToShim "lwWindow" lwWindow) qType
 
 createLangWindow :: LangContext -> WindowSpec -> View LangWindow
@@ -41,8 +41,8 @@ createLangWindow lc uiw = do
     let lwClose = wclose
     return $ MkLangWindow{..}
 
-uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow{..} = runGView (lcGTKContext lwContext) lwClose
+uiWindowClose :: LangWindow -> Semiview ()
+uiWindowClose MkLangWindow{..} = runGSemiview (lcGTKContext lwContext) lwClose
 
 openWindow :: LangContext -> (Natural, Natural) -> ImmutableWholeModel Text -> LangWidget -> Action LangWindow
 openWindow lc (w, h) title (MkLangWidget widget) =
@@ -55,36 +55,36 @@ openWindow lc (w, h) title (MkLangWidget widget) =
                     $ let
                         wsSize :: (Int32, Int32)
                         wsSize = (fromIntegral w, fromIntegral h)
-                        wsPosition = WindowPositionCenter
                         wsCloseBoxAction :: GView 'Locked ()
-                        wsCloseBoxAction = gvRunUnlocked $ lwClose window
+                        wsCloseBoxAction = lift $ gsvRunUnlocked $ lwClose window
                         wsTitle :: Model (ROWUpdate Text)
                         wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
-                        wsContent :: AccelGroup -> GView 'Unlocked Widget
-                        wsContent ag =
+                        wsContent :: GView 'Unlocked Widget
+                        wsContent =
                             widget
                                 MkWidgetContext
                                     { wcUnlift = unlift
-                                    , wcAccelGroup = ag
                                     , wcSelectNotify = mempty
                                     , wcOtherContext = lcOtherContext lc
                                     }
                         in MkWindowSpec{..}
 
-exitUI :: LangContext -> View ()
-exitUI lc = runGView (lcGTKContext lc) $ gvExitUI
+exitUI :: LangContext -> ActionException -> View ()
+exitUI lc aex = runGView (lcGTKContext lc) $ gvExitUI $ case aex of
+    ExActionException ex -> FailureResult ex
+    StopActionException -> SuccessResult ()
 
 showWindow :: LangWindow -> View ()
-showWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowShow lwWindow
+showWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ #present lwWindow
 
 hideWindow :: LangWindow -> View ()
-hideWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowHide lwWindow
+hideWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ #setVisible lwWindow False
 
 run :: forall a. (LangContext -> Action a) -> Action a
 run call =
     actionTunnelView $ \unlift ->
-        runGTKView $ \gtkc -> do
-            clipboard <- runGView gtkc getClipboard
+        runGTK $ \gtkc -> do
+            clipboard <- runGView gtkc getTheClipboardModel
             unlift
                 $ call
                 $ MkLangContext{lcGTKContext = gtkc, lcOtherContext = MkOtherContext{ocClipboard = clipboard}}
@@ -97,7 +97,7 @@ windowStuff =
         [ typeBDS "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
         , valBDS
             "run"
-            "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed."
+            "Run GTK with the provided function, then wait until all windows are closed or `exit` is called."
             $ run @A
         , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
@@ -110,15 +110,19 @@ windowStuff =
         , valBDS "exit" "Exit the user interface." exitUI
         ]
 
-langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Bool) -> Action LangFile
-langChooseFile action lc test =
-    actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
+langChooseFile :: FileChooserAction -> LangContext -> LangWindow -> Maybe [(Text, Maybe Text)] -> Action (LangStoppableTask LangFile)
+langChooseFile action lc lw test =
+    fmap (MkLangStoppableTask . hoistStoppableTask (actionLiftView . runGView (lcGTKContext lc)))
+        $ actionLiftView
+        $ runGView (lcGTKContext lc)
+        $ gvRunLocked
+        $ chooseFile action (lwWindow lw) test
 
 dialogStuff :: LibraryStuff
 dialogStuff =
     headingBDS
         "Dialogs"
         ""
-        [ valBDS "chooseExistingFile" "Run a dialog to choose an existing file." $ langChooseFile FileChooserActionOpen
-        , valBDS "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
+        [ valBDS "chooseExistingFile" "Create a dialog to choose an existing file." $ langChooseFile FileChooserActionOpen
+        , valBDS "chooseNewFile" "Create a dialog to choose a new file." $ langChooseFile FileChooserActionSave
         ]

@@ -6,12 +6,17 @@ where
 -- shapes
 import Control.Applicative.Wrapped as I
 import Control.AsyncRunner as I
-import Control.CallbackLock as I
+import Control.AsyncRunner.ThreadBound as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
 import Control.Category.Lifted as I
 import Control.Clock as I
+import Control.Concurrent.TPieceVar as I
 import Control.FixIO as I
+import Control.Lock.Callback as I
+import Control.Lock.IsLock as I
+import Control.Lock.LockableT as I
+import Control.Lock.SingleThread as I
 import Control.Stream as I
 import Control.Task as I
 import Data.CatEndo as I

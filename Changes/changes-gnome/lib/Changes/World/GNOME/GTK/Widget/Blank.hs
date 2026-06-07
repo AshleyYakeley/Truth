@@ -3,13 +3,12 @@ module Changes.World.GNOME.GTK.Widget.Blank
     )
 where
 
-import GI.Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-createBlank :: GView 'Unlocked Widget
+createBlank :: GView 'Unlocked GI.Widget
 createBlank =
     gvRunLocked $ do
-        widget <- gvNew DrawingArea []
-        toWidget widget
+        widget <- gvNew GI.DrawingArea []
+        GI.toWidget widget
