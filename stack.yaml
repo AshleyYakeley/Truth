@@ -7,7 +7,7 @@ packages:
 - external/countable
 - external/witness
 #- external/open-witness
-#- external/type-rig
+- external/type-rig
 - external/monadology
 #- external/primitive-serial
 
