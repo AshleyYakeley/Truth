@@ -62,8 +62,8 @@ langListModelCountModel (FullLangListModel model) =
             model
 
 langListModelRead :: forall p q t. LangListModel '(p, q) -> ReadM (ListReader (WholeReader q)) t -> Action t
-langListModelRead (OrderedLangListModel model) rm = actionModelGet model rm
-langListModelRead (FullLangListModel model) rm = actionModelGet model rm
+langListModelRead (OrderedLangListModel model) rm = actionModelRead model rm
+langListModelRead (FullLangListModel model) rm = actionModelRead model rm
 
 langListModelGetCount :: forall p q. LangListModel '(p, q) -> Action Natural
 langListModelGetCount model = fmap (toNaturalForce . unSequencePoint) $ langListModelRead model $ readM ListReadLength

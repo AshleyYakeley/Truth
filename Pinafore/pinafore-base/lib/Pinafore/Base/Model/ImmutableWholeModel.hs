@@ -35,7 +35,7 @@ immutableModelToRejectingBiModel model =
     eaMap (fromReadOnlyRejectingChangeLens . readOnlyBiChangeLens) $ immutableModelToReadOnlyModel model
 
 getImmutableModel :: ImmutableWholeModel a -> Action (Know a)
-getImmutableModel model = actionModelGet (immutableModelToReadOnlyModel model) $ readM ReadWhole
+getImmutableModel model = actionModelRead (immutableModelToReadOnlyModel model) $ readM ReadWhole
 
 functionImmutableModel :: WROWModel a -> ImmutableWholeModel a
 functionImmutableModel fv = MkImmutableWholeModel $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv

@@ -23,8 +23,8 @@ instance EditApplicative WModel where
 instance FloatingEditApplicative WModel where
     eaFloatMap rc flens (MkWModel sub) = fmap MkWModel $ floatMapModel rc flens sub
 
-wModelGet :: ResourceContext -> WModel update -> ReadM (UpdateReader update) t -> IO t
-wModelGet rc (MkWModel sub) readm = runResource rc sub $ \asub -> unReadM readm $ aModelRead asub
+wModelRead :: ResourceContext -> WModel update -> ReadM (UpdateReader update) t -> IO t
+wModelRead rc (MkWModel sub) readm = runResource rc sub $ \asub -> unReadM readm $ aModelRead asub
 
 wModelPush :: ResourceContext -> WModel update -> NonEmpty (UpdateEdit update) -> IO Bool
 wModelPush rc (MkWModel sub) edits = runResource rc sub $ \asub -> pushEdit noEditSource $ aModelEdit asub edits
