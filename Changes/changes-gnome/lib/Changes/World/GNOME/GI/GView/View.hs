@@ -59,7 +59,7 @@ import Import
 type GView :: LockState -> Type -> Type
 type GView ls = LifecycleT (GSemiview 'Unlocked) (GSemiview ls)
 
-gvGetContext :: GView ls (GTKContext ls)
+gvGetContext :: GView ls GTKContext
 gvGetContext = lift gsvGetContext
 
 type GViewState :: Type
@@ -90,13 +90,11 @@ gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GSemiview 'Unlocked ())
 gvGetCloser gv = trustMeNoUI @ls $ trustMeNoUI @'Unlocked $ lifecycleGetCloser gv
 
 -- | `View` is implicitly unlocked.
-runGView :: GTKContext 'Unlocked -> GView 'Unlocked --> View
+runGView :: GTKContext -> GView 'Unlocked --> View
 runGView ctx = hoistLifecycleBoth $ runGSemiview ctx
 
-runGViewOnGTKThread :: GTKContext 'Locked -> GView 'Locked --> View
-runGViewOnGTKThread ctxl gvl = do
-    ctxu <- provideUnlocked ctxl
-    hoist (runGSemiviewOnGTKThread ctxl) $ hoistLifecycleClose (runGSemiview ctxu) gvl
+runGViewOnGTKThread :: GTKContext -> GView 'Locked --> View
+runGViewOnGTKThread context gvl = hoist (runGSemiviewOnGTKThread context) $ hoistLifecycleClose (runGSemiview context) gvl
 
 gvLiftIO :: IO --> GView 'Locked
 gvLiftIO = liftIO
@@ -128,11 +126,10 @@ gvLiftViewWithUnlift call =
 gvLiftLifecycle :: Lifecycle --> GView 'Unlocked
 gvLiftLifecycle = gvLiftView . viewLiftLifecycle
 
-gvAskUnliftView :: forall ls. Is LockStateType ls => GView ls (WRaised (GView 'Unlocked) View)
+gvAskUnliftView :: forall ls. GView ls (WRaised (GView 'Unlocked) View)
 gvAskUnliftView = do
-    gtkc <- gvGetContext
-    gtkcu <- trustMeNoUI @ls $ provideUnlocked gtkc
-    return $ MkWRaised $ runGView gtkcu
+    context <- gvGetContext
+    return $ MkWRaised $ runGView context
 
 gvAskUnliftLifecycle :: GView 'Unlocked (WRaised (GView 'Unlocked) Lifecycle)
 gvAskUnliftLifecycle = do
@@ -195,18 +192,16 @@ type GTKAsyncUnlift a = GView 'Unlocked a -> IO a
 
 gvWithAsyncUnlift ::
     forall ls def a.
-    Is LockStateType ls =>
     def ->
     (GTKAsyncUnlift def -> GView ls a) ->
     GView ls a
 gvWithAsyncUnlift defaultVal call = do
-    ctx <- gvGetContext
-    ctxu <- trustMeNoUI @ls $ provideUnlocked ctx
+    context <- gvGetContext
     MkWRaised unlift <- gvLiftViewAny viewAskUnliftIOAsync
     call
-        $ handleExc (\ex -> gtkcExit ctx (FailureResult ex) >> return defaultVal)
+        $ handleExc (\ex -> gtkcExit context (FailureResult ex) >> return defaultVal)
         . unlift
-        . runGView ctxu
+        . runGView context
 
 gvNewEditSource :: GView ls EditSource
 gvNewEditSource = gvLiftIOTrustMeNoUI newEditSource

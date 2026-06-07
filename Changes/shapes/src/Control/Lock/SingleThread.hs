@@ -6,34 +6,31 @@ import Control.Concurrent.TPieceVar
 import Control.Lock.IsLock
 import Shapes.Import
 
-data family SingleThreadLock (ls :: LockState) :: Type
-
-data instance SingleThreadLock 'Locked = MkLockedSingleTheadLock (TPieceVar (IO ()))
-
-data instance SingleThreadLock 'Unlocked = MkUnlockedSingleTheadLock (TPieceVar (IO ())) ThreadId
+data SingleThreadLock = MkSingleTheadLock
+    { stlVar :: TPieceVar (IO ())
+    , stlIsThread :: IO Bool
+    }
 
 instance IsLock SingleThreadLock where
-    runLockedIO (MkUnlockedSingleTheadLock var threadId) la = do
-        thisThread <- myThreadId
-        if threadId == thisThread
-            then la $ MkLockedSingleTheadLock var
-            else pusherWait (\work -> atomically $ ppPush var work) $ la $ MkLockedSingleTheadLock var
-    runUnlockedIO llock ua = do
-        ulock <- provideUnlockedIO llock
-        ua ulock
-    provideUnlockedIO (MkLockedSingleTheadLock var) = do
-        thisThread <- myThreadId
-        return $ MkUnlockedSingleTheadLock var thisThread
+    runLockedIO lock la = do
+        isThread <- stlIsThread lock
+        if isThread
+            then la
+            else pusherWait (\work -> atomically $ ppPush (stlVar lock) work) la
+    runUnlockedIO _ = id
 
-mkSingleThreadLock :: ThreadId -> TPieceVar (IO ()) -> SingleThreadLock 'Unlocked
-mkSingleThreadLock threadId var = MkUnlockedSingleTheadLock var threadId
+isThisThread :: ThreadId -> IO Bool
+isThisThread threadId = do
+    thisThread <- myThreadId
+    return $ threadId == thisThread
 
-newSingleThreadLock :: TPieceVar (IO ()) -> IO (SingleThreadLock 'Unlocked)
+mkSingleThreadLock :: TPieceVar (IO ()) -> IO Bool -> SingleThreadLock
+mkSingleThreadLock = MkSingleTheadLock
+
+newSingleThreadLock :: TPieceVar (IO ()) -> IO SingleThreadLock
 newSingleThreadLock var = do
     thisThread <- myThreadId
-    return $ MkUnlockedSingleTheadLock var thisThread
+    return $ MkSingleTheadLock var $ isThisThread thisThread
 
-runUnlockedIOAllowAsync :: forall a. SingleThreadLock 'Locked -> (SingleThreadLock 'Unlocked -> IO a) -> IO a
-runUnlockedIOAllowAsync llock@(MkLockedSingleTheadLock var) call = do
-    ulock <- provideUnlockedIO llock
-    asyncIORunnerThreadBound var $ call ulock
+runUnlockedIOAllowAsync :: SingleThreadLock -> IO --> IO
+runUnlockedIOAllowAsync lock = asyncIORunnerThreadBound $ stlVar lock

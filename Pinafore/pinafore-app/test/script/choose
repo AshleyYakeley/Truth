@@ -1,14 +1,7 @@
 #!/usr/bin/env pinafore1
 import "media", "gnome"
-do
-{
-    gtk <- runAsync.GTK;
-    open.Window.GTK gtk (300, 100) ap{"Choose File"} blank.Widget.GTK;
-}
-
-{#
 run.GTK $ fn gtk =>
-# async.Task $ fn _ =>
+async.StoppableTask $ fn _ =>
 let rec {
     showFile: Action Unit =
         do {
@@ -30,4 +23,3 @@ let rec {
             showFile;
         };
 } showFile
-#}

@@ -18,7 +18,7 @@ let {
                     submenu "File" [
                         action ap{("Close" ,Just "Ctrl+W")} ap{close.Window window},
                         separator,
-                        action ap{("Exit" ,Just "Ctrl+Q")} ap{exit gtk}
+                        action ap{("Exit" ,Just "Ctrl+Q")} ap{exit gtk Mk.Stop}
                     ],
                     submenu "Edit" [
                         action ap{("Undo" ,Just "Ctrl+Z")} ap{queueUndo.UndoHandler uh},

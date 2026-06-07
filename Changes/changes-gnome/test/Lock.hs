@@ -11,16 +11,17 @@ import Changes.World.GNOME.GTK
 
 lockTest :: String -> GView 'Unlocked a -> (a -> GView 'Unlocked ()) -> TestTree
 lockTest name setup action =
-    testTree name $ runLifecycle $ do
+    testTree name $ do
         (task, _) <-
-            do
-                gtkc <- runGTK
-                runView $ do
-                    a <- runGView gtkc setup
-                    viewLiftLifecycle
-                        $ liftIOWithUnlift
-                        $ \unlift -> forkTask $ unlift $ runView $ runGView gtkc $ action a
-        liftIO $ taskWait task
+            runLifecycle
+                $ runGTK
+                $ \gtkc -> do
+                    runView $ do
+                        a <- runGView gtkc setup
+                        viewLiftLifecycle
+                            $ liftIOWithUnlift
+                            $ \unlift -> forkTask $ unlift $ runView $ runGView gtkc $ action a
+        taskWait task
 
 blankWindowSpec :: WindowSpec
 blankWindowSpec = let
@@ -42,9 +43,7 @@ lockTests :: TestTree
 lockTests =
     testTree
         "lock"
-        [ testTree @(IO ()) "run" $ runLifecycle $ do
-            _ <- runGTK
-            return ()
+        [ testTree @(IO ()) "run" $ runLifecycle $ runGTK $ \_ -> return ()
         , lockTest "return" (return ()) noAction
         , lockTest "lock" (gvRunLocked $ return ()) noAction
         , lockTest "lock-unlock-1" (gvRunLocked $ gvRunUnlocked $ return ()) noAction
@@ -92,10 +91,9 @@ lockTests =
                             $ do
                                 threadSleep 0.1
                                 runLockedIO gtkc
-                                    $ \_ ->
-                                        unlift
-                                            $ gvLiftIOTrustMeNoUI
-                                            $ putMVar var ()
+                                    $ unlift
+                                    $ gvLiftIOTrustMeNoUI
+                                    $ putMVar var ()
                 gvLiftIOTrustMeNoUI $ takeMVar var
             in lockTest "on" setup noAction
         , let

@@ -46,14 +46,14 @@ instance Given (HasNoUnlockedUICalls ls) => MonadUnliftIO (GSemiview ls) where
     liftIOWithUnlift call = MkGSemiview $ liftIOWithUnlift $ \unlift -> call $ unlift . unGSemiview
 
 -- | Run this only when you already know you're on the GTK thread.
-runGSemiviewOnGTKThread :: GTKContext ls -> GSemiview ls --> Semiview
+runGSemiviewOnGTKThread :: GTKContext -> GSemiview ls --> Semiview
 runGSemiviewOnGTKThread ctx (MkGSemiview ma) = runLockableT ctx ma
 
 -- | A `Semiview` is implicitly unlocked.
-runGSemiview :: GTKContext 'Unlocked -> GSemiview 'Unlocked --> Semiview
+runGSemiview :: GTKContext -> GSemiview 'Unlocked --> Semiview
 runGSemiview = runGSemiviewOnGTKThread
 
-mkGSemiView :: (GTKContext ls -> Semiview a) -> GSemiview ls a
+mkGSemiView :: (GTKContext -> Semiview a) -> GSemiview ls a
 mkGSemiView rma = MkGSemiview $ mkLockableT rma
 
 gsvLiftIO :: IO --> GSemiview 'Locked
@@ -69,10 +69,8 @@ gsvRunUnlocked :: GSemiview 'Unlocked --> GSemiview 'Locked
 gsvRunUnlocked (MkGSemiview ma) = MkGSemiview $ lockableTRunUnlocked ma
 
 gsvRunUnlockedAllowAsync :: GSemiview 'Unlocked --> GSemiview 'Locked
-gsvRunUnlockedAllowAsync gsva = mkGSemiView $ \lockedContext ->
-    tunnelIO $ \tun ->
-        runUnlockedIOAllowAsync (gtkcLock lockedContext) $ \unlockedSTL ->
-            tun $ runGSemiview (gtkContextSetLock unlockedSTL lockedContext) gsva
+gsvRunUnlockedAllowAsync gsva = mkGSemiView $ \context ->
+    hoistIO (runUnlockedIOAllowAsync $ gtkcLock context) (runGSemiview context gsva)
 
 gsvRelock ::
     forall lsfrom lsto.
@@ -86,7 +84,7 @@ gsvRelock = case lockStateType @lsfrom of
         UnlockedType -> gsvRunLocked
         LockedType -> id
 
-gsvGetContext :: GSemiview ls (GTKContext ls)
+gsvGetContext :: GSemiview ls GTKContext
 gsvGetContext = MkGSemiview lockableTGetLock
 
 gsvLiftSemiviewAny :: forall ls. Semiview --> GSemiview ls

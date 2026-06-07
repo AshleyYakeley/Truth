@@ -71,6 +71,7 @@ docker:
     enable: true
     image: "local-build_lts-24.31"
     env:
+    - "DISPLAY"
     - "LIBGL_ALWAYS_SOFTWARE=1"  # don't attempt to use DRM
     - "GTK_A11Y=none"  # don't complain about lack of accessibility bus
 

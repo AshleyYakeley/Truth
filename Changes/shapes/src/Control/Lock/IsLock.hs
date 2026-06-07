@@ -5,7 +5,6 @@ module Control.Lock.IsLock
     , IsLock (..)
     , runLocked
     , runUnlocked
-    , provideUnlocked
     )
 where
 
@@ -45,43 +44,20 @@ lockStateType ::
     LockStateType ls
 lockStateType = representative @_ @_ @ls
 
-class IsLock (lock :: LockState -> Type) where
-    runLockedIO :: forall a. lock 'Unlocked -> (lock 'Locked -> IO a) -> IO a
-    runUnlockedIO :: forall a. lock 'Locked -> (lock 'Unlocked -> IO a) -> IO a
+class IsLock (lock :: Type) where
+    runLockedIO :: lock -> IO --> IO
+    runUnlockedIO :: lock -> IO --> IO
 
-    -- | for providing to another thread
-    provideUnlockedIO :: lock 'Locked -> IO (lock 'Unlocked)
+runLocked :: forall lock m. (IsLock lock, MonadHoistIO m) => lock -> m --> m
+runLocked lock = hoistIO $ runLockedIO lock
 
-runLocked :: forall lock m a. (IsLock lock, MonadTunnelIO m) => lock 'Unlocked -> (lock 'Locked -> m a) -> m a
-runLocked lock rma = tunnelIO $ \tun ->
-    runLockedIO lock $ \lock' ->
-        tun $ rma lock'
+runUnlocked :: forall lock m. (IsLock lock, MonadHoistIO m) => lock -> m --> m
+runUnlocked lock = hoistIO $ runUnlockedIO lock
 
-runUnlocked :: forall lock m a. (IsLock lock, MonadTunnelIO m) => lock 'Locked -> (lock 'Unlocked -> m a) -> m a
-runUnlocked lock rma = tunnelIO $ \tun ->
-    runUnlockedIO lock $ \lock' ->
-        tun $ rma lock'
+instance IsLock () where
+    runLockedIO () = id
+    runUnlockedIO () = id
 
-provideUnlocked :: forall lock ls m. (IsLock lock, Is LockStateType ls, MonadIO m) => lock ls -> m (lock 'Unlocked)
-provideUnlocked lock = case lockStateType @ls of
-    LockedType -> liftIO $ provideUnlockedIO lock
-    UnlockedType -> return lock
-
-instance IsLock (Const a) where
-    runLockedIO (Const a) call = call $ Const a
-    runUnlockedIO (Const a) call = call $ Const a
-    provideUnlockedIO (Const a) = return $ Const a
-
-instance (IsLock p, IsLock q) => IsLock (PairType p q) where
-    runLockedIO (MkPairType pl ql) call =
-        runLockedIO pl $ \pl' ->
-            runLockedIO ql $ \ql' ->
-                call $ MkPairType pl' ql'
-    runUnlockedIO (MkPairType pl ql) call =
-        runUnlockedIO ql $ \ql' ->
-            runUnlockedIO pl $ \pl' ->
-                call $ MkPairType pl' ql'
-    provideUnlockedIO (MkPairType pl ql) = do
-        pl' <- provideUnlockedIO pl
-        ql' <- provideUnlockedIO ql
-        return $ MkPairType pl' ql'
+instance (IsLock p, IsLock q) => IsLock (p, q) where
+    runLockedIO (pl, ql) = runLockedIO pl . runLockedIO ql
+    runUnlockedIO (pl, ql) = runUnlockedIO ql . runUnlockedIO pl

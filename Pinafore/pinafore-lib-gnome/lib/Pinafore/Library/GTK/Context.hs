@@ -12,7 +12,7 @@ data OtherContext = MkOtherContext
     }
 
 data LangContext = MkLangContext
-    { lcGTKContext :: GTKContext 'Unlocked
+    { lcGTKContext :: GTKContext
     , lcOtherContext :: OtherContext
     }
 
