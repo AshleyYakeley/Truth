@@ -179,6 +179,9 @@
             default = pkgs.mkShell
               {
                 buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                shellHook = ''
+                  export PATH="$PWD/bin:$PATH"
+                '';
               };
             haskell-nix = flake.devShells.default;
           };
