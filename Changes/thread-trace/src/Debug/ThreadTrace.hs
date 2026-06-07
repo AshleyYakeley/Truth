@@ -139,11 +139,16 @@ traceIOM msg =
                     then do
                         MkSystemTime s ns <- getSystemTime
                         tid <- myThreadId
+                        isBound <- isCurrentThreadBound
                         let
-                            threadtext =
+                            threadtxt =
                                 case show tid of
                                     'T' : 'h' : 'r' : 'e' : 'a' : 'd' : 'I' : 'd' : ' ' : t -> '#' : t
                                     t -> t
+                            boundtxt =
+                                if isBound
+                                    then "!"
+                                    else ""
                             nametxt =
                                 case tdName tdata of
                                     "" -> ""
@@ -156,7 +161,16 @@ traceIOM msg =
                             showMod 0 _ = ""
                             showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
                         traceIO
-                            $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> statetxt <> ": " <> msg
+                            $ show s
+                                <> "."
+                                <> showMod 9 ns
+                                <> ": "
+                                <> threadtxt
+                                <> boundtxt
+                                <> nametxt
+                                <> statetxt
+                                <> ": "
+                                <> msg
                     else traceIO msg
             else return ()
 
