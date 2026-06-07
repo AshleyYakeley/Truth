@@ -137,10 +137,11 @@ viewBindModelUpdates model testesrc initv utask recv = do
     liftIOWithUnlift $ \unlift ->
         unlift
             $ viewRunResourceContext model
-            $ \stunlift amodel -> do
+            $ \stunlift (amodel :: _ tt) -> do
                 a <- initv
+                Dict <- return $ transStackDict @MonadIO @tt @IO
                 viewLiftLifecycle
-                    $ stunlift
+                    $ hoist stunlift
                     $ aModelSubscribe amodel (utask a)
                     $ \urc updates ec@MkEditContext{..} ->
                         if testesrc editContextSource

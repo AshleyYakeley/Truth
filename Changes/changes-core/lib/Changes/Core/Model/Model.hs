@@ -31,7 +31,7 @@ import Changes.Core.Types
 
 data AModel update tt = MkAModel
     { aModelAReference :: AReference (UpdateEdit update) tt
-    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
+    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO (ApplyStack tt IO) ()
     , aModelUpdatesTask :: Task IO ()
     }
 
@@ -55,7 +55,7 @@ instance MapResource (AModel update) where
                 case transStackDict @Monad @tt2 @IO of
                     Dict -> let
                         obj2 = mapResource tlf obj1
-                        sub2 recv task = tlfFunction tlf (Proxy @Lifecycle) $ sub1 recv task
+                        sub2 recv task = hoist (tlfFunction tlf (Proxy @IO)) $ sub1 recv task
                         in MkAModel obj2 sub2 utask
 
 type Model update = Resource (AModel update)
@@ -98,7 +98,8 @@ singleUpdateQueue updates ec = MkUpdateQueue $ pure (ec, updates)
 
 modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
 modelPremodel rc (MkResource rr MkAModel{..}) val update utask = do
-    runResourceRunner rc rr $ aModelSubscribe update utask
+    Dict <- return $ resourceRunnerStackUnliftDict @IO rr
+    hoist (\ma -> runResourceRunner rc rr ma) $ aModelSubscribe update utask
     return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
 makeSharedModel :: forall update a. Premodel update a -> Lifecycle (Model update, a)
@@ -121,9 +122,9 @@ makeSharedModel premodel = do
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
-            Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
+            Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO (ApplyStack tt IO) ()
         aModelSubscribe taskC updateC =
-            stackLift @tt @Lifecycle $ do
+            hoist (stackLift @tt @IO) $ do
                 key <-
                     liftIO
                         $ mVarRunStateT var

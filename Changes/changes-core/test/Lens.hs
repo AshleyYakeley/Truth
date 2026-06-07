@@ -11,8 +11,8 @@ import Changes.Core
 collectModelUpdates :: ResourceContext -> Model update -> Lifecycle (IO [update])
 collectModelUpdates rc sub = do
     var <- liftIO $ newMVar []
-    runResource rc sub $ \asub ->
-        aModelSubscribe asub mempty $ \_ updates _ec -> do
+    tunnel $ \tun -> runResource rc sub $ \asub ->
+        tun $ aModelSubscribe asub mempty $ \_ updates _ec -> do
             mVarRunStateT var $ do
                 uu <- get
                 put $ uu <> toList updates
