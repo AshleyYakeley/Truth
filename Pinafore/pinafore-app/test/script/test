@@ -14,13 +14,13 @@ let {
         fn title, contents => mfix.Action $ fn window => let {
             mbar: Widget =
                 menuBar.Widget $
-                with MenuEntry.GTK. [
-                    submenu "File" [
+                with Menu.GTK. [
+                    menu "File" [
                         action ap{("Close" ,Just "Ctrl+W")} ap{close.Window window},
                         separator,
                         action ap{("Exit" ,Just "Ctrl+Q")} ap{exit gtk Mk.Stop}
                     ],
-                    submenu "Edit" [
+                    menu "Edit" [
                         action ap{("Undo" ,Just "Ctrl+Z")} ap{queueUndo.UndoHandler uh},
                         action ap{("Redo" ,Just "Ctrl+Y")} ap{queueRedo.UndoHandler uh}
                     ]
@@ -322,8 +322,8 @@ let {
                 with Widget
                 let {
                     mbar: Widget =
-                        menuBar $ with MenuEntry [
-                                submenu "Menu" [
+                        menuBar $ with Menu [
+                                menu "Menu" [
                                     checked ap{("Value",Nothing)} value
                                 ]
                             ]

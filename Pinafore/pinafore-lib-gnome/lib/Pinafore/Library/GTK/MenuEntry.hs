@@ -15,17 +15,21 @@ import Shapes
 
 import Pinafore.Library.GTK.Widget
 
+-- LangMenu
+newtype LangMenu
+    = MkLangMenu ((View --> IO) -> Menu)
+
+instance HasQGroundType '[] LangMenu where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenu)|]) "Menu.GTK."
+
 -- LangMenuEntry
 newtype LangMenuEntry
     = MkLangMenuEntry ((View --> IO) -> MenuEntry)
 
-menuItemGroundType :: QGroundType '[] LangMenuEntry
-menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuEntry)|]) "MenuEntry.GTK."
-
 instance HasQGroundType '[] LangMenuEntry where
-    qGroundType = menuItemGroundType
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuEntry)|]) "Entry.Menu.GTK."
 
-type LangMenuBar = [LangMenuEntry]
+type LangMenuBar = [LangMenu]
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -60,26 +64,33 @@ menuChecked labelAccel val =
     MkLangMenuEntry $ \_ ->
         CheckedMenuEntry (getLabelAccelModel labelAccel) $ unWModel $ eaMap (unknownValueChangeLens False) val
 
-menuSubmenu :: Text -> [LangMenuEntry] -> LangMenuEntry
-menuSubmenu name entries =
-    MkLangMenuEntry $ \unlift -> SubMenuEntry name $ fmap (\(MkLangMenuEntry entry) -> entry unlift) entries
+mkMenu :: Text -> [LangMenuEntry] -> LangMenu
+mkMenu name entries =
+    MkLangMenu $ \unlift -> MkMenu name $ fmap (\(MkLangMenuEntry entry) -> entry unlift) entries
+
+menuSubmenu :: LangMenu -> LangMenuEntry
+menuSubmenu (MkLangMenu menu) =
+    MkLangMenuEntry $ \unlift -> SubMenuEntry $ menu unlift
 
 uiMenuBar :: LangMenuBar -> LangWidget
 uiMenuBar lmb =
-    MkLangWidget $ \MkWidgetContext{..} -> createMenuBar $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
+    MkLangWidget $ \MkWidgetContext{..} -> createMenuBar $ fmap (\(MkLangMenu me) -> me wcUnlift) lmb
 
 menuEntryStuff :: LibraryStuff
 menuEntryStuff =
     headingBDS
         "Menu"
         ""
-        [ typeBDS "MenuEntry" "A item of a menu." (MkSomeGroundType menuItemGroundType) []
+        [ typeBDS "Menu" "A menu." (qSomeGroundType @_ @LangMenu) []
+        , hasSubtypeRelationBDS @LangMenu @LangMenuEntry Verify "Menu as submenu"
+            $ functionToShim "submenu" menuSubmenu
         , namespaceBDS
-            "MenuEntry"
-            [ valBDS "separator" "Separator menu item." $ MkLangMenuEntry $ \_ -> SeparatorMenuEntry
-            , valBDS "submenu" "Submenu menu item." menuSubmenu
-            , valBDS "action" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
-            , valBDS "checked" "Checked menu item." menuChecked
+            "Menu"
+            [ typeBDS "Entry" "A entry on a menu." (qSomeGroundType @_ @LangMenuEntry) []
+            , valBDS "menu" "A menu (or submenu of a menu)." mkMenu
+            , valBDS "separator" "Separator menu entry." $ MkLangMenuEntry $ \_ -> SeparatorMenuEntry
+            , valBDS "action" "Action menu entry. Item will be disabled if the action reference is unknown." menuAction
+            , valBDS "checked" "Checked menu entry." menuChecked
             ]
         , namespaceBDS "Widget" [valBDS "menuBar" "Menu bar widget" uiMenuBar]
         ]

@@ -58,7 +58,7 @@ namespace UILib {
             = [];
 
         #| extra menus
-        extraMenus: List MenuEntry
+        extraMenus: List Menu
             = [];
 
         #| a `Pane` for a individual item
@@ -91,9 +91,9 @@ namespace UILib {
                     itemSet = itemSet;
                   };
 
-                allExtraMenus: List MenuEntry =
-                with MenuEntry.GTK. [
-                  submenu "Selection" $
+                allExtraMenus: List Menu =
+                with Menu.GTK. [
+                  menu "Selection" $
                   map.List (toMenuEntry.Command (context,setContext)) $
                   menuEntries <>.List [
                       viewCommand,

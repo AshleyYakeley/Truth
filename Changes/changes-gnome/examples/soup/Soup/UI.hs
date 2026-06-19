@@ -118,14 +118,14 @@ soupWindow newWindow dirpath = do
                         return ()
         mbar :: GViewState -> Window -> MenuBar
         mbar cc _ =
-            [ SubMenuEntry
+            [ MkMenu
                 "File"
                 [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W')
                     $ gvRunUnlocked
                     $ gvCloseState cc
                 , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                 ]
-            , SubMenuEntry
+            , MkMenu
                 "Item"
                 [ simpleActionMenuEntry "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') $ gvRunUnlocked newItem
                 , simpleActionMenuEntry "Delete" Nothing $ gvRunUnlocked $ withSelection deleteItem

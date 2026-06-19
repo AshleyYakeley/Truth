@@ -20,7 +20,7 @@ namespace UILib {
     datatype Pane {
       Mk {
         titleModel: WholeModel Text;
-        extraMenusModel: Context.Command -> WholeModel (List MenuEntry) = fn _ => ap{[]};
+        extraMenusModel: Context.Command -> WholeModel (List Menu) = fn _ => ap{[]};
         contents: Widget;
       };
     };
@@ -78,13 +78,13 @@ namespace UILib {
           mbar: Widget =
             dynamic.Widget ap{
               menuBar.Widget $
-              with MenuEntry.GTK., Command.UILib. [
-                submenu "File" [
+              with Menu.GTK., Command.UILib. [
+                menu "File" [
                   toMenuEntry context close,
                   separator,
                   toMenuEntry context exit
                 ],
-                submenu "Edit" [
+                menu "Edit" [
                   toMenuEntry context undo,
                   toMenuEntry context redo,
                   separator,

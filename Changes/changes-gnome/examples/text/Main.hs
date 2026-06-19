@@ -117,7 +117,7 @@ main = do
                                 return window
                             simpleUI :: AppUI
                             simpleUI closer =
-                                [ SubMenuEntry
+                                [ MkMenu
                                     "File"
                                     [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W')
                                         $ gvRunUnlocked
@@ -142,7 +142,7 @@ main = do
                                             Just (_, action) -> action emptyResourceContext noEditSource
                                             _ -> return False
                                     return ()
-                                in [ SubMenuEntry
+                                in [ MkMenu
                                         "File"
                                         [ simpleActionMenuEntry "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S')
                                             $ liftIO saveAction
@@ -153,7 +153,7 @@ main = do
                                         , SeparatorMenuEntry
                                         , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ gvExitUI $ SuccessResult ()
                                         ]
-                                   , SubMenuEntry
+                                   , MkMenu
                                         "Edit"
                                         [ simpleActionMenuEntry "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z')
                                             $ liftIO
