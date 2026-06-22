@@ -4,12 +4,16 @@ var: "ABC"
 pair: push [tuple first section 1+0 "x"]
 pair: push succeeded
 main: receive section 1+0 "x"
+{{{unordered}}}
 pair: receive tuple first section 1+0 "x"
 pair: receive tuple second section 1+0 "x"
+{{{/}}}
 var: "AxBC"
 pair: push [tuple second section 3+0 "y"]
 pair: push succeeded
 main: receive section 3+0 "y"
+{{{unordered}}}
 pair: receive tuple first section 3+0 "y"
 pair: receive tuple second section 3+0 "y"
+{{{/}}}
 var: "AxByC"

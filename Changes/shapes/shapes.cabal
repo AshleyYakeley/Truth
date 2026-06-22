@@ -82,6 +82,7 @@ library
       Shapes.Unsafe
       Shapes.Test
       Shapes.Test.Context
+      Shapes.Test.Filigree
   other-modules:
       Unsafe.Refl
       Shapes.Import

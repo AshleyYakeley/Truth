@@ -70,6 +70,7 @@ import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
 
 import Shapes
+import Shapes.Test.Filigree
 
 instance Arbitrary StrictByteString where
     arbitrary = fmap fromList $ arbitrary @[Word8]
@@ -190,7 +191,7 @@ testNoMARK = id
 
 testHandleVsFile :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree
 testHandleVsFile testName refPath outPath call =
-    goldenVsFile testName refPath outPath
+    filigreeVsFile testName refPath outPath
         $ withBinaryFile outPath WriteMode
         $ \h -> do
             hSetBuffering h NoBuffering
