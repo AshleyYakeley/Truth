@@ -5,7 +5,7 @@ PINAFOREVERSION := 0.6
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
-SNAPSHOT := lts-24.31
+SNAPSHOT := lts-24.45
 
 ### Flags for stack
 
@@ -207,7 +207,7 @@ LIBMODULEFILES := \
 		--suppress-tags-from-file deb/lintian-ignore \
 		.build/deb/$(PACKAGEFULLNAME).deb
 
-TESTDISTROS := ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
+TESTDISTROS := ubuntu:26.04 bitnami/minideb:$(DEBIANREL)
 
 out/pinafore.deps: ${BINPATH}/pinafore1 out
 	ldd $< > $@

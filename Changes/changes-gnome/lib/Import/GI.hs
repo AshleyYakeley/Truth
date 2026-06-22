@@ -14,7 +14,17 @@ import GI.GLib as I hiding
     , MINOR_VERSION
     , checkVersion
     )
-import GI.GObject as I
+import GI.GObject as I hiding
+    ( AnotherIOCondition
+    , IOCondition
+    , IOConditionErr
+    , IOConditionHup
+    , IOConditionIn
+    , IOConditionNval
+    , IOConditionOut
+    , IOConditionPri
+    , variantGetGtype
+    )
 import GI.Gdk as I hiding
     ( AnotherGravity
     , AppLaunchContext
@@ -85,6 +95,7 @@ import GI.Pango as I hiding
     ( AnotherWrapMode
     , WrapMode
     , WrapModeChar
+    , WrapModeNone
     , WrapModeWord
     , WrapModeWordChar
     )

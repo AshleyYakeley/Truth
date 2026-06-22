@@ -25,4 +25,6 @@ bindCSS priority cssmod widget = do
             sc <- #getStyleContext widget
             #addProvider sc provider priority
             return provider
-    gvBindReadOnlyWholeModel cssmod $ \css -> gvRunLocked $ #loadFromData provider $ encodeUtf8 css
+    gvBindReadOnlyWholeModel cssmod $ \css ->
+        gvRunLocked
+            $ #loadFromData provider css (-1)

@@ -23,7 +23,7 @@ oneWholeView model baseView sn = do
             item <- cvw
             gvRunLocked $ do
                 gvBoxPrepend box item
-                GI.widgetShow item
+                GI.widgetSetVisible item True
     gvInnerWholeView model (\fmodel -> addWidget $ baseView fmodel) sn
     return widget
 

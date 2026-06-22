@@ -4,16 +4,13 @@ import Changes.World.GNOME.GI.GView
 import Import
 import Import.GI qualified as GI
 
--- | Bind an object to a lifecycle, causing it to be deterministically disposed at the end of a lifecycle
--- rather than on finalisation. Not strictly necessary for correctness, but improves determinism.
+-- | Bind an object to a lifecycle, causing this Haskell-owned reference to be
+-- deterministically released at the end of the lifecycle rather than by GC finalisation.
 gvBind :: GI.IsObject a => a -> GView 'Locked ()
 gvBind a =
     gvOnClose
         $ gsvLiftIO
-        $ do
-            GI.objectUnref a
-            _ <- GI.disownObject a
-            return ()
+        $ GI.releaseObject a
 
 gvNewUnbound :: GI.Constructible a tag => (GI.ManagedPtr a -> a) -> [GI.AttrOp a tag] -> GView 'Locked a
 gvNewUnbound = GI.new

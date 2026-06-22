@@ -50,7 +50,7 @@ testUIAction text testaction =
 
 testActions :: ScriptTestTree
 testActions =
-    tGroup
+    tGroupSeq
         "GTK"
         [ testUIAction "pure ()" noTestAction
         , testUIAction "newpoint" noTestAction

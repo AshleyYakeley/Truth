@@ -33,20 +33,6 @@ packages:
   original:
     hackage: optparse-applicative-0.17.1.0
 - completed:
-    hackage: Cabal-syntax-3.12.1.0@sha256:6dbb06fb08ff77520947fb4c1ef281c9cea5b8dc7fd9a41ad62273fa916cf4b2,7407
-    pantry-tree:
-      sha256: 62e4b1bbdf7fe7d5259f45811e6fd0131823a10a8ec8c5eaf25370d444ac263a
-      size: 11051
-  original:
-    hackage: Cabal-syntax-3.12.1.0
-- completed:
-    hackage: Cabal-3.12.1.0@sha256:08be296ddd941b3f9be4bd125fbb3e6857f5c707b8d10464f6f1d30c91ca3e5f,13551
-    pantry-tree:
-      sha256: a509c8164a9682e2cbd080ef8446164fbe11a9c5c0f88b61f41094a8167e6a04
-      size: 11798
-  original:
-    hackage: Cabal-3.12.1.0
-- completed:
     hackage: ghc-lib-parser-9.10.2.20250515@sha256:3d91a6eb7f59cd134294759759d0ab56e793111e0f97e4697609737be260d047,17593
     pantry-tree:
       sha256: 2036f4c5bbe88faf92a5f3cd1eba649db35c8d4f5895e5d5592fa5fa36d97402
@@ -64,16 +50,9 @@ packages:
     version: 0.17.0.0
   original:
     url: https://github.com/AshleyYakeley/fourmolu/archive/8f7bfbaebfc7337e3301f87ba602fea65ad12323.tar.gz
-- completed:
-    hackage: open-witness-0.7@sha256:5eb33f9ec31d170b972811cc904398eae8188a9153d7c0d529345056987ad722,3704
-    pantry-tree:
-      sha256: c96d854bde89a1cbdd79735110ed4868ef8e5fc8fbf01d63744daf8ef73f3911
-      size: 921
-  original:
-    hackage: open-witness-0.7
 snapshots:
 - completed:
-    sha256: d5dc0b770386350f61aa8310d3d347e6ea16466a0b0adb533b64689840eebfd6
-    size: 726797
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/31.yaml
-  original: lts-24.31
+    sha256: e9e41fa6ceba9911de922014632ed66aa6f87af0cf92fc54f0e1835176a5be06
+    size: 732456
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/45.yaml
+  original: lts-24.45

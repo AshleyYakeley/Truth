@@ -41,7 +41,7 @@ closeAction closer = lift $ do
 
 lockTests :: TestTree
 lockTests =
-    testTree
+    inOrderTestGroup
         "lock"
         [ testTree @(IO ()) "run" $ runLifecycle $ runGTK $ \_ -> return ()
         , lockTest "return" (return ()) noAction
@@ -103,7 +103,7 @@ lockTests =
                     (w, closer) <- gvRunUnlocked $ gvGetCloser $ createWindow blankWindowSpec
                     #present w
                     return closer
-            in lockTest "window" setup closeAction
+            in lockTest "window-simple" setup closeAction
         , let
             setup :: GView 'Unlocked (GSemiview 'Unlocked ())
             setup =

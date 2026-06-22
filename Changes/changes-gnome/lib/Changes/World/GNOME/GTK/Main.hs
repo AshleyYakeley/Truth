@@ -76,7 +76,8 @@ startGTK = do
             gtkcLock = mkSingleThreadLock workVar $ do
                 isBound <- isCurrentThreadBound
                 if isBound
-                    then GI.mainContextIsOwner mc
+                    then
+                        GI.mainContextIsOwner $ Just mc
                     else return False
 
             context :: GTKContext

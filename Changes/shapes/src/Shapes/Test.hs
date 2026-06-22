@@ -19,6 +19,10 @@ module Shapes.Test
     , testTreeOne
     , testMARK
     , testNoMARK
+    , testGroup
+    , DependencyType (..)
+    , dependentTestGroup
+    , inOrderTestGroup
 
       -- * Options
     , localOption
