@@ -13,18 +13,22 @@ setCSSName :: Text -> GI.Widget -> GView 'Locked ()
 setCSSName name w = #setName w name
 
 setCSSClass :: Text -> GI.Widget -> GView 'Locked ()
-setCSSClass cssclass w = do
-    sc <- #getStyleContext w
-    #addClass sc cssclass
+setCSSClass cssclass w = GI.widgetAddCssClass w cssclass
 
 bindCSS :: Word32 -> Model (ROWUpdate Text) -> GI.Widget -> GView 'Unlocked ()
-bindCSS priority cssmod widget = do
+bindCSS priority cssmod _widget = do
     provider <-
         gvRunLocked $ do
             provider <- gvNew GI.CssProvider []
-            sc <- #getStyleContext widget
-            #addProvider sc provider priority
-            return provider
+            mdisplay <- GI.displayGetDefault
+            case mdisplay of
+                Just display -> do
+                    GI.styleContextAddProviderForDisplay display provider priority
+                    gvOnClose
+                        $ gsvLiftIO
+                        $ GI.styleContextRemoveProviderForDisplay display provider
+                    return provider
+                Nothing -> fail "No GDK display"
     gvBindReadOnlyWholeModel cssmod $ \css ->
         gvRunLocked
-            $ #loadFromData provider css (-1)
+            $ GI.cssProviderLoadFromString provider css

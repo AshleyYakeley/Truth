@@ -403,7 +403,7 @@ widgetStuff =
             , recordValueBDS
                 "styleSheet"
                 "A widget with a CSS style-sheet (applied to the whole tree of widgets). \
-                \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
+                \See the GTK CSS [overview](https://docs.gtk.org/gtk4/css-overview.html) and [properties](https://docs.gtk.org/gtk4/css-properties.html) for how this works."
                 uiStyleSheetParams
                 uiStyleSheet
             ]
