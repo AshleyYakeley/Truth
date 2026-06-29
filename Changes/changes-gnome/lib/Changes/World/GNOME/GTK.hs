@@ -32,7 +32,7 @@ import Changes.World.GNOME.GTK.Widget.SpinButton as I
 import Changes.World.GNOME.GTK.Widget.Switch as I
 import Changes.World.GNOME.GTK.Widget.Table as I
 import Changes.World.GNOME.GTK.Widget.Text as I
-import Changes.World.GNOME.GTK.Widget.TextEntry as I
+import Changes.World.GNOME.GTK.Widget.TextEntry as I (BadTextBehaviour (..), createTextEntry)
 import Changes.World.GNOME.GTK.Widget.TextStyle as I
 import Changes.World.GNOME.GTK.Widget.WebView as I
 import Changes.World.GNOME.GTK.Window as I

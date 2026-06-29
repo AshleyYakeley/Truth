@@ -88,7 +88,7 @@ type NoteUpdate = TupleUpdate NoteSel
 
 noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> GView 'Unlocked Widget
 noteEditSpec sub sel = do
-    titleUI <- createTextEntry $ mapModel (tupleChangeLens NoteTitle) sub
+    titleUI <- createTextEntry MarkBadText $ mapModel (tupleChangeLens NoteTitle) sub
     pastUI <- createCheckButton (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub
     textUI <- createTextView (mapModel (tupleChangeLens NoteText) sub) sel
     createLayout

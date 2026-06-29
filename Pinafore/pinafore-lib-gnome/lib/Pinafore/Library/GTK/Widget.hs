@@ -187,7 +187,7 @@ uiCheckBox name val =
             $ eaMap (toChangeLens knowMaybe) val
 
 uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangWidget
-uiTextEntry val = MkLangWidget $ \_ -> createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry val = MkLangWidget $ \_ -> createTextEntry MarkBadText $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
 
 uiLayout :: Orientation -> [LangLayoutWidget] -> LangWidget
 uiLayout orientation mitems =

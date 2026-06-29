@@ -1,6 +1,7 @@
-module Changes.World.GNOME.GTK.Test where
+module Changes.World.GNOME.GTK.Test (module I, module Changes.World.GNOME.GTK.Test) where
 
 import Changes.World.GNOME.GI
+import Changes.World.GNOME.GTK.Widget.TextEntry as I (testTextEntry)
 import Import
 import Import.GI qualified as GI
 
