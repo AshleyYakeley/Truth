@@ -219,16 +219,33 @@ uiExec pui =
             Known (MkLangWidget ui) -> ui ec
             Unknown -> createBlank
 
-uiStyleSheetParams :: ListType QDocSignature '[Word32]
-uiStyleSheetParams =
+uiStyleParams :: ListType QDocSignature '[Word32, Bool]
+uiStyleParams =
     ConsListType (mkValueDocSignature "priority" "CSS priority" $ Just $ fromIntegral GI.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        $ ConsListType (mkValueDocSignature "subtree" "apply to subtree" $ Just False)
         $ NilListType
 
-uiStyleSheet :: ListProduct '[Word32] -> ImmutableWholeModel CSSText -> LangWidget -> LangWidget
-uiStyleSheet (priority, ()) cssmodel (MkLangWidget mw) =
+uiStyle :: ListProduct '[Word32, Bool] -> ImmutableWholeModel Text -> LangWidget -> LangWidget
+uiStyle (priority, (subtree, ())) styleModel (MkLangWidget mw) =
     MkLangWidget $ \ec -> do
         widget <- mw ec
-        bindCSS priority (unWModel $ immutableWholeModelValue mempty $ fmap unCSSText cssmodel) widget
+        cssClass <- gvLiftIOTrustMeNoUI $ do
+            unique <- newUnique
+            return $ "pinafore-style-" <> fromString (show $ hashUnique unique)
+        gvRunLocked $ do
+            setCSSClass cssClass widget
+            gvOnClose
+                $ gsvLiftIO
+                $ GI.widgetRemoveCssClass widget cssClass
+        let
+            styleToCSS :: Text -> Text
+            styleToCSS styleText = let
+                selector =
+                    if subtree
+                        then "." <> cssClass <> ", ." <> cssClass <> " *"
+                        else "." <> cssClass
+                in selector <> " {" <> styleText <> "}\n"
+        bindCSS priority (unWModel $ immutableWholeModelValue mempty $ fmap styleToCSS styleModel)
         return widget
 
 uiName :: Text -> LangWidget -> LangWidget
@@ -401,10 +418,10 @@ widgetStuff =
                 "A widget with CSS class set. You can use something like `.text` to refer to all widgets in this class in the CSS style-sheet."
                 uiStyleClass
             , recordValueBDS
-                "styleSheet"
-                "A widget with a CSS style-sheet (applied to the whole tree of widgets). \
+                "style"
+                "A widget with CSS styles. \
                 \See the GTK CSS [overview](https://docs.gtk.org/gtk4/css-overview.html) and [properties](https://docs.gtk.org/gtk4/css-properties.html) for how this works."
-                uiStyleSheetParams
-                uiStyleSheet
+                uiStyleParams
+                uiStyle
             ]
         ]

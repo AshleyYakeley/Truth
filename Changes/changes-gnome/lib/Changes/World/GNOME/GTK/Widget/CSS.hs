@@ -15,8 +15,8 @@ setCSSName name w = #setName w name
 setCSSClass :: Text -> GI.Widget -> GView 'Locked ()
 setCSSClass cssclass w = GI.widgetAddCssClass w cssclass
 
-bindCSS :: Word32 -> Model (ROWUpdate Text) -> GI.Widget -> GView 'Unlocked ()
-bindCSS priority cssmod _widget = do
+bindCSS :: Word32 -> Model (ROWUpdate Text) -> GView 'Unlocked ()
+bindCSS priority cssmod = do
     provider <-
         gvRunLocked $ do
             provider <- gvNew GI.CssProvider []

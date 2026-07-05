@@ -11,7 +11,7 @@ run $ fn gtk => do {
     sel <- newMem.WholeModel;
     open.Window gtk (400,500) ap{"Text Selection"} $
         with Widget
-        styleSheet ap{Mk.CSSText "* {padding: 2pt;}"} $
+        style ap{"padding: 2pt;"} $
         vertical [
             grow.Layout $
             notifySelection (fn atm => sel := atm) $

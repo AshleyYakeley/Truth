@@ -10,7 +10,9 @@ import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
 import GI.Gtk (FileChooserAction (..))
+import GI.Gtk qualified as GI
 import Pinafore.API
+import Pinafore.Library.Media
 import Shapes
 
 import Pinafore.Library.GIO
@@ -36,7 +38,7 @@ instance HasQType QPolyShim 'Negative Window where
 
 createLangWindow :: LangContext -> WindowSpec -> View LangWindow
 createLangWindow lc uiw = do
-    (lwWindow, wclose) <- runGView (lcGTKContext lc) $ gvGetCloser $ createWindow uiw
+    (lwWindow, wclose) <- runLangContext lc $ gvGetCloser $ createWindow uiw
     let lwContext = lc
     let lwClose = wclose
     return $ MkLangWindow{..}
@@ -70,15 +72,15 @@ openWindow lc (w, h) title (MkLangWidget widget) =
                         in MkWindowSpec{..}
 
 exitUI :: LangContext -> ActionException -> View ()
-exitUI lc aex = runGView (lcGTKContext lc) $ gvExitUI $ case aex of
+exitUI lc aex = runLangContext lc $ gvExitUI $ case aex of
     ExActionException ex -> FailureResult ex
     StopActionException -> SuccessResult ()
 
 showWindow :: LangWindow -> View ()
-showWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ #present lwWindow
+showWindow MkLangWindow{..} = runLangContext lwContext $ gvRunLocked $ #present lwWindow
 
 hideWindow :: LangWindow -> View ()
-hideWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ #setVisible lwWindow False
+hideWindow MkLangWindow{..} = runLangContext lwContext $ gvRunLocked $ #setVisible lwWindow False
 
 run :: forall a. (LangContext -> Action a) -> Action a
 run call =
@@ -88,6 +90,16 @@ run call =
             unlift
                 $ call
                 $ MkLangContext{lcGTKContext = gtkc, lcOtherContext = MkOtherContext{ocClipboard = clipboard}}
+
+styleSheetParams :: ListType QDocSignature '[Word32]
+styleSheetParams =
+    ConsListType (mkValueDocSignature "priority" "CSS priority" $ Just $ fromIntegral GI.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        $ NilListType
+
+styleSheet :: ListProduct '[Word32] -> LangContext -> ImmutableWholeModel CSSText -> View ()
+styleSheet (priority, ()) lc cssmodel =
+    runLangContext lc
+        $ bindCSS priority (unWModel $ immutableWholeModelValue mempty $ fmap unCSSText cssmodel)
 
 windowStuff :: LibraryStuff
 windowStuff =
@@ -99,6 +111,7 @@ windowStuff =
             "run"
             "Run GTK with the provided function, then wait until all windows are closed or `exit` is called."
             $ run @A
+        , valBDS "exit" "Exit the user interface." exitUI
         , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
             "Window"
@@ -107,14 +120,19 @@ windowStuff =
             , valBDS "show" "Show a window." showWindow
             , valBDS "hide" "Hide a window." hideWindow
             ]
-        , valBDS "exit" "Exit the user interface." exitUI
+        , recordValueBDS
+            "styleSheet"
+            "Add a CSS style-sheet for GTK (for the duration of the lifecycle). \
+            \See the GTK CSS [overview](https://docs.gtk.org/gtk4/css-overview.html) and [properties](https://docs.gtk.org/gtk4/css-properties.html) for how this works."
+            styleSheetParams
+            styleSheet
         ]
 
 langChooseFile :: FileChooserAction -> LangContext -> LangWindow -> Maybe [(Text, Maybe Text)] -> Action (LangStoppableTask LangFile)
 langChooseFile action lc lw test =
-    fmap (MkLangStoppableTask . hoistStoppableTask (actionLiftView . runGView (lcGTKContext lc)))
+    fmap (MkLangStoppableTask . hoistStoppableTask (actionLiftView . runLangContext lc))
         $ actionLiftView
-        $ runGView (lcGTKContext lc)
+        $ runLangContext lc
         $ gvRunLocked
         $ chooseFile action (lwWindow lw) test
 

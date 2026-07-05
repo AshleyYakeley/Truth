@@ -191,8 +191,8 @@ let {
             cssref := rule.CSSText ".y, .y > text" [("color","green"),("font-family","\"serif\"")];
             sometext <- newMem.WholeModel;
             sometext := "whatever";
+            styleSheet gtk $ ignoreUpdateUIExceptions.GTK.Debug. cssref;
             std_window ap{"CSS"} $
-                styleSheet.Widget (ignoreUpdateUIExceptions.GTK.Debug. cssref) $
                 name.Widget "root" $
                 vertical.Widget [
                     styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget ap{"Box"} ap{True},
@@ -248,7 +248,7 @@ let {
                     fn atref => sel := atref;
             }
             std_window ap{"Text Selection"} $
-                styleSheet.Widget ap{rule.CSSText "*" [("padding","2pt")]} $
+                style.Widget ap{style.CSSText [("padding","2pt")]} $
                 vertical.Widget [
                     notifySelection.Widget notify $ textView.Widget tref1,
                     notifySelection.Widget notify $ textView.Widget tref2,
@@ -309,7 +309,7 @@ let {
             grow.Layout $
                 draw ap{drawing} empty.Handler,
             grow.Layout $
-                styleSheet ap{rule.CSSText "*" [("border","solid 5px black"),("padding","5px")]} $
+                style ap{style.CSSText [("border","solid 5px black"),("padding","5px")]} $
                 image ap{toImage dimensions $ drawing dimensions}
         ];
 
