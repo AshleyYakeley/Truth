@@ -53,7 +53,7 @@ else
 BINPATH := $(shell $(STACK) path --local-bin)
 endif
 
-NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/'
+NIXFLAGS ?=
 
 ### Docker image
 
@@ -233,9 +233,15 @@ nix-fmt:
 	nix $(NIXFLAGS) fmt
 
 # Use this on a Nix system
-nix-flake: out
+nix-build-%: out
+	nix $(NIXFLAGS) build .#$*
+
+# Use this on a Nix system
+nix-check: out
 	nix $(NIXFLAGS) flake check .
-	nix $(NIXFLAGS) build .#vscode-extension
+
+# Use this on a Nix system
+nix-flake: nix-check nix-build-vscode-extension
 
 nix/docker/flake.nix: flake.nix
 	cp $< $@
