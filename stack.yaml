@@ -1,8 +1,5 @@
 packages:
 
-# examination
-#- examine/gnome-bindings
-
 # separate (submodule) dependencies
 - external/countable
 - external/witness
