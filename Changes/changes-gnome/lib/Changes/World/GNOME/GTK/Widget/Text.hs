@@ -97,4 +97,5 @@ createTextView rmod seln = do
     gvRunLocked $ do
         widget <- gvNew GI.TextView [#buffer GI.:= buffer]
         GI.textViewSetWrapMode widget GI.WrapModeWordChar
+        #setSizeRequest widget (-1) 32
         GI.toWidget widget
