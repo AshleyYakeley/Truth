@@ -59,42 +59,48 @@
                     ignorePackageYaml = true;
                     modules =
                       [
-                        {
-                          packages =
-                            {
-                              "unix" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "directory" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "process" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "gi-soup" =
-                                {
-                                  components.library.libs = [ pkgs.libsoup ];
-                                };
-                              "changes-gnome" =
-                                {
-                                  # no X11 server available during testing
-                                  configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
-                                };
-                              "pinafore-lib-gnome" =
-                                {
-                                  configureFlags = [ "-f" "-test-X11" ];
-                                };
-                              "pinafore-app" =
-                                {
-                                  configureFlags = [ "-f" "-gitversion" ];
-                                  dontStrip = false;
-                                  dontPatchELF = false;
-                                };
-                            };
-                        }
+                        ({ lib, options, ... }:
+                          let
+                            packageOptions = options.packages or { };
+                            hasPackage = name: builtins.hasAttr name packageOptions;
+                            packageSettings =
+                              {
+                                "unix" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "directory" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "process" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "gi-soup" =
+                                  {
+                                    components.library.libs = [ pkgs.libsoup ];
+                                  };
+                                "changes-gnome" =
+                                  {
+                                    # no X11 server available during testing
+                                    configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
+                                  };
+                                "pinafore-lib-gnome" =
+                                  {
+                                    configureFlags = [ "-f" "-test-X11" ];
+                                  };
+                                "pinafore-app" =
+                                  {
+                                    configureFlags = [ "-f" "-gitversion" ];
+                                    dontStrip = false;
+                                    dontPatchELF = false;
+                                  };
+                              };
+                          in
+                          {
+                            packages = lib.filterAttrs (name: _: hasPackage name) packageSettings;
+                          })
                       ];
                   };
               })

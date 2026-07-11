@@ -254,8 +254,8 @@ nix/docker/flake.nix: flake.nix
 nix/docker/flake.lock: flake.lock
 	cp $< $@
 
-nix/docker/stack.yaml: stack.yaml
-	$(STACK) exec -- yq '.packages=[]' $< > $@
+nix/docker/stack.yaml: stack.yaml Makefile
+	$(STACK) exec -- yq '.packages=[] | del(.flags)' $< > $@
 
 nix/docker/stack.yaml.lock: stack.yaml.lock
 	cp $< $@
@@ -265,7 +265,7 @@ nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.ya
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
-	docker run --rm -v `pwd`:/workspace -ti nix-build make nix-docker=1 nix-flake
+	docker run --rm -v `pwd`:/workspace -ti nix-build make nix-flake
 
 nix-docker-shell: nix-docker-image
 	mkdir -p nix/home

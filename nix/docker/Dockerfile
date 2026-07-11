@@ -4,7 +4,7 @@ FROM nixos/nix:2.28.2
 # set up nix
 COPY nix.conf /etc/nix/nix.conf
 
-# pre-build GHC
+# pre-build source-independent Nix development tools, including GHC
 RUN mkdir -p /setup
 COPY flake.nix flake.lock stack.yaml stack.yaml.lock /setup/
 WORKDIR "/setup"
