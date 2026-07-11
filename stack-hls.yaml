@@ -1,0 +1,64 @@
+packages:
+  # separate (submodule) dependencies
+  - external/countable
+  - external/witness
+  #- external/open-witness
+  - external/type-rig
+  - external/monadology
+  #- external/primitive-serial
+
+  # Changes
+  - Changes/thread-trace
+  - Changes/shapes
+  - Changes/cairo-functional
+  - Changes/changes-core
+  - Changes/changes-media
+  - Changes/changes-world
+  - Changes/changes-gnome
+  # Pinafore
+  - Pinafore/polar-shim
+  - Pinafore/typed-expression
+  - Pinafore/pinafore-base
+  - Pinafore/pinafore-storage
+  - Pinafore/pinafore-syntax
+  - Pinafore/pinafore-language
+  - Pinafore/pinafore-lib-media
+  - Pinafore/pinafore-lib-gnome
+  - Pinafore/pinafore-lib-script
+  - Pinafore/pinafore-app
+  - Pinafore/pinafore-docgen
+# Haskell.nix does not recognise "snapshot"
+resolver: lts-24.45
+local-bin-path: .build/bin
+allow-newer: true
+allow-newer-deps:
+  - leb128
+  - optparse-applicative
+  - criterion
+  - fourmolu
+extra-deps:
+  # GTK
+  - gi-webkit-6.0.5
+  # other
+  - blake3-0.3
+  - leb128-0.1.0.0
+  - optparse-applicative-0.17.1.0
+  # format
+  - ghc-lib-parser-9.10.2.20250515
+  - github: AshleyYakeley/fourmolu
+    commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
+# my stuff
+#- witness-0.8
+flags:
+  changes-gnome:
+    build-examples: true
+docker:
+  enable: false
+notify-if-nix-on-path: false
+recommend-stack-upgrade: false
+nix:
+  enable: false
+ghc-options:
+  "$locals": -Werror
+system-ghc: true
+install-ghc: false

@@ -187,10 +187,25 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
-          devShells = let
-            shellInputs =
+          devShells =
+            let
+              shellInputs =
                 {
-                  buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                  tools =
+                    {
+                      haskell-language-server = "2.12.0.0";
+                    };
+                  buildInputs = with pkgs;
+                    [
+                      bashInteractive
+                      gnumake
+                      docker
+                      xorg.xhost
+                      stack
+                      yq-go
+                      haskellPackages.hlint
+                      haskellPackages.implicit-hie
+                    ];
                   shellHook = ''
                     export PATH="$PWD/bin:$PATH"
                   '';

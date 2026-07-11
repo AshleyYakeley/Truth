@@ -1,0 +1,168 @@
+cradle:
+  stack:
+    stackYaml: stack-hls.yaml
+    components:
+      - path: "Changes/cairo-functional/lib"
+        component: "cairo-functional:lib"
+
+      - path: "Changes/changes-core/lib"
+        component: "changes-core:lib"
+
+      - path: "Changes/changes-core/test"
+        component: "changes-core:test:test"
+
+      - path: "Changes/changes-gnome/lib"
+        component: "changes-gnome:lib"
+
+      - path: "Changes/changes-gnome/examples/cairo/Main.hs"
+        component: "changes-gnome:exe:changes-cairo"
+
+      - path: "Changes/changes-gnome/examples/gio/Main.hs"
+        component: "changes-gnome:exe:changes-gio"
+
+      - path: "Changes/changes-gnome/examples/showImages/Main.hs"
+        component: "changes-gnome:exe:changes-showImages"
+
+      - path: "Changes/changes-gnome/examples/soup/Main.hs"
+        component: "changes-gnome:exe:changes-soup"
+
+      - path: "Changes/changes-gnome/examples/soup/Soup.hs"
+        component: "changes-gnome:exe:changes-soup"
+
+      - path: "Changes/changes-gnome/examples/soup/Soup/Note.hs"
+        component: "changes-gnome:exe:changes-soup"
+
+      - path: "Changes/changes-gnome/examples/soup/Soup/Edit.hs"
+        component: "changes-gnome:exe:changes-soup"
+
+      - path: "Changes/changes-gnome/examples/soup/Soup/UI.hs"
+        component: "changes-gnome:exe:changes-soup"
+
+      - path: "Changes/changes-gnome/examples/text/Main.hs"
+        component: "changes-gnome:exe:changes-text"
+
+      - path: "Changes/changes-gnome/test"
+        component: "changes-gnome:test:test"
+
+      - path: "Changes/changes-media/lib"
+        component: "changes-media:lib"
+
+      - path: "Changes/changes-world/lib"
+        component: "changes-world:lib"
+
+      - path: "Changes/shapes/src"
+        component: "shapes:lib"
+
+      - path: "Changes/shapes/test"
+        component: "shapes:test:test"
+
+      - path: "Changes/thread-trace/src"
+        component: "thread-trace:lib"
+
+      - path: "Pinafore/pinafore-app/lib"
+        component: "pinafore-app:lib"
+
+      - path: "Pinafore/pinafore-app/app/data/Main.hs"
+        component: "pinafore-app:exe:pinadata"
+
+      - path: "Pinafore/pinafore-app/app/data/Options.hs"
+        component: "pinafore-app:exe:pinadata"
+
+      - path: "Pinafore/pinafore-app/app/main/Main.hs"
+        component: "pinafore-app:exe:pinafore1"
+
+      - path: "Pinafore/pinafore-app/app/main/Options.hs"
+        component: "pinafore-app:exe:pinafore1"
+
+      - path: "Pinafore/pinafore-app/app/main/Run.hs"
+        component: "pinafore-app:exe:pinafore1"
+
+      - path: "Pinafore/pinafore-app/app/main"
+        component: "pinafore-app:test:app"
+
+      - path: "Pinafore/pinafore-app/test"
+        component: "pinafore-app:test:test"
+
+      - path: "Pinafore/pinafore-app/benchmark/Main.hs"
+        component: "pinafore-app:bench:benchmark"
+
+      - path: "Pinafore/pinafore-base/lib"
+        component: "pinafore-base:lib"
+
+      - path: "Pinafore/pinafore-base/test"
+        component: "pinafore-base:test:test"
+
+      - path: "Pinafore/pinafore-docgen/lib"
+        component: "pinafore-docgen:lib"
+
+      - path: "Pinafore/pinafore-docgen/app/Main.hs"
+        component: "pinafore-docgen:exe:pinadoc"
+
+      - path: "Pinafore/pinafore-docgen/app/Options.hs"
+        component: "pinafore-docgen:exe:pinadoc"
+
+      - path: "Pinafore/pinafore-docgen/test"
+        component: "pinafore-docgen:test:test"
+
+      - path: "Pinafore/pinafore-language/lib"
+        component: "pinafore-language:lib"
+
+      - path: "Pinafore/pinafore-language/test"
+        component: "pinafore-language:test:test"
+
+      - path: "Pinafore/pinafore-lib-gnome/lib"
+        component: "pinafore-lib-gnome:lib"
+
+      - path: "Pinafore/pinafore-lib-gnome/test"
+        component: "pinafore-lib-gnome:test:test"
+
+      - path: "Pinafore/pinafore-lib-media/lib"
+        component: "pinafore-lib-media:lib"
+
+      - path: "Pinafore/pinafore-lib-media/test"
+        component: "pinafore-lib-media:test:test"
+
+      - path: "Pinafore/pinafore-lib-script/./"
+        component: "pinafore-lib-script:lib"
+
+      - path: "Pinafore/pinafore-lib-script/test"
+        component: "pinafore-lib-script:test:test"
+
+      - path: "Pinafore/pinafore-storage/lib"
+        component: "pinafore-storage:lib"
+
+      - path: "Pinafore/pinafore-storage/test"
+        component: "pinafore-storage:test:test"
+
+      - path: "Pinafore/pinafore-syntax/lib"
+        component: "pinafore-syntax:lib"
+
+      - path: "Pinafore/pinafore-syntax/test"
+        component: "pinafore-syntax:test:test"
+
+      - path: "Pinafore/polar-shim/lib"
+        component: "polar-shim:lib"
+
+      - path: "Pinafore/typed-expression/lib"
+        component: "typed-expression:lib"
+
+      - path: "Pinafore/typed-expression/test"
+        component: "typed-expression:test:test"
+
+      - path: "external/countable/src"
+        component: "countable:lib"
+
+      - path: "external/countable/test"
+        component: "countable:test:test"
+
+      - path: "external/monadology/src"
+        component: "monadology:lib"
+
+      - path: "external/monadology/test"
+        component: "monadology:test:test"
+
+      - path: "external/type-rig/lib"
+        component: "type-rig:lib"
+
+      - path: "external/witness/src"
+        component: "witness:lib"

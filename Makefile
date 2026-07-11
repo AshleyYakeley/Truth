@@ -114,6 +114,19 @@ haddock:
 
 ### Watch-Building for development
 
+stack-hls.yaml: stack.yaml
+	yq '.docker = {"enable": false} | .["system-ghc"] = true | .["install-ghc"] = false' $< > $@
+
+hie.yaml: stack-hls.yaml
+	printf 'cradle:\n' > $@
+	printf '  stack:\n' >> $@
+	printf '    stackYaml: %s\n' "$<" >> $@
+	printf '    components:\n' >> $@
+	STACK_YAML="$<" gen-hie --stack | sed '1,2d;s/^    /      /' >> $@
+
+.PHONY: hie-yaml
+hie-yaml: hie.yaml
+
 .PHONY: watch-build
 watch-build: out docker-image
 	$(STACK) build --file-watch --fast
