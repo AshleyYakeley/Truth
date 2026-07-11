@@ -465,11 +465,8 @@ top-nix-flake:
 top-format-test:
 	make test=1 format exe
 
-top-full-resume:
+top-full:
 	make haddock=1 test=1 bench=1 full
 
-top-full:
-	make haddock=1 test=1 bench=1 clean full
-
 top-release:
-	make stackroot=1 haddock=1 test=1 bench=1 clean full
+	make haddock=1 test=1 bench=1 clean full
