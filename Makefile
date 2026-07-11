@@ -233,9 +233,9 @@ deb: out/$(PACKAGEFULLNAME).deb
 ### Nix
 
 # Use this on a Nix system
-# broken, see https://github.com/NixOS/nix/issues/9347
+# **/*.nix
 nix-fmt:
-	nix $(NIXFLAGS) fmt
+	shopt -s globstar && nix $(NIXFLAGS) fmt *.nix
 
 # Use this on a Nix system
 nix-build-%: out
