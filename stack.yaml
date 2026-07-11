@@ -33,6 +33,8 @@ packages:
 # Haskell.nix does not recognise "snapshot"
 resolver: lts-24.45
 
+local-bin-path: .build/bin
+
 allow-newer: true
 allow-newer-deps:
     - leb128

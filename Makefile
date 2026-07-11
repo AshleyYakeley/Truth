@@ -21,11 +21,7 @@ else
 JOBFLAGS := --keep-going
 endif
 
-ifeq ($(stackroot),1)
 STACKROOTFLAGS := --stack-root $$PWD/.stack-root
-else
-STACKROOTFLAGS :=
-endif
 
 STACK := stack $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
@@ -47,11 +43,7 @@ else
 HADDOCKFLAGS :=
 endif
 
-ifeq ($(nix-docker),1)
-BINPATH := /binpath
-else
-BINPATH := $(shell $(STACK) path --local-bin)
-endif
+BINPATH := .build/bin
 
 NIXFLAGS ?=
 
@@ -444,9 +436,7 @@ clean:
 	rm -rf */*/test/*/*.out
 	rm -rf */*/test/*/*/*.out
 	rm -rf result
-ifeq ($(stackroot),1)
 	rm -rf .stack-root
-endif
 
 .PHONY: update-locks
 update-locks: docker-image
