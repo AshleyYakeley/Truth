@@ -210,30 +210,31 @@
                     export PATH="$PWD/bin:$PATH"
                   '';
                 };
-            in {
+            in
+            {
               default = pkgs.pinaforeProject.shellFor shellInputs;
-              haskell-nix = pkgs.pinaforeProject.shellFor (shellInputs //
-                {
-                  packages = ps: with ps;
-                    [
-                      thread-trace
-                      shapes
-                      cairo-functional
-                      changes-core
-                      changes-media
-                      changes-world
-                      changes-gnome
+              hoogle = pkgs.pinaforeProject.shellFor (shellInputs //
+              {
+                withHoogle = true;
+                additional = ps: with ps;
+                  [
+                    thread-trace
+                    shapes
+                    cairo-functional
+                    changes-core
+                    changes-media
+                    changes-world
+                    changes-gnome
 
-                      polar-shim
-                      typed-expression
-                      pinafore-base
-                      pinafore-storage
-                      pinafore-syntax
-                      pinafore-language
-                      pinafore-lib-media
-                    ];
-                  withHoogle = true;
-                });
+                    polar-shim
+                    typed-expression
+                    pinafore-base
+                    pinafore-storage
+                    pinafore-syntax
+                    pinafore-language
+                    pinafore-lib-media
+                  ];
+              });
             };
         }
       );
