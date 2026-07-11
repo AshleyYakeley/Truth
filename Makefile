@@ -154,7 +154,7 @@ PACKAGEVERSION := $(PINAFOREVERSION)
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
-DEBIANREL := bookworm
+DEBIANREL := forky
 
 LIBMODULEFILES := \
 	UILib/Context \
@@ -207,7 +207,7 @@ LIBMODULEFILES := \
 		--suppress-tags-from-file deb/lintian-ignore \
 		.build/deb/$(PACKAGEFULLNAME).deb
 
-TESTDISTROS := ubuntu:26.04 bitnami/minideb:$(DEBIANREL)
+TESTDISTROS := ubuntu:26.04 debian:$(DEBIANREL)
 
 out/pinafore.deps: ${BINPATH}/pinafore1 out
 	ldd $< > $@
