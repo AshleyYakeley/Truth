@@ -32,7 +32,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add div
       . replace openDefault.Store with openLocal.Store record function
       . add openTemp.Store
-      . use `?arglist` implicit variable to pass parameters
+      . use ?arglist implicit variable to pass parameters
       . new Pinafore namespace with interpretation and functions for splicing
       . rename Map to EntityMap, use hash-map
       . add Equivalence/Preorder/Order types and functions

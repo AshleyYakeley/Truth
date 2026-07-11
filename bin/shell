@@ -1,3 +1,0 @@
-#!/usr/bin/env -S bash -e
-export PATH=`dirname $0`:$PATH
-exec bash "$@"
