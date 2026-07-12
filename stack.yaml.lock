@@ -19,9 +19,9 @@ packages:
   original:
     hackage: blake3-0.3
 - completed:
-    hackage: leb128-0.1.0.0@sha256:f07e491e34bcac09bd816daefe1b9cfba163249a776b5c669821ebd0f7a5118b,1854
+    hackage: leb128-0.1.0.0@sha256:1574d7a9b77eb7173d17297e79e9394caaf168fd8be2cdaeee2f03a14c35165a,1852
     pantry-tree:
-      sha256: f604a03c6366251ffca268b94026f7a1032f319327f1f1877a274c2f59ef735f
+      sha256: a53a1c2aabf50e1e0a5f5d4ff597ae153365cab199b77bbfabb06382232d8504
       size: 758
   original:
     hackage: leb128-0.1.0.0
