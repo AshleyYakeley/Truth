@@ -365,6 +365,7 @@ let {
                         button.Widget ap{"CSS"} ap{window_css},
                         button.Widget ap{"Drawing"} ap{window_drawing now},
                         button.Widget ap{"List"} ap{window_list},
+                        button.Widget ap{"People"} ap{window_people},
                         button.Widget ap{"Text Selection"} ap{window_textselection},
                         button.Widget ap{"Disabled"} unknown,
                         button.Widget ap{"Unowned self"} ap{window_start},

@@ -3,6 +3,8 @@ module Changes.World.GNOME.GTK.Widget.DynamicStore
     , dynamicStoreEntryValue
     , DynamicStore
     , getDynamicSeqStore
+    , getDynamicListModel
+    , dynamicStoreOnChange
     , newDynamicStore
     , dynamicStoreClear
     , dynamicStoreInsert
@@ -18,6 +20,7 @@ import Data.IORef
 
 import Changes.World.GNOME.GI
 import Import
+import Import.GI qualified as GI
 
 data DynamicStoreEntry t = MkDynamicStoreEntry
     { dynamicStoreEntryKey :: Unique
@@ -28,6 +31,16 @@ data DynamicStoreEntry t = MkDynamicStoreEntry
 newtype DynamicStore t = MkDynamicStore
     { getDynamicSeqStore :: SeqStore (DynamicStoreEntry t)
     }
+
+getDynamicListModel :: DynamicStore t -> GI.StringList
+getDynamicListModel = seqStoreGetListModel . getDynamicSeqStore
+
+dynamicStoreOnChange ::
+    DynamicStore t ->
+    (Int32 -> t -> GSemiview 'Locked ()) ->
+    GView 'Locked ()
+dynamicStoreOnChange (MkDynamicStore store) listener =
+    seqStoreOnSetValue store $ \i entry -> listener i $ dynamicStoreEntryValue entry
 
 findInStore :: Unique -> SeqStore (DynamicStoreEntry t) -> GSemiview 'Locked (Maybe (Int32, DynamicStoreEntry t))
 findInStore key store = do
@@ -84,6 +97,7 @@ newDynamicStore tdef lcv = do
         entries <- for lcv $ \cvt -> makeEntry tdef cvt store
         store <- gsvRunLocked $ seqStoreNew entries
         return $ MkDynamicStore store
+    gvRunLocked $ gvBind $ getDynamicListModel dstore
     gvOnClose $ dynamicStoreClear dstore
     return dstore
 
