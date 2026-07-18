@@ -28,7 +28,7 @@ extraVersion =
         if giDirty gi
             then "+"
             else ""
-    in " (" <> commitTimeString <> " " <> giHash gi <> ")" <> flag
+    in " (" <> giDescribe gi <> " " <> commitTimeString <> ")" <> flag
 #else
     ""
 #endif
