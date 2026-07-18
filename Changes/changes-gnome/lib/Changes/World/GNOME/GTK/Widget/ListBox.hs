@@ -36,7 +36,7 @@ createListBox ::
     GView 'Unlocked GI.Widget
 createListBox mkWidget model = do
     (listBox, widget) <-
-        gvRunLocked $ gvNewWidget GI.ListBox [#selectionMode GI.:= GI.SelectionModeSingle, #activateOnSingleClick GI.:= True]
+        gvRunLocked $ gvNewWidget GI.ListBox [#selectionMode GI.:= GI.SelectionModeNone, #activateOnSingleClick GI.:= True]
     let
         insertWidget :: SequencePoint -> GView 'Unlocked GViewState
         insertWidget i = do

@@ -6,7 +6,7 @@ run $
     mfix $
     fn window =>
     with Widget
-    let {mbar = menuBar [action.MenuEntry ap{("Close",Just "Ctrl+W")} ap{close.Window window}]}
+    let {mbar = menuBar [menu.Menu "File" [action.Menu ap{("Close",Just "Ctrl+W")} ap{close.Window window}]]}
     open.Window gtk (400,600) ap{"Pinafore"} $
     vertical
         [mbar, grow.Layout $ button ap{"Close"} ap{close.Window window}]

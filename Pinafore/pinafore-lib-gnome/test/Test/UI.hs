@@ -29,7 +29,7 @@ runUIAction testaction script =
                         liftIOWithUnlift $ \unlift ->
                             forkIO
                                 $ unlift
-                                $ runGView (lcGTKContext lc)
+                                $ runLangContext lc
                                 $ do
                                     lift $ gsvSleep 50000
                                     ra <- tryExc testaction
@@ -50,7 +50,7 @@ testUIAction text testaction =
 
 testActions :: ScriptTestTree
 testActions =
-    tGroup
+    tGroupSeq
         "GTK"
         [ testUIAction "pure ()" noTestAction
         , testUIAction "newpoint" noTestAction

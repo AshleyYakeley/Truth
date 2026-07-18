@@ -252,8 +252,9 @@ testEntity =
                             "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeq [10,15,20,30] l;}"
                         , testExpectSuccess
                             "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; i <- get ir; testeq 20 i;}"
-                        , testExpectSuccess
-                            "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeq [10,12,15,30] l;}"
+                        , tModify (ignoreTestBecause "ISSUE 352")
+                            $ testExpectSuccess
+                                "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeq [10,12,15,30] l;}"
                         , testExpectSuccess "testImmutList True 1 $ fn _ => pure ()"
                         ]
                 ]

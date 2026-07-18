@@ -16,6 +16,9 @@ data LangContext = MkLangContext
     , lcOtherContext :: OtherContext
     }
 
+runLangContext :: LangContext -> GView 'Unlocked --> View
+runLangContext lc = runGView $ lcGTKContext lc
+
 contextGroundType :: QGroundType '[] LangContext
 contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangContext)|]) "Context.GTK."
 

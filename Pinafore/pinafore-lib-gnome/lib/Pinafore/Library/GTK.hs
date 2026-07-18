@@ -1,6 +1,7 @@
 module Pinafore.Library.GTK
     ( allGTKStuff
     , LangContext (..)
+    , runLangContext
     )
 where
 

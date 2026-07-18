@@ -59,42 +59,48 @@
                     ignorePackageYaml = true;
                     modules =
                       [
-                        {
-                          packages =
-                            {
-                              "unix" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "directory" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "process" =
-                                {
-                                  configureFlags = [ "-f" "os-string" ];
-                                };
-                              "gi-soup" =
-                                {
-                                  components.library.libs = [ pkgs.libsoup ];
-                                };
-                              "changes-gnome" =
-                                {
-                                  # no X11 server available during testing
-                                  configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
-                                };
-                              "pinafore-lib-gnome" =
-                                {
-                                  configureFlags = [ "-f" "-test-X11" ];
-                                };
-                              "pinafore-app" =
-                                {
-                                  configureFlags = [ "-f" "-gitversion" ];
-                                  dontStrip = false;
-                                  dontPatchELF = false;
-                                };
-                            };
-                        }
+                        ({ lib, options, ... }:
+                          let
+                            packageOptions = options.packages or { };
+                            hasPackage = name: builtins.hasAttr name packageOptions;
+                            packageSettings =
+                              {
+                                "unix" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "directory" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "process" =
+                                  {
+                                    configureFlags = [ "-f" "os-string" ];
+                                  };
+                                "gi-soup" =
+                                  {
+                                    components.library.libs = [ pkgs.libsoup ];
+                                  };
+                                "changes-gnome" =
+                                  {
+                                    # no X11 server available during testing
+                                    configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
+                                  };
+                                "pinafore-lib-gnome" =
+                                  {
+                                    configureFlags = [ "-f" "-test-X11" ];
+                                  };
+                                "pinafore-app" =
+                                  {
+                                    configureFlags = [ "-f" "-gitversion" ];
+                                    dontStrip = false;
+                                    dontPatchELF = false;
+                                  };
+                              };
+                          in
+                          {
+                            packages = lib.filterAttrs (name: _: hasPackage name) packageSettings;
+                          })
                       ];
                   };
               })
@@ -187,38 +193,54 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
-          devShells = let
-            shellInputs =
+          devShells =
+            let
+              shellInputs =
                 {
-                  buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+                  tools =
+                    {
+                      haskell-language-server = "2.12.0.0";
+                    };
+                  buildInputs = with pkgs;
+                    [
+                      bashInteractive
+                      gnumake
+                      docker
+                      xorg.xhost
+                      stack
+                      yq-go
+                      haskellPackages.hlint
+                      haskellPackages.implicit-hie
+                    ];
                   shellHook = ''
                     export PATH="$PWD/bin:$PATH"
                   '';
                 };
-            in {
+            in
+            {
               default = pkgs.pinaforeProject.shellFor shellInputs;
-              haskell-nix = pkgs.pinaforeProject.shellFor (shellInputs //
-                {
-                  packages = ps: with ps;
-                    [
-                      thread-trace
-                      shapes
-                      cairo-functional
-                      changes-core
-                      changes-media
-                      changes-world
-                      changes-gnome
+              hoogle = pkgs.pinaforeProject.shellFor (shellInputs //
+              {
+                withHoogle = true;
+                additional = ps: with ps;
+                  [
+                    thread-trace
+                    shapes
+                    cairo-functional
+                    changes-core
+                    changes-media
+                    changes-world
+                    changes-gnome
 
-                      polar-shim
-                      typed-expression
-                      pinafore-base
-                      pinafore-storage
-                      pinafore-syntax
-                      pinafore-language
-                      pinafore-lib-media
-                    ];
-                  withHoogle = true;
-                });
+                    polar-shim
+                    typed-expression
+                    pinafore-base
+                    pinafore-storage
+                    pinafore-syntax
+                    pinafore-language
+                    pinafore-lib-media
+                  ];
+              });
             };
         }
       );

@@ -5,7 +5,7 @@ PINAFOREVERSION := 0.6
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
-SNAPSHOT := lts-24.31
+SNAPSHOT := lts-24.45
 
 ### Flags for stack
 
@@ -21,11 +21,7 @@ else
 JOBFLAGS := --keep-going
 endif
 
-ifeq ($(stackroot),1)
 STACKROOTFLAGS := --stack-root $$PWD/.stack-root
-else
-STACKROOTFLAGS :=
-endif
 
 STACK := stack $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
@@ -47,13 +43,9 @@ else
 HADDOCKFLAGS :=
 endif
 
-ifeq ($(nix-docker),1)
-BINPATH := /binpath
-else
-BINPATH := $(shell $(STACK) path --local-bin)
-endif
+BINPATH := .build/bin
 
-NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/'
+NIXFLAGS ?=
 
 ### Docker image
 
@@ -114,6 +106,19 @@ haddock:
 
 ### Watch-Building for development
 
+stack-hls.yaml: stack.yaml
+	yq '.docker = {"enable": false} | .["system-ghc"] = true | .["install-ghc"] = false' $< > $@
+
+hie.yaml: stack-hls.yaml
+	printf 'cradle:\n' > $@
+	printf '  stack:\n' >> $@
+	printf '    stackYaml: %s\n' "$<" >> $@
+	printf '    components:\n' >> $@
+	STACK_YAML="$<" gen-hie --stack | sed '1,2d;s/^    /      /' >> $@
+
+.PHONY: hie-yaml
+hie-yaml: hie.yaml
+
 .PHONY: watch-build
 watch-build: out docker-image
 	$(STACK) build --file-watch --fast
@@ -154,7 +159,7 @@ PACKAGEVERSION := $(PINAFOREVERSION)
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
-DEBIANREL := bookworm
+DEBIANREL := forky
 
 LIBMODULEFILES := \
 	UILib/Context \
@@ -207,7 +212,7 @@ LIBMODULEFILES := \
 		--suppress-tags-from-file deb/lintian-ignore \
 		.build/deb/$(PACKAGEFULLNAME).deb
 
-TESTDISTROS := ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
+TESTDISTROS := ubuntu:26.04 debian:$(DEBIANREL)
 
 out/pinafore.deps: ${BINPATH}/pinafore1 out
 	ldd $< > $@
@@ -228,14 +233,20 @@ deb: out/$(PACKAGEFULLNAME).deb
 ### Nix
 
 # Use this on a Nix system
-# broken, see https://github.com/NixOS/nix/issues/9347
+# **/*.nix
 nix-fmt:
-	nix $(NIXFLAGS) fmt
+	shopt -s globstar && nix $(NIXFLAGS) fmt *.nix
 
 # Use this on a Nix system
-nix-flake: out
+nix-build-%: out
+	nix $(NIXFLAGS) build .#$*
+
+# Use this on a Nix system
+nix-check: out
 	nix $(NIXFLAGS) flake check .
-	nix $(NIXFLAGS) build .#vscode-extension
+
+# Use this on a Nix system
+nix-flake: nix-check nix-build-vscode-extension
 
 nix/docker/flake.nix: flake.nix
 	cp $< $@
@@ -243,8 +254,8 @@ nix/docker/flake.nix: flake.nix
 nix/docker/flake.lock: flake.lock
 	cp $< $@
 
-nix/docker/stack.yaml: stack.yaml
-	$(STACK) exec -- yq '.packages=[]' $< > $@
+nix/docker/stack.yaml: stack.yaml Makefile
+	$(STACK) exec -- yq '.packages=[] | del(.flags)' $< > $@
 
 nix/docker/stack.yaml.lock: stack.yaml.lock
 	cp $< $@
@@ -254,7 +265,7 @@ nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.ya
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
-	docker run --rm -v `pwd`:/workspace -ti nix-build make nix-docker=1 nix-flake
+	docker run --rm -v `pwd`:/workspace -ti nix-build make nix-flake
 
 nix-docker-shell: nix-docker-image
 	mkdir -p nix/home
@@ -425,9 +436,7 @@ clean:
 	rm -rf */*/test/*/*.out
 	rm -rf */*/test/*/*/*.out
 	rm -rf result
-ifeq ($(stackroot),1)
 	rm -rf .stack-root
-endif
 
 .PHONY: update-locks
 update-locks: docker-image
@@ -456,11 +465,8 @@ top-nix-flake:
 top-format-test:
 	make test=1 format exe
 
-top-full-resume:
+top-full:
 	make haddock=1 test=1 bench=1 full
 
-top-full:
-	make haddock=1 test=1 bench=1 clean full
-
 top-release:
-	make stackroot=1 haddock=1 test=1 bench=1 clean full
+	make haddock=1 test=1 bench=1 clean full

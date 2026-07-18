@@ -16,11 +16,11 @@
             "command": "cd ${workspaceRoot} && make top-format",
             "problemMatcher": [
                 {
-                    "owner": "hindent",
+                    "owner": "fourmolu",
                     "fileLocation": "relative",
                     "pattern": [
                         {
-                            "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+                            "regexp": "^fourmolu: (.*):(\\d+):(\\d+):\\s+(.*)",
                             "file": 1,
                             "line": 2,
                             "column": 3,
@@ -155,7 +155,7 @@
         {
             "label": "Hoogle",
             "type": "shell",
-            "command": "cd ${workspaceRoot} && hoogle server --local",
+            "command": "cd ${workspaceRoot} && nix develop .#hoogle --command hoogle server --local",
             "problemMatcher": []
         }
     ]

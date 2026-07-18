@@ -27,7 +27,7 @@ debugIgnoreUpdateUIExceptions :: LangWholeModel '(P, Q) -> LangWholeModel '(P, Q
 debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeModelMapModel (Identity . ignoreUpdateException) ref
 
 gtkLock :: LangContext -> Action A -> Action A
-gtkLock lc = actionHoistView $ \va -> runGView (lcGTKContext lc) $ gvRunLocked $ gvRunUnlocked $ gvLiftView va
+gtkLock lc = actionHoistView $ \va -> runLangContext lc $ gvRunLocked $ gvRunUnlocked $ gvLiftView va
 
 gtkDebugStuff :: LibraryStuff
 gtkDebugStuff =

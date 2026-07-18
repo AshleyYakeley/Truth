@@ -14,4 +14,4 @@ tests :: [TestTree]
 tests = [testGolden] <> ifpure flag_TestX11 testUI
 
 main :: IO ()
-main = testMainNoSignalHandler $ testTree "gnome" tests
+main = testMainNoSignalHandler $ inOrderTestGroup "gnome" tests

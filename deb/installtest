@@ -3,7 +3,14 @@ export DEBIAN_FRONTEND=noninteractive
 apt update
 apt install -y sudo
 apt install -y /home/$1
-useradd -u $2 user
-sudo -u user pinafore1 /home/checkscript
-sudo -u user /home/checkscript
+testuser="$(getent passwd "$2" | cut -d: -f1)"
+if [ -z "$testuser" ]; then
+    testuser=user
+    if getent passwd "$testuser" >/dev/null; then
+        testuser=pinafore-test
+    fi
+    useradd -u "$2" "$testuser"
+fi
+sudo -u "$testuser" pinafore1 /home/checkscript
+sudo -u "$testuser" /home/checkscript
 echo "package runs OK"

@@ -1,0 +1,53 @@
+#!/bin/sh
+
+set -eu
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+if [ -z "${NIX_GHC:-}" ] && [ -z "${PINAFORE_HLS_IN_NIX_DEVELOP:-}" ]; then
+    if command -v nix >/dev/null 2>&1; then
+        export PINAFORE_HLS_IN_NIX_DEVELOP=1
+        exec nix develop "$repo_root" --command "$repo_root/bin/haskell-language-server-wrapper" "$@"
+    fi
+fi
+
+cache_dir=${HIE_BIOS_CACHE_DIR:-}
+if [ -z "$cache_dir" ]; then
+    if [ -n "${XDG_CACHE_HOME:-}" ]; then
+        cache_dir="$XDG_CACHE_HOME/hie-bios"
+    else
+        cache_dir="${HOME:-}/.cache/hie-bios"
+    fi
+fi
+
+patch_hie_bios_wrappers() {
+    bash_path=$(command -v bash || true)
+    [ -n "$bash_path" ] || return 0
+    [ -d "$cache_dir" ] || return 0
+
+    for wrapper in "$cache_dir"/wrapper-*; do
+        [ -f "$wrapper" ] || continue
+        first_line=$(sed -n '1p' "$wrapper" 2>/dev/null || true)
+        [ "$first_line" = "#!/usr/bin/env bash" ] || continue
+
+        tmp="${wrapper}.tmp.$$"
+        {
+            printf '#!%s\n' "$bash_path"
+            sed '1d' "$wrapper"
+        } > "$tmp"
+        chmod --reference="$wrapper" "$tmp" 2>/dev/null || chmod 755 "$tmp"
+        mv "$tmp" "$wrapper"
+    done
+}
+
+patch_hie_bios_wrappers
+(
+    i=0
+    while [ "$i" -lt 200 ]; do
+        patch_hie_bios_wrappers
+        i=$((i + 1))
+        sleep 0.05
+    done
+) >/dev/null 2>&1 &
+
+exec haskell-language-server "$@"

@@ -68,7 +68,7 @@ main = do
                                                         return ()
                                     wsContent :: GView 'Unlocked Widget
                                     wsContent = do
-                                        mb <- createMenuBar $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
+                                        mb <- createMenuBar $ pure $ MkMenu "Image" $ fmap setFileRef filenames
                                         uic <- createImage $ mapModel toReadOnlyChangeLens model
                                         createLayout
                                             OrientationVertical

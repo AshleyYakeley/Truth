@@ -34,8 +34,11 @@ asMedia =
                 _ -> False
             )
 
+style :: [(Text, Text)] -> Text
+style decls = concatmap (\(k, v) -> k <> ":" <> v <> ";") decls
+
 rule :: Text -> [(Text, Text)] -> CSSText
-rule sels decls = MkCSSText $ sels <> " {" <> concatmap (\(k, v) -> k <> ":" <> v <> ";") decls <> "}\n"
+rule sels decls = MkCSSText $ sels <> " {" <> style decls <> "}\n"
 
 cssStuff :: LibraryStuff
 cssStuff =
@@ -49,7 +52,8 @@ cssStuff =
           , hasSubtypeRelationBDS @CSSText @Text Verify "" $ functionToShim "unCSSText" unCSSText
           , namespaceBDS "CSSText"
                 $ monoidEntries @CSSText
-                <> [ valBDS "rule" "A CSS rule." rule
+                <> [ valBDS "style" "CSS styles." style
+                   , valBDS "rule" "A CSS rule." rule
                    , valBDS "asText" "" $ codecToPrism asText
                    , valBDS "asMedia" "" $ codecToPrism asMedia
                    ]

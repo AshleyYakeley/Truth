@@ -1,10 +1,10 @@
 ARG SNAPSHOT
 
-FROM ubuntu:jammy
+FROM debian:forky
 # FROM fpco/stack-build-small:${SNAPSHOT}
 ARG SNAPSHOT
 RUN : "${SNAPSHOT:?SNAPSHOT is required}"
-RUN echo 2026-03-01 > /container.date
+RUN echo 2026-07-11 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -44,6 +44,7 @@ RUN apt-get install -y \
     gobject-introspection \
     libgirepository1.0-dev \
     libglib2.0-dev               gir1.2-glib-2.0 \
+    libatk1.0-dev                gir1.2-atk-1.0 \
     libgdk-pixbuf-2.0-dev        gir1.2-gdkpixbuf-2.0 \
     libpango1.0-dev              gir1.2-pango-1.0 \
     libcairo2-dev                gir1.2-cairo-1.0 \
@@ -61,10 +62,7 @@ RUN apt-get install -y \
     python3-dev
 
 # Node.js & VScode
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_21.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-RUN apt-get update
-RUN apt-get install -y nodejs
+RUN apt-get install -y nodejs npm
 RUN npm --global install @vscode/vsce
 
 # jq & yq

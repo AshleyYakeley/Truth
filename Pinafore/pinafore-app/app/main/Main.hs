@@ -13,11 +13,14 @@ import Pinafore.Options
 import Pinafore.Version
 import Run
 
-excHandler :: SomeException -> IO ()
-excHandler exc = do
-    progname <- getProgName
-    hPutStrLn stderr $ progname <> ": " <> show exc
-    exitFailure
+excHandler :: SomeException -> IO a
+excHandler exc =
+    case fromException exc of
+        Just ec -> exitWith ec
+        Nothing -> do
+            progname <- getProgName
+            hPutStrLn stderr $ progname <> ": " <> show exc
+            exitFailure
 
 main :: IO ()
 main =

@@ -2,6 +2,7 @@ module Pinafore.Library.GNOME
     ( gnomeLibrary
     , LangFile
     , LangContext (..)
+    , runLangContext
     )
 where
 

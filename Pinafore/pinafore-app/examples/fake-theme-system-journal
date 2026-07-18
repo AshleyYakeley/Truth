@@ -15,7 +15,7 @@ let {
         !{property @Integer @Text !"FTSJ.yearTheme"} ?store;
 
     frontCoverPane: Pane =
-        simple.Pane "Cover" $ styleSheet.Widget ap{rule.CSSText "*" [("font-size","32pt")]} $ label.Widget ap{"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+        simple.Pane "Cover" $ style.Widget ap{style.CSSText [("font-size","32pt")]} $ label.Widget ap{"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
     getThemesPane: Action Pane =
         pure $ simple.Pane "Themes" $ blank.Widget;

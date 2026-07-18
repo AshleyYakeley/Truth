@@ -38,24 +38,24 @@ createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> G
 createTextBuffer rmod (MkSelectNotify setsel) = do
     esrc <- gvNewEditSource
     (buffer, blockSignals) <-
-        gvRunLocked $ do
+        gvRunLocked $ mdo
             buffer <- gvNew GI.TextBuffer []
+            let
+                pushBufferEdit :: Text -> StringEdit Text -> GView 'Locked ()
+                pushBufferEdit signalName edit = do
+                    succeeded <-
+                        gvLiftIO
+                            $ runResource emptyResourceContext rmod
+                            $ \asub -> pushEdit esrc $ aModelEdit asub $ pure edit
+                    unless succeeded $ GI.signalStopEmissionByName buffer signalName
             insertSignal <-
                 gvOnSignal () buffer #insertText $ \iter text _ -> do
                     p <- getSequencePoint iter
-                    gvLiftIO
-                        $ runResource emptyResourceContext rmod
-                        $ \asub -> do
-                            _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
-                            return ()
+                    pushBufferEdit "insert-text" $ StringReplaceSection (MkSequenceRun p 0) text
             deleteSignal <-
                 gvOnSignal () buffer #deleteRange $ \iter1 iter2 -> do
                     srun <- getSequenceRun iter1 iter2
-                    gvLiftIO
-                        $ runResource emptyResourceContext rmod
-                        $ \asub -> do
-                            _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
-                            return ()
+                    pushBufferEdit "delete-range" $ StringReplaceSection srun mempty
             let
                 getSelection :: GView 'Unlocked SequenceRun
                 getSelection =
@@ -97,4 +97,5 @@ createTextView rmod seln = do
     gvRunLocked $ do
         widget <- gvNew GI.TextView [#buffer GI.:= buffer]
         GI.textViewSetWrapMode widget GI.WrapModeWordChar
+        #setSizeRequest widget (-1) 32
         GI.toWidget widget

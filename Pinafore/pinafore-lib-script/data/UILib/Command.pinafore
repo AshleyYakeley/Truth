@@ -11,8 +11,8 @@ namespace UILib {
     };
 
     namespace Command {
-      toMenuEntry: context -> Command context -> MenuEntry =
-        fn ctxt, Mk => action.MenuEntry ap{(name, defaultKeyBinding)} ap{action ctxt};
+      toMenuEntry: context -> Command context -> Entry.Menu =
+        fn ctxt, Mk => action.Menu ap{(name, defaultKeyBinding)} ap{action ctxt};
 
       datatype Context {
         Mk {

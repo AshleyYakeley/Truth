@@ -1,5 +1,10 @@
 {
-    "terminal.integrated.shell.linux": "${workspaceFolder}/bin/shell",
+    "haskell.manageHLS": "PATH",
+    "haskell.serverExecutablePath": "${workspaceFolder}/bin/haskell-language-server-wrapper",
+    "haskell.plugin.importLens.codeLensOn": false,
+    "haskell.plugin.importLens.inlayHintsOn": false,
+    "haskell.plugin.explicit-fields.inlayHintsOn": false,
+    "haskell.plugin.semanticTokens.globalOn": true,
     "svg.preview.background": "transparent",
     "[haskell]": {
         "editor.indentSize": 4

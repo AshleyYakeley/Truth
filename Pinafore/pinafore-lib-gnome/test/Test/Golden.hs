@@ -34,4 +34,4 @@ testItem item = let
     in testFile file
 
 testGolden :: TestTree
-testGolden = testTree "golden" $ fmap testItem items
+testGolden = inOrderTestGroup "golden" $ fmap testItem items

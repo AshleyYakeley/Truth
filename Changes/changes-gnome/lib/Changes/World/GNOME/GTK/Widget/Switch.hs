@@ -16,7 +16,11 @@ createDynamic model =
             addItem :: GView 'Unlocked GI.Widget -> GView 'Unlocked ()
             addItem cvw = do
                 item <- cvw
-                gvRunLocked $ gvBoxPrepend box item
+                gvRunLocked $ do
+                    #setHexpand item True
+                    #setVexpand item True
+                    gvBoxPrepend box item
+                    GI.widgetSetVisible item True
         return $ do
             gvSwitch $ mapModel (funcChangeLens addItem) model
             return widget
