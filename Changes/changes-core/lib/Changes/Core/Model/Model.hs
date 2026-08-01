@@ -29,34 +29,30 @@ import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
 
-data AModel update tt = MkAModel
-    { aModelAReference :: AReference (UpdateEdit update) tt
-    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO (ApplyStack tt IO) ()
+data AModel update (m :: Type -> Type) = MkAModel
+    { aModelAReference :: AReference (UpdateEdit update) m
+    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO m ()
     , aModelUpdatesTask :: Task IO ()
     }
 
-aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
+aModelRead :: AModel update m -> Readable m (UpdateReader update)
 aModelRead amodel = refRead $ aModelAReference amodel
 
 aModelEdit ::
-    AModel update tt -> NonEmpty (UpdateEdit update) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+    AModel update m -> NonEmpty (UpdateEdit update) -> m (Maybe (EditSource -> m ()))
 aModelEdit = refEdit . aModelAReference
 
 instance MapResource (AModel update) where
     mapResource ::
-        forall tt1 tt2.
-        (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2) =>
-        TransListFunction tt1 tt2 ->
-        AModel update tt1 ->
-        AModel update tt2
-    mapResource tlf (MkAModel obj1 sub1 utask) =
-        case transStackDict @Monad @tt1 @IO of
-            Dict ->
-                case transStackDict @Monad @tt2 @IO of
-                    Dict -> let
-                        obj2 = mapResource tlf obj1
-                        sub2 recv task = hoist (tlfFunction tlf (Proxy @IO)) $ sub1 recv task
-                        in MkAModel obj2 sub2 utask
+        forall m1 m2.
+        (Monad m1, Monad m2) =>
+        (m1 --> m2) ->
+        AModel update m1 ->
+        AModel update m2
+    mapResource f (MkAModel obj1 sub1 utask) = let
+        obj2 = mapResource f obj1
+        sub2 recv task = hoist f $ sub1 recv task
+        in MkAModel obj2 sub2 utask
 
 type Model update = Resource (AModel update)
 
@@ -177,7 +173,7 @@ floatMapModel rc lens modelA = do
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
-    case resourceRunnerUnliftDict rr of
+    case resourceRunnerStackUnliftDict @IO rr of
         Dict -> let
             objB = mapAReference plens objA
             subB utask recvB = let
@@ -190,7 +186,7 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
                 in subA utask recvA
             in MkResource rr $ MkAModel objB subB utaskA
 
-aReferenceModel :: AReference (UpdateEdit update) '[] -> Model update
+aReferenceModel :: AReference (UpdateEdit update) IO -> Model update
 aReferenceModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())

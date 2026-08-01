@@ -37,7 +37,6 @@ clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiListTable ::
-    HasCallStack =>
     [(LangWholeModel '(BottomType, Text), A -> LangWholeModel '(BottomType, Text))] ->
     LangListModel '(BottomType, EnA) ->
     (A -> Action TopType) ->
@@ -99,7 +98,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             finit :: GView 'Unlocked ()
             finit =
                 gvLiftViewWithUnlift $ \unlift ->
-                    viewRunResourceContext selectionModel $ \unliftR (amod :: _ tt) -> do
+                    viewRunResourceContext selectionModel $ \unliftR amod -> do
                         ka <- liftIO $ unliftR $ aModelRead amod ReadWhole
                         unlift $ setsel ka
             recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> GView 'Unlocked ()

@@ -9,19 +9,17 @@ import Shapes.Test
 import Changes.Core
 import Test.Useful
 
-data AThing (tt :: [TransKind])
-    = MkAThing (ApplyStack tt IO ())
+data AThing (m :: Type -> Type)
+    = MkAThing (m ())
 
 instance MapResource AThing where
-    mapResource f (MkAThing mu) = MkAThing $ tlfFunction f (Proxy @IO) mu
+    mapResource f (MkAThing mu) = MkAThing $ f mu
 
 type Thing = Resource AThing
 
 joinThings :: Thing -> Thing -> Thing
 joinThings =
-    joinResource $ \(MkAThing m1 :: _ tt) (MkAThing m2) ->
-        case transStackDict @Monad @tt @IO of
-            Dict -> MkAThing $ m1 >> m2
+    joinResource $ \(MkAThing m1) (MkAThing m2) -> MkAThing $ m1 >> m2
 
 stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner '[StateT s])
 stateResourceRunnerTrace name s = do

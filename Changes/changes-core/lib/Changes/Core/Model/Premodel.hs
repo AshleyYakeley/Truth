@@ -67,7 +67,7 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e cta
                                 $ deferAction @IO
                                 $ recv emptyResourceContext (fmap editUpdate edits)
                                 $ editSourceContext esrc
-        anobj :: AReference (UpdateEdit update) (Concat tt '[DeferActionT])
+        anobj :: AReference (UpdateEdit update) (ApplyStack (Concat tt '[DeferActionT]) IO)
         anobj = MkAReference r' e' ctask
         pmrUpdatesTask :: Task IO ()
         pmrUpdatesTask = utask
@@ -116,7 +116,7 @@ mapPremodel rc (MkFloatingChangeLens finit rlens) premodel utask recvb = do
                             Just ebb -> recvb urc ebb esrc
                     objB :: Reference (UpdateEdit updateB)
                     objB =
-                        case resourceRunnerUnliftDict rr of
+                        case resourceRunnerStackUnliftDict @IO rr of
                             Dict -> MkResource rr $ mapAReference lens anobjA
                 return (MkPremodelResult objB updTask val, recva')
     return result

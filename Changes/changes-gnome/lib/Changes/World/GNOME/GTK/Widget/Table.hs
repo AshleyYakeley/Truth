@@ -175,7 +175,7 @@ instance Monoid (KeyColumns update) where
 
 tableContainerView ::
     forall update.
-    (HasCallStack, IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update)) =>
+    HasCallStack =>
     KeyColumns update ->
     Model (OrderedListUpdate update) ->
     (Model update -> GView 'Locked ()) ->
@@ -304,7 +304,7 @@ tableContainerView
                     testEntry se =
                         gvLiftView
                             $ viewRunResourceContext (entryModel se)
-                            $ \unlift (amod :: _ tt) ->
+                            $ \unlift amod ->
                                 unReadM sel $ \rt -> liftIO $ unlift $ aModelRead amod rt
                 mi <- mFindIndex testEntry items
                 withSignalBlocked tselection getSelSig $ gvRunLocked $ setSelectedIndex mi
@@ -318,7 +318,6 @@ tableContainerView
 
 createListTable ::
     forall update.
-    (IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update)) =>
     [KeyColumn update] ->
     Model (OrderedListUpdate update) ->
     (Model update -> GView 'Locked ()) ->

@@ -20,18 +20,18 @@ import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
 
-class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [TransKind] -> Type) where
-    noneTupleAResource :: f (TupleUpdate (ListElementType '[])) '[]
+class (forall update. MapResource (f update)) => TupleResource (f :: Type -> (Type -> Type) -> Type) where
+    noneTupleAResource :: f (TupleUpdate (ListElementType '[])) IO
     consTupleAResource ::
-        forall tt update updates.
-        MonadTransStackUnlift tt =>
-        f update tt ->
-        f (TupleUpdate (ListElementType updates)) tt ->
-        f (TupleUpdate (ListElementType (update ': updates))) tt
+        forall m update updates.
+        Monad m =>
+        f update m ->
+        f (TupleUpdate (ListElementType updates)) m ->
+        f (TupleUpdate (ListElementType (update ': updates))) m
     mapResourceUpdate :: ChangeLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
-newtype UAReference (update :: Type) (tt :: [TransKind]) = MkUAReference
-    { unUAReference :: AReference (UpdateEdit update) tt
+newtype UAReference (update :: Type) (m :: Type -> Type) = MkUAReference
+    { unUAReference :: AReference (UpdateEdit update) m
     }
 
 type UReference update = Resource (UAReference update)
@@ -44,11 +44,11 @@ objToUObj (MkResource rr anobj) = MkResource rr $ MkUAReference anobj
 
 instance MapResource (UAReference update) where
     mapResource ::
-        forall tt1 tt2.
-        (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2) =>
-        TransListFunction tt1 tt2 ->
-        UAReference update tt1 ->
-        UAReference update tt2
+        forall m1 m2.
+        (Monad m1, Monad m2) =>
+        (m1 --> m2) ->
+        UAReference update m1 ->
+        UAReference update m2
     mapResource f (MkUAReference obj) = MkUAReference $ mapResource f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
@@ -125,53 +125,49 @@ instance TupleResource UAReference where
         refCommitTask = mempty
         in MkUAReference $ MkAReference{..}
     consTupleAResource ::
-        forall tt update updates.
-        MonadTransStackUnlift tt =>
-        UAReference update tt ->
-        UAReference (TupleUpdate (ListElementType updates)) tt ->
-        UAReference (TupleUpdate (ListElementType (update ': updates))) tt
-    consTupleAResource (MkUAReference (MkAReference readA editA ctaskA)) (MkUAReference (MkAReference readB editB ctaskB)) =
-        case transStackDict @MonadIO @tt @IO of
-            Dict -> let
-                readAB :: Readable (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update ': updates)))
-                readAB (MkTupleUpdateReader FirstElementType r) = readA r
-                readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
-                editAB ::
-                    NonEmpty (TupleUpdateEdit (ListElementType (update ': updates))) ->
-                    ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                editAB edits = let
-                    (eas, ebs) = partitionListTupleUpdateEdits (toList edits)
-                    in case (nonEmpty eas, nonEmpty ebs) of
-                        (Nothing, Nothing) -> return $ Just $ \_ -> return ()
-                        (Just eas', Nothing) -> editA eas'
-                        (Nothing, Just ebs') -> editB ebs'
-                        (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
-                ctaskAB = ctaskA <> ctaskB
-                in MkUAReference $ MkAReference readAB editAB ctaskAB
+        forall m update updates.
+        Monad m =>
+        UAReference update m ->
+        UAReference (TupleUpdate (ListElementType updates)) m ->
+        UAReference (TupleUpdate (ListElementType (update ': updates))) m
+    consTupleAResource (MkUAReference (MkAReference readA editA ctaskA)) (MkUAReference (MkAReference readB editB ctaskB)) = let
+        readAB :: Readable m (TupleUpdateReader (ListElementType (update ': updates)))
+        readAB (MkTupleUpdateReader FirstElementType r) = readA r
+        readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
+        editAB ::
+            NonEmpty (TupleUpdateEdit (ListElementType (update ': updates))) ->
+            m (Maybe (EditSource -> m ()))
+        editAB edits = let
+            (eas, ebs) = partitionListTupleUpdateEdits (toList edits)
+            in case (nonEmpty eas, nonEmpty ebs) of
+                (Nothing, Nothing) -> return $ Just $ \_ -> return ()
+                (Just eas', Nothing) -> editA eas'
+                (Nothing, Just ebs') -> editB ebs'
+                (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
+        ctaskAB = ctaskA <> ctaskB
+        in MkUAReference $ MkAReference readAB editAB ctaskAB
     mapResourceUpdate plens uobj = objToUObj $ mapReference plens $ uObjToObj uobj
 
 instance TupleResource AModel where
-    noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) '[]
+    noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) IO
     noneTupleAResource = MkAModel (unUAReference noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
-        forall tt update updates.
-        MonadTransStackUnlift tt =>
-        AModel update tt ->
-        AModel (TupleUpdate (ListElementType updates)) tt ->
-        AModel (TupleUpdate (ListElementType (update ': updates))) tt
-    consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) =
-        case transStackDict @MonadIO @tt @IO of
-            Dict -> let
-                anobj12 = unUAReference $ consTupleAResource (MkUAReference anobj1) (MkUAReference anobj2)
-                sub12 task recv12 = do
-                    let
-                        recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
-                        recv2 rc u2 ec =
-                            recv12 rc (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
-                    sub1 task recv1
-                    sub2 task recv2
-                utask12 = utask1 <> utask2
-                in MkAModel anobj12 sub12 utask12
+        forall m update updates.
+        Monad m =>
+        AModel update m ->
+        AModel (TupleUpdate (ListElementType updates)) m ->
+        AModel (TupleUpdate (ListElementType (update ': updates))) m
+    consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) = let
+        anobj12 = unUAReference $ consTupleAResource (MkUAReference anobj1) (MkUAReference anobj2)
+        sub12 task recv12 = do
+            let
+                recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
+                recv2 rc u2 ec =
+                    recv12 rc (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
+            sub1 task recv1
+            sub2 task recv2
+        utask12 = utask1 <> utask2
+        in MkAModel anobj12 sub12 utask12
     mapResourceUpdate :: ChangeLens updateA updateB -> Model updateA -> Model updateB
     mapResourceUpdate = mapModel
 
