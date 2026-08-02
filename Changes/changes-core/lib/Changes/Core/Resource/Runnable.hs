@@ -70,39 +70,38 @@ joinResource ff =
                         Dict -> ff f1 f2
 
 runResource ::
-    forall f m r.
-    MonadUnliftIO m =>
+    forall f r.
     ResourceContext ->
     Resource f ->
-    (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => f (ApplyStack tt IO) -> ApplyStack tt m r) ->
-    m r
+    (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO)) => f (ApplyStack tt IO) -> ApplyStack tt IO r) ->
+    IO r
 runResource rc (MkResource (rr :: ResourceRunner tt) ftt) call =
     runResourceRunner rc rr $ call @tt ftt
 
 runResourceUnlift ::
-    forall f m r.
-    (MapResource f, MonadUnliftIO m) =>
+    forall f r.
+    MapResource f =>
     ResourceContext ->
     Resource f ->
-    (f IO -> m r) ->
-    m r
+    (f IO -> IO r) ->
+    IO r
 runResourceUnlift rc resource call = let
     call' ::
         forall tt.
         MonadTransStackUnlift tt =>
         f (ApplyStack tt IO) ->
-        ApplyStack tt m r
+        ApplyStack tt IO r
     call' ftt =
         case transStackDict @Monad @tt @IO of
             Dict -> unStackT @tt $ liftWithUnlift $ \unlift -> call $ mapResource (unlift . MkStackT) ftt
-    in runResource @f @m @r rc resource $ \ @tt ftt -> call' @tt ftt
+    in runResource @f @r rc resource $ \ @tt ftt -> call' @tt ftt
 
 runResourceLifecycle ::
-    forall f m.
-    (MapResource f, MonadCoroutine m, MonadAskUnliftIO m) =>
+    forall f.
+    MapResource f =>
     ResourceContext ->
     Resource f ->
-    LifecycleT m m (f IO)
+    LifecycleT IO IO (f IO)
 runResourceLifecycle rc resource = lifecycleWith $ runResourceUnlift rc resource
 
 runResourceContext ::

@@ -169,12 +169,11 @@ runLSR rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
                             Dict -> call
 
 runResourceRunner ::
-    forall tt m r.
-    MonadUnliftIO m =>
+    forall tt r.
     ResourceContext ->
     ResourceRunner tt ->
-    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r) ->
-    m r
+    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO)) => ApplyStack tt IO r) ->
+    IO r
 runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = runLSR rc rr call
 
 runLSRContext ::
