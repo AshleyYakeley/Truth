@@ -145,7 +145,7 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
     -- runResourceRunnerWith rr $ \_ ->
     case transStackConcatRefl @'[StateT Bool] @tt @IO of
         Refl ->
-            case resourceRunnerStackUnliftDict @IO rr of
+            case resourceRunnerStackUnliftDict rr of
                 Dict -> let
                     pushFirst :: StateT Bool (ApplyStack tt IO) ()
                     pushFirst = do

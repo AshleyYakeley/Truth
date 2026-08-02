@@ -59,7 +59,7 @@ traceAReference prefix MkEditShower{..} (MkAReference r e ct) = let
 
 traceReference :: forall edit. String -> EditShower edit -> Reference edit -> Reference edit
 traceReference prefix shower (MkResource rr anobj) =
-    case resourceRunnerStackUnliftDict @IO rr of
+    case resourceRunnerStackUnliftDict rr of
         Dict -> MkResource rr $ traceAReference prefix shower anobj
 
 showEditShower ::
@@ -119,7 +119,7 @@ instance TraceThing (LifeState mc) where
 
 slowObject :: Int -> Reference edit -> Reference edit
 slowObject mus (MkResource rr (MkAReference rd push ct)) =
-    case resourceRunnerStackUnliftDict @IO rr of
+    case resourceRunnerStackUnliftDict rr of
         Dict -> let
             push' edits = do
                 maction <- push edits

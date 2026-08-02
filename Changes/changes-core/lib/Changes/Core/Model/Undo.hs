@@ -129,11 +129,11 @@ undoHandlerReference ::
     Reference edit
 undoHandlerReference MkUndoHandler{..} ref@(MkResource rr aref) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerStackUnliftDict @IO rr of
+        case resourceRunnerStackUnliftDict rr of
             Dict ->
                 case resourceRunnerUnliftDict rr' of
                     Dict ->
-                        case resourceRunnerStackUnliftDict @IO rr' of
+                        case resourceRunnerStackUnliftDict rr' of
                             Dict ->
                                 MkResource rr'
                                     $ undoHandlerAReference
@@ -149,11 +149,11 @@ undoHandlerModel ::
     Model update
 undoHandlerModel MkUndoHandler{..} model@(MkResource rr amodel) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerStackUnliftDict @IO rr of
+        case resourceRunnerStackUnliftDict rr of
             Dict ->
                 case resourceRunnerUnliftDict rr' of
                     Dict ->
-                        case resourceRunnerStackUnliftDict @IO rr' of
+                        case resourceRunnerStackUnliftDict rr' of
                             Dict ->
                                 case mapResource (tlfFunction liftr (Proxy @IO)) amodel of
                                     MkAModel aref subscribe utask -> let

@@ -72,7 +72,7 @@ directoryReferenceStore ::
     (name -> String) ->
     Reference (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
 directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd push refCommitTask)) nameStr =
-    case resourceRunnerStackUnliftDict @IO rr of
+    case resourceRunnerStackUnliftDict rr of
         Dict -> let
             undoName :: String -> Int -> FilePath
             undoName name i = "undo/" ++ name ++ show i

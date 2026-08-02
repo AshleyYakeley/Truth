@@ -116,7 +116,7 @@ mapPremodel rc (MkFloatingChangeLens finit rlens) premodel utask recvb = do
                             Just ebb -> recvb urc ebb esrc
                     objB :: Reference (UpdateEdit updateB)
                     objB =
-                        case resourceRunnerStackUnliftDict @IO rr of
+                        case resourceRunnerStackUnliftDict rr of
                             Dict -> MkResource rr $ mapAReference lens anobjA
                 return (MkPremodelResult objB updTask val, recva')
     return result

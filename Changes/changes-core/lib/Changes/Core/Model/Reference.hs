@@ -112,7 +112,7 @@ mapReference ::
     Reference (UpdateEdit updateA) ->
     Reference (UpdateEdit updateB)
 mapReference plens (MkResource rr anobjA) =
-    case resourceRunnerStackUnliftDict @IO rr of
+    case resourceRunnerStackUnliftDict rr of
         Dict -> MkResource rr $ mapAReference plens anobjA
 
 floatMapAReference ::

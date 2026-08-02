@@ -16,12 +16,10 @@ import Changes.Debug.Reference
 
 instance TraceThing (Model edit) where
     traceThing prefix (MkResource rr (MkAModel anobj sub utask)) =
-        case resourceRunnerStackUnliftDict @IO rr of
+        case resourceRunnerStackUnliftDict rr of
             Dict ->
-                case resourceRunnerStackUnliftDict @Lifecycle rr of
-                    Dict ->
-                        MkResource rr
-                            $ MkAModel
-                                (traceAReference prefix blankEditShower anobj)
-                                (\task call -> traceBracket_ (contextStr prefix "update") $ sub task call)
-                                utask
+                MkResource rr
+                    $ MkAModel
+                        (traceAReference prefix blankEditShower anobj)
+                        (\task call -> traceBracket_ (contextStr prefix "update") $ sub task call)
+                        utask

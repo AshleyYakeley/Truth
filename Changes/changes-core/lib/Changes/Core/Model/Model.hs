@@ -94,7 +94,7 @@ singleUpdateQueue updates ec = MkUpdateQueue $ pure (ec, updates)
 
 modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
 modelPremodel rc (MkResource rr MkAModel{..}) val update utask = do
-    Dict <- return $ resourceRunnerStackUnliftDict @IO rr
+    Dict <- return $ resourceRunnerStackUnliftDict rr
     hoist (\ma -> runResourceRunner rc rr ma) $ aModelSubscribe update utask
     return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
@@ -173,7 +173,7 @@ floatMapModel rc lens modelA = do
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
-    case resourceRunnerStackUnliftDict @IO rr of
+    case resourceRunnerStackUnliftDict rr of
         Dict -> let
             objB = mapAReference plens objA
             subB utask recvB = let

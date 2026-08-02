@@ -99,13 +99,12 @@ resourceRunnerUnliftDict :: ResourceRunner tt -> Dict (MonadTransStackUnlift tt)
 resourceRunnerUnliftDict (MkResourceRunner lsr) = lsrUnliftDict lsr
 
 resourceRunnerStackUnliftDict ::
-    forall m tt.
-    MonadUnliftIO m =>
+    forall tt.
     ResourceRunner tt ->
-    Dict (MonadUnliftIO (ApplyStack tt m))
+    Dict (MonadUnliftIO (ApplyStack tt IO))
 resourceRunnerStackUnliftDict rr =
     case resourceRunnerUnliftDict rr of
-        Dict -> transStackDict @MonadUnliftIO @tt @m
+        Dict -> transStackDict @MonadUnliftIO @tt @IO
 
 singleResourceRunner :: SingleRunner t -> ResourceRunner '[t]
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
