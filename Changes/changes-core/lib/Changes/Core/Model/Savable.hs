@@ -66,16 +66,16 @@ saveBufferReference rc objP pmrUpdatesTask update = do
                         else Nothing
     return
         $ combineResourceRunners (mvarResourceRunner iow sbVar) deferRunner
-        $ \(rrC :: ResourceRunner tt) liftState liftDefer -> let
-            runS :: StateT (SaveBuffer (UpdateSubject update)) IO --> ReaderT (ListProduct tt) IO
+        $ \(rrC :: ResourceRunner t) liftState liftDefer -> let
+            runS :: StateT (SaveBuffer (UpdateSubject update)) IO --> ReaderT t IO
             runS ma = do
                 params <- ask
                 liftIO $ mVarRunStateT (fst $ liftState params) ma
-            readC :: Readable (ReaderT (ListProduct tt) IO) (UpdateReader update)
+            readC :: Readable (ReaderT t IO) (UpdateReader update)
             readC rt = runS $ mSubjectToReadable (fmap saveBuffer get) rt
             pushC ::
                 NonEmpty (UpdateEdit update) ->
-                ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+                ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
             pushC edits =
                 return
                     $ Just

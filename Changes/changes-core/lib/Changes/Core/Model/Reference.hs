@@ -43,14 +43,14 @@ noneReference = let
 
 mvarReference :: forall a. IOWitness (MVar a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
 mvarReference iow var allowed = let
-    refRead :: Readable (ReaderT (ListProduct '[MVar a]) IO) (WholeReader a)
+    refRead :: Readable (ReaderT (MVar a, ()) IO) (WholeReader a)
     refRead ReadWhole = runResourceStateT get
     refEdit ::
         NonEmpty (WholeEdit a) ->
         ReaderT
-            (ListProduct '[MVar a])
+            (MVar a, ())
             IO
-            (Maybe (EditSource -> ReaderT (ListProduct '[MVar a]) IO ()))
+            (Maybe (EditSource -> ReaderT (MVar a, ()) IO ()))
     refEdit edits = do
         na <- runResourceStateT $ applyEdits (toList edits) (mSubjectToReadable get) ReadWhole
         return
@@ -173,12 +173,12 @@ convertReference ::
     (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb) =>
     Reference edita ->
     Reference editb
-convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) = let
-    refRead :: Readable (ReaderT (ListProduct tt) IO) (EditReader editb)
+convertReference (MkResource (trun :: ResourceRunner t) (MkAReference mra pe refCommitTask)) = let
+    refRead :: Readable (ReaderT t IO) (EditReader editb)
     refRead = mSubjectToReadable $ readableToSubject mra
     refEdit ::
         NonEmpty editb ->
-        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+        ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
     refEdit ebs = do
         oldsubj <- readableToSubject mra
         newsubj <- mapSubjectEdits (toList ebs) oldsubj

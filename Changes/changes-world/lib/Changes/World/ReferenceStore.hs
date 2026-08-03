@@ -71,16 +71,16 @@ directoryReferenceStore ::
     Reference FSEdit ->
     (name -> String) ->
     Reference (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
-directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd push refCommitTask)) nameStr = let
+directoryReferenceStore (MkResource (rr :: ResourceRunner t) (MkAReference rd push refCommitTask)) nameStr = let
     undoName :: String -> Int -> FilePath
     undoName name i = "undo/" ++ name ++ show i
-    findUndoCode :: String -> Int -> ReaderT (ListProduct tt) IO Int
+    findUndoCode :: String -> Int -> ReaderT t IO Int
     findUndoCode name i = do
         mitem <- rd $ FSReadItem $ undoName name i
         case mitem of
             Nothing -> return i
             Just _ -> findUndoCode name $ succ i
-    refRead :: Readable (ReaderT (ListProduct tt) IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
+    refRead :: Readable (ReaderT t IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
     refRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
         case edit of
             ReadSingleReferenceStore -> do
@@ -98,7 +98,7 @@ directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd p
                     _ -> return $ Nothing
     refEdit ::
         NonEmpty (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit)) ->
-        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+        ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
     refEdit edits =
         return
             $ Just

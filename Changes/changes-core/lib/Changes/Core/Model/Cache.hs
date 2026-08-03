@@ -25,7 +25,7 @@ cacheReference rc mus obj = do
     return $ \rc' -> let
         refRead ::
             Readable
-                (ReaderT (ListProduct '[MVar (ListCache (EditCacheKey ListCache edit))]) IO)
+                (ReaderT (MVar (ListCache (EditCacheKey ListCache edit)), ()) IO)
                 (EditReader edit)
         refRead rt =
             runResourceStateT $ do

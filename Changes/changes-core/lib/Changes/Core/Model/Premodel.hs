@@ -40,14 +40,14 @@ reflectingPremodel ::
     IsUpdate update =>
     Reference (UpdateEdit update) ->
     Premodel update ()
-reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e ctask)) utask recv = do
+reflectingPremodel (MkResource (trun :: ResourceRunner t) (MkAReference r e ctask)) utask recv = do
     deferRR <- deferActionResourceRunner
-    combineResourceRunners trun deferRR $ \(trun' :: ResourceRunner ttab) liftResource liftDefer -> let
-        r' :: Readable (ReaderT (ListProduct ttab) IO) (UpdateReader update)
+    combineResourceRunners trun deferRR $ \(trun' :: ResourceRunner tab) liftResource liftDefer -> let
+        r' :: Readable (ReaderT tab IO) (UpdateReader update)
         r' rt = withReaderT liftResource $ r rt
         e' ::
             NonEmpty (UpdateEdit update) ->
-            ReaderT (ListProduct ttab) IO (Maybe (EditSource -> ReaderT (ListProduct ttab) IO ()))
+            ReaderT tab IO (Maybe (EditSource -> ReaderT tab IO ()))
         e' edits = do
             maction <- withReaderT liftResource $ e edits
             return
@@ -61,7 +61,7 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e cta
                             $ editSourceContext esrc
                     )
                     maction
-        anobj :: AReference (UpdateEdit update) (ListProduct ttab)
+        anobj :: AReference (UpdateEdit update) tab
         anobj = MkAReference r' e' ctask
         pmrUpdatesTask = utask
         pmrValue = ()

@@ -20,10 +20,10 @@ where
 import Changes.Core.Import
 import Changes.Core.Resource.SingleRunner
 
-newtype ResourceRunner (tt :: [Type])
-    = MkResourceRunner (ListType SingleRunner tt)
+data ResourceRunner (t :: Type) where
+    MkResourceRunner :: forall (tt :: [Type]). ListType SingleRunner tt -> ResourceRunner (ListProduct tt)
 
-nilResourceRunner :: ResourceRunner '[]
+nilResourceRunner :: ResourceRunner ()
 nilResourceRunner = MkResourceRunner NilListType
 
 emptyListProductFunction :: ListProduct tt -> ListProduct '[]
@@ -66,46 +66,46 @@ combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call = case testC
                 (consListProductFunction tf2)
 
 combineResourceRunners ::
-    ResourceRunner tta ->
-    ResourceRunner ttb ->
-    (forall ttab. ResourceRunner ttab -> (ListProduct ttab -> ListProduct tta) -> (ListProduct ttab -> ListProduct ttb) -> r) ->
+    ResourceRunner ta ->
+    ResourceRunner tb ->
+    (forall tab. ResourceRunner tab -> (tab -> ta) -> (tab -> tb) -> r) ->
     r
 combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
     combineLSR la lb $ \lab -> call (MkResourceRunner lab)
 
-singleResourceRunner :: SingleRunner t -> ResourceRunner '[t]
+singleResourceRunner :: SingleRunner t -> ResourceRunner (t, ())
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
 
 mkResourceRunner ::
     forall t.
     IOWitness t ->
     With IO t ->
-    ResourceRunner '[t]
+    ResourceRunner (t, ())
 mkResourceRunner iow run = singleResourceRunner $ mkSingleRunner iow run
 
 newResourceRunner ::
     forall t.
     With IO t ->
-    IO (ResourceRunner '[t])
+    IO (ResourceRunner (t, ()))
 newResourceRunner run = do
     iow <- newIOWitness
     return $ mkResourceRunner iow run
 
-stateResourceRunner :: s -> IO (ResourceRunner '[MVar s])
+stateResourceRunner :: s -> IO (ResourceRunner (MVar s, ()))
 stateResourceRunner s = do
     var <- newMVar s
     iow <- newIOWitness
     return $ mvarResourceRunner iow var
 
-mvarResourceRunner :: IOWitness (MVar s) -> MVar s -> ResourceRunner '[MVar s]
+mvarResourceRunner :: IOWitness (MVar s) -> MVar s -> ResourceRunner (MVar s, ())
 mvarResourceRunner iow var =
     mkResourceRunner iow $ \call -> mVarRunStateT var $ liftWithMVarStateT call
 
-discardingStateResourceRunner :: IOWitness (MVar s) -> s -> ResourceRunner '[MVar s]
+discardingStateResourceRunner :: IOWitness (MVar s) -> s -> ResourceRunner (MVar s, ())
 discardingStateResourceRunner iow s =
     mkResourceRunner iow $ \call -> discardingStateTUnlift s $ liftWithMVarStateT call
 
-runResourceStateT :: StateT s IO --> ReaderT (ListProduct '[MVar s]) IO
+runResourceStateT :: StateT s IO --> ReaderT (MVar s, ()) IO
 runResourceStateT ma = do
     stateVar <- asks fst
     liftIO $ mVarRunStateT stateVar ma
@@ -133,10 +133,10 @@ runLSR rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
         runSingleRunner rc sr $ \t -> call (t, ttr)
 
 runResourceRunner ::
-    forall tt r.
+    forall t r.
     ResourceContext ->
-    ResourceRunner tt ->
-    (ListProduct tt -> IO r) ->
+    ResourceRunner t ->
+    (t -> IO r) ->
     IO r
 runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) = runLSR rc rr
 
@@ -153,19 +153,19 @@ runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
         runSingleRunnerContext rc' sr $ \rc'' t -> call rc'' (t, ttr)
 
 runResourceRunnerContext ::
-    forall tt r.
+    forall t r.
     ResourceContext ->
-    ResourceRunner tt ->
-    (ResourceContext -> ListProduct tt -> IO r) ->
+    ResourceRunner t ->
+    (ResourceContext -> t -> IO r) ->
     IO r
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
     runLSRContext rc rr $ \rc' -> call (MkResourceContext rc')
 
 exclusiveResourceRunner ::
-    forall tt.
+    forall t.
     ResourceContext ->
-    ResourceRunner tt ->
-    LifecycleT IO IO (ResourceRunner '[ListProduct tt])
+    ResourceRunner t ->
+    LifecycleT IO IO (ResourceRunner (t, ()))
 exclusiveResourceRunner rc rr = do
     iow <- liftIO newIOWitness
     lifecycleWith $ \call ->

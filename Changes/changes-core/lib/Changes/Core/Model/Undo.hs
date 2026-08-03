@@ -30,7 +30,7 @@ data UndoQueue = MkUndoQueue
 
 data UndoHandler = MkUndoHandler
     { uhVar :: MVar UndoQueue
-    , uhRunner :: ResourceRunner '[UndoRecorder]
+    , uhRunner :: ResourceRunner (UndoRecorder, ())
     }
 
 newtype UndoRecorder = MkUndoRecorder (RefEdits -> IO ())

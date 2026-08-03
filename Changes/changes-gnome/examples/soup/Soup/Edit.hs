@@ -42,8 +42,8 @@ nameUUID = MkCodec Data.UUID.fromString Data.UUID.toString
 type ReferenceSoupUpdate = SoupUpdate (ReferenceUpdate ByteStringUpdate)
 
 directorySoup :: Reference FSEdit -> FilePath -> Reference (UpdateEdit ReferenceSoupUpdate)
-directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS pushFS ctask)) dirpath = let
-    readSoup :: Readable (ReaderT (ListProduct tt) IO) (UpdateReader ReferenceSoupUpdate)
+directorySoup (MkResource (runFS :: ResourceRunner t) (MkAReference readFS pushFS ctask)) dirpath = let
+    readSoup :: Readable (ReaderT t IO) (UpdateReader ReferenceSoupUpdate)
     readSoup KeyReadKeys = do
         mnames <- readFS $ FSReadDirectory dirpath
         return
@@ -67,7 +67,7 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS push
                 _ -> Nothing
     pushSoup ::
         NonEmpty (UpdateEdit ReferenceSoupUpdate) ->
-        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+        ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
     pushSoup =
         singleEdit $ \edit ->
             case edit of

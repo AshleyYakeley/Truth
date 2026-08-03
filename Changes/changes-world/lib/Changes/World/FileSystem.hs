@@ -147,13 +147,13 @@ subdirCreateWitness :: IOWitness (MVar Bool)
 subdirCreateWitness = $(iowitness [t|MVar Bool|])
 
 subdirectoryReference :: Bool -> FilePath -> Reference FSEdit -> Reference FSEdit
-subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAReference rd push ctask)) =
+subdirectoryReference create dir (MkResource (rr :: ResourceRunner t) (MkAReference rd push ctask)) =
     combineResourceRunners
         (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
         rr
-        $ \(rr' :: ResourceRunner ttab) liftState liftBase -> let
+        $ \(rr' :: ResourceRunner tab) liftState liftBase -> let
             MkAReference rdBase pushBase _ = contramap liftBase $ MkAReference rd push ctask
-            pushFirst :: ReaderT (ListProduct ttab) IO ()
+            pushFirst :: ReaderT tab IO ()
             pushFirst = do
                 params <- ask
                 liftIO
@@ -180,7 +180,7 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
                 in if isRelative relpath
                     then Just relpath
                     else Nothing
-            rd' :: Readable (ReaderT (ListProduct ttab) IO) FSReader
+            rd' :: Readable (ReaderT tab IO) FSReader
             rd' (FSReadDirectory path) = do
                 pushFirst
                 rdBase $ FSReadDirectory $ insideToOutside path

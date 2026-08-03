@@ -14,19 +14,19 @@ import Changes.Core.Import
 import Changes.Core.Resource.ResourceRunner
 
 data Resource (f :: Type -> Type)
-    = forall (tt :: [Type]). MkResource
-        (ResourceRunner tt)
-        (f (ListProduct tt))
+    = forall t. MkResource
+        (ResourceRunner t)
+        (f t)
 
 joinResource_ ::
     forall f1 f2 r.
     (Contravariant f1, Contravariant f2) =>
-    (forall tt. ResourceRunner tt -> f1 (ListProduct tt) -> f2 (ListProduct tt) -> r) ->
+    (forall t. ResourceRunner t -> f1 t -> f2 t -> r) ->
     Resource f1 ->
     Resource f2 ->
     r
-joinResource_ ff (MkResource (run1 :: ResourceRunner tt1) fma1) (MkResource (run2 :: ResourceRunner tt2) fma2) =
-    combineResourceRunners run1 run2 $ \(run12 :: ResourceRunner tt12) tf1 tf2 ->
+joinResource_ ff (MkResource run1 fma1) (MkResource run2 fma2) =
+    combineResourceRunners run1 run2 $ \run12 tf1 tf2 ->
         ff
             run12
             (contramap tf1 fma1)
@@ -40,7 +40,7 @@ joinResource ::
     Resource f2 ->
     Resource f3
 joinResource ff =
-    joinResource_ $ \(run :: ResourceRunner tt) f1 f2 ->
+    joinResource_ $ \run f1 f2 ->
         MkResource run $ ff f1 f2
 
 runResource ::
@@ -49,8 +49,8 @@ runResource ::
     Resource f ->
     (forall t. f t -> ReaderT t IO r) ->
     IO r
-runResource rc (MkResource (rr :: ResourceRunner tt) ftt) call =
-    runResourceRunner rc rr $ runReaderT $ call @(ListProduct tt) ftt
+runResource rc (MkResource rr ft) call =
+    runResourceRunner rc rr $ runReaderT $ call ft
 
 runResourceUnlift ::
     forall f r.
@@ -75,15 +75,15 @@ runResourceContext ::
     forall f r.
     ResourceContext ->
     Resource f ->
-    ( forall tt.
+    ( forall t.
       ResourceContext ->
-      (ReaderT (ListProduct tt) IO --> IO) ->
-      f (ListProduct tt) ->
+      (ReaderT t IO --> IO) ->
+      f t ->
       IO r
     ) ->
     IO r
-runResourceContext rc (MkResource (rr :: ResourceRunner tt) ftt) call =
-    runResourceRunnerContext rc rr $ \rc' tt -> call @tt rc' (`runReaderT` tt) ftt
+runResourceContext rc (MkResource rr ft) call =
+    runResourceRunnerContext rc rr $ \rc' t -> call rc' (`runReaderT` t) ft
 
 exclusiveResource ::
     forall f.
@@ -91,6 +91,6 @@ exclusiveResource ::
     ResourceContext ->
     Resource f ->
     LifecycleT IO IO (Resource f)
-exclusiveResource rc (MkResource (trun :: ResourceRunner tt) f) = do
+exclusiveResource rc (MkResource trun f) = do
     trun' <- exclusiveResourceRunner rc trun
     return $ MkResource trun' $ contramap fst f

@@ -258,10 +258,10 @@ instance CacheableEdit QTableEdit where
 
 -- can't be a Lens, because reads can cause edits
 qTableEntityReference :: Reference QTableEdit -> Reference QStorageEdit
-qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) = let
-    tablePush :: EditSource -> QTableEdit -> ReaderT (ListProduct tt) IO ()
+qTableEntityReference (MkResource (trun :: ResourceRunner tr) (MkAReference tableRead tableMPush refCommitTask)) = let
+    tablePush :: EditSource -> QTableEdit -> ReaderT tr IO ()
     tablePush esrc edit = pushOrFail "can't push table edit" esrc $ tableMPush $ pure edit
-    acquireEntity :: EditSource -> Entity -> ReaderT (ListProduct tt) IO ()
+    acquireEntity :: EditSource -> Entity -> ReaderT tr IO ()
     acquireEntity esrc entity = do
         mrc <- tableRead $ QTableReadEntityRefCount entity
         newrc <-
@@ -271,7 +271,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                     Just oldrc -> succ oldrc
         tablePush esrc $ QTableEditEntityRefCount entity $ Just newrc
     releaseByFact ::
-        forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ReaderT (ListProduct tt) IO ()
+        forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ReaderT tr IO ()
     releaseByFact esrc (MkFieldStorer p subdef) entity = do
         msubv <- tableRead $ QTableReadFactGet p entity
         for_ msubv $ \subv -> releaseByEntity esrc subdef subv
@@ -281,7 +281,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         EditSource ->
         ConstructorStorer 'MultipleMode t ->
         Entity ->
-        ReaderT (ListProduct tt) IO ()
+        ReaderT tr IO ()
     releaseByConstructor _ PlainConstructorStorer _ = return ()
     releaseByConstructor _ LiteralConstructorStorer entity
         | Just _ <- entityToLiteral entity = return ()
@@ -290,7 +290,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
     releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
         listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
     releaseByEntity ::
-        forall t. EditSource -> MultipleEntityStorer t -> Entity -> ReaderT (ListProduct tt) IO ()
+        forall t. EditSource -> MultipleEntityStorer t -> Entity -> ReaderT tr IO ()
     releaseByEntity esrc (MkMultipleEntityStorer css) entity = do
         mrc <- tableRead $ QTableReadEntityRefCount entity
         case mrc of
@@ -299,7 +299,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                 for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
             Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
             Nothing -> return ()
-    releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ReaderT (ListProduct tt) IO ()
+    releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ReaderT tr IO ()
     releaseByAdapter esrc vtype entity =
         releaseByEntity esrc (storeAdapterDefinitions vtype) entity
     setFact ::
@@ -308,7 +308,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         FieldStorer 'SingleMode t ->
         Entity ->
         t ->
-        ReaderT (ListProduct tt) IO ()
+        ReaderT tr IO ()
     setFact esrc (MkFieldStorer p subdef) v t = do
         let subv = entityStorerToEntity subdef t
         moldsub <- tableRead $ QTableReadFactGet p v
@@ -324,7 +324,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         ListType (FieldStorer 'SingleMode) t ->
         Entity ->
         ListProduct t ->
-        ReaderT (ListProduct tt) IO ()
+        ReaderT tr IO ()
     setFacts _ NilListType _ () = return ()
     setFacts esrc (ConsListType f1 fr) v (a1, ar) = do
         setFact esrc f1 v a1
@@ -335,7 +335,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         ConstructorStorer 'SingleMode t ->
         Entity ->
         t ->
-        ReaderT (ListProduct tt) IO ()
+        ReaderT tr IO ()
     setConstructor _ PlainConstructorStorer _ _ = return ()
     setConstructor _ LiteralConstructorStorer v _
         | Just _ <- entityToLiteral v = return ()
@@ -348,13 +348,13 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         SingleEntityStorer t ->
         Entity ->
         t ->
-        ReaderT (ListProduct tt) IO ()
+        ReaderT tr IO ()
     setEntity esrc (MkSingleEntityStorer cs) e t = setConstructor esrc cs e t
-    setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ReaderT (ListProduct tt) IO ()
+    setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ReaderT tr IO ()
     setEntityFromAdapter esrc entity ea t = do
         case storeAdapterToDefinition ea t of
             MkSomeOf def tt -> setEntity esrc def entity tt
-    doEntityEdit :: EditSource -> QStorageEdit -> ReaderT (ListProduct tt) IO ()
+    doEntityEdit :: EditSource -> QStorageEdit -> ReaderT tr IO ()
     doEntityEdit esrc (MkQStorageEdit stype vtype p s (Known v)) = do
         let
             se = storeAdapterConvert stype s
@@ -386,7 +386,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         forall (t :: Type).
         FieldStorer 'MultipleMode t ->
         Entity ->
-        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+        ComposeInner Know (ReaderT tr IO) t
     readFact (MkFieldStorer p subdef) entity = do
         subentity <- MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadFactGet p entity
         readEntity subdef subentity
@@ -394,7 +394,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         forall (t :: [Type]).
         ListType (FieldStorer 'MultipleMode) t ->
         Entity ->
-        ComposeInner Know (ReaderT (ListProduct tt) IO) (ListProduct t)
+        ComposeInner Know (ReaderT tr IO) (ListProduct t)
     readFacts NilListType _ = return ()
     readFacts (ConsListType f1 fr) entity = do
         t1 <- readFact f1 entity
@@ -404,7 +404,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         forall (t :: Type).
         ConstructorStorer 'MultipleMode t ->
         Entity ->
-        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+        ComposeInner Know (ReaderT tr IO) t
     readConstructor PlainConstructorStorer entity = return entity
     readConstructor LiteralConstructorStorer entity
         | Just lit <- entityToLiteral entity = return lit
@@ -418,12 +418,12 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         forall (t :: Type).
         MultipleEntityStorer t ->
         Entity ->
-        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+        ComposeInner Know (ReaderT tr IO) t
     readEntity (MkMultipleEntityStorer css) entity =
         firstKnown css $ \(MkKnowShim def f) -> do
             dt <- readConstructor def entity
             liftInner $ f dt
-    refRead :: Readable (ReaderT (ListProduct tt) IO) QStorageRead
+    refRead :: Readable (ReaderT tr IO) QStorageRead
     refRead (QStorageReadGet stype prd subj) = do
         mval <- tableRead $ QTableReadPropertyGet prd $ storeAdapterConvert stype subj
         case mval of
@@ -438,7 +438,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
         unComposeInner $ readEntity (storeAdapterDefinitions ea) entity
     refEdit ::
         NonEmpty QStorageEdit ->
-        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+        ReaderT tr IO (Maybe (EditSource -> ReaderT tr IO ()))
     refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit
     in MkResource trun MkAReference{..}
 

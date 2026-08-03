@@ -112,12 +112,12 @@ makeSharedModel premodel = do
         utaskP :: Task IO ()
         utaskP = ioTask (fmap mconcat getTasks)
     MkPremodelResult{..} <- premodel utaskP updateP
-    MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
+    MkResource (trunC :: ResourceRunner t) aModelAReference <- return pmrReference
     let
         aModelSubscribe ::
             Task IO () ->
             (ResourceContext -> NonEmpty update -> EditContext -> IO ()) ->
-            LifecycleT IO (ReaderT (ListProduct tt) IO) ()
+            LifecycleT IO (ReaderT t IO) ()
         aModelSubscribe taskC updateC =
             hoist liftIO $ do
                 key <-

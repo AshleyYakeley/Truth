@@ -62,6 +62,7 @@
 - ignore: {name: "Use const"}
 - ignore: {name: "Avoid lambda"}
 - ignore: {name: "Use <$>"}
+- ignore: {name: "Move brackets to avoid $"}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~

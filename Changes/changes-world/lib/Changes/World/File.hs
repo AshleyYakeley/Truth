@@ -13,14 +13,14 @@ fileReference :: FilePath -> Reference ByteStringEdit
 fileReference path = let
     iow :: IOWitness Handle
     iow = hashOpenWitness fileWitness path
-    objRun :: ResourceRunner '[Handle]
+    objRun :: ResourceRunner (Handle, ())
     objRun =
         mkResourceRunner iow $ \call -> do
             h <- openBinaryFile path ReadWriteMode
             r <- call h
             hClose h
             return r
-    refRead :: Readable (ReaderT (ListProduct '[Handle]) IO) ByteStringReader
+    refRead :: Readable (ReaderT (Handle, ()) IO) ByteStringReader
     refRead ReadByteStringLength = do
         h <- asks fst
         n <- lift $ hFileSize h
@@ -29,7 +29,7 @@ fileReference path = let
         h <- asks fst
         lift $ hSeek h AbsoluteSeek $ toInteger start
         lift $ hGet h $ fromIntegral len
-    objOneEdit :: ByteStringEdit -> EditSource -> ReaderT (ListProduct '[Handle]) IO ()
+    objOneEdit :: ByteStringEdit -> EditSource -> ReaderT (Handle, ()) IO ()
     objOneEdit (ByteStringSetLength len) _ = do
         h <- asks fst
         lift $ hSetFileSize h $ toInteger len
@@ -43,7 +43,7 @@ fileReference path = let
         lift $ hPut h bs
     refEdit ::
         NonEmpty ByteStringEdit ->
-        ReaderT (ListProduct '[Handle]) IO (Maybe (EditSource -> ReaderT (ListProduct '[Handle]) IO ()))
+        ReaderT (Handle, ()) IO (Maybe (EditSource -> ReaderT (Handle, ()) IO ()))
     refEdit = singleAlwaysEdit objOneEdit
     refCommitTask :: Task IO ()
     refCommitTask = mempty

@@ -207,7 +207,7 @@ sqliteReference ::
 sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[Connection]
+        objRun :: ResourceRunner (Connection, ())
         objRun =
             mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
                 mVarRunLocked var $ do
@@ -279,7 +279,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
                 <> " SET "
                 <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis)
                 <> wherePart tableColumnRefs wc
-        refRead :: Readable (ReaderT (ListProduct '[Connection]) IO) (SQLiteReader tablesel)
+        refRead :: Readable (ReaderT (Connection, ()) IO) (SQLiteReader tablesel)
         refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
                 MkQueryString s v -> do
@@ -288,9 +288,9 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
         refEdit ::
             NonEmpty (SQLiteEdit tablesel) ->
             ReaderT
-                (ListProduct '[Connection])
+                (Connection, ())
                 IO
-                (Maybe (EditSource -> ReaderT (ListProduct '[Connection]) IO ()))
+                (Maybe (EditSource -> ReaderT (Connection, ()) IO ()))
         refEdit =
             alwaysEdit $ \edits _ -> let
                 queries :: [QueryString]

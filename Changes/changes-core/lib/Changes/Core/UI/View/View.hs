@@ -92,17 +92,17 @@ viewRunResourceLifecycle resource = do
 viewRunResourceContext ::
     forall f r.
     Resource f ->
-    ( forall tt.
-      (ReaderT (ListProduct tt) IO --> IO) ->
-      f (ListProduct tt) ->
+    ( forall t.
+      (ReaderT t IO --> IO) ->
+      f t ->
       View r
     ) ->
     View r
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext
     liftIOWithUnlift $ \unliftView ->
-        runResourceContext rc resource $ \ @tt rc' unlift ftt ->
-            unliftView $ viewLocalResourceContext rc' $ call @tt unlift ftt
+        runResourceContext rc resource $ \ @t rc' unlift ft ->
+            unliftView $ viewLocalResourceContext rc' $ call @t unlift ft
 
 viewWithContext :: (ViewContext -> ViewContext) -> View --> View
 viewWithContext f ma = hoist (semiviewWithContext f) ma

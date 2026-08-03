@@ -18,17 +18,17 @@ makeMemoryCellReference = do
     iow <- newIOWitness
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[MVar ()]
+        objRun :: ResourceRunner (MVar (), ())
         objRun = mvarResourceRunner iow var
-        refRead :: Readable (ReaderT (ListProduct '[MVar ()]) IO) (UpdateReader MemoryCellUpdate)
+        refRead :: Readable (ReaderT (MVar (), ()) IO) (UpdateReader MemoryCellUpdate)
         refRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) =
             runResourceStateT $ liftIO $ readIORef $ unWitnessed ioref
         refEdit ::
             NonEmpty (UpdateEdit MemoryCellUpdate) ->
             ReaderT
-                (ListProduct '[MVar ()])
+                (MVar (), ())
                 IO
-                (Maybe (EditSource -> ReaderT (ListProduct '[MVar ()]) IO ()))
+                (Maybe (EditSource -> ReaderT (MVar (), ()) IO ()))
         refEdit =
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 runResourceStateT $ liftIO $ writeIORef (unWitnessed ioref) a
