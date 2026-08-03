@@ -61,7 +61,7 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e cta
                             $ editSourceContext esrc
                     )
                     maction
-        anobj :: AReference (UpdateEdit update) (ReaderT (ListProduct ttab) IO)
+        anobj :: AReference (UpdateEdit update) (ListProduct ttab)
         anobj = MkAReference r' e' ctask
         pmrUpdatesTask = utask
         pmrValue = ()

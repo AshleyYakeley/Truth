@@ -64,15 +64,15 @@ giFileReference path = do
                     newmh <- readMVar stateVar
                     for_ newmh closeGIFile
                     return r
-            refRead :: Readable M (OneReader Maybe (PairUpdateReader (WholeUpdate Text) ByteStringUpdate))
-            refRead ReadHasOne = fmap (fmap (\_ -> ())) get
-            refRead (ReadOne (MkTupleUpdateReader SelectFirst ReadWhole)) = do
+            stateRefRead :: Readable M (OneReader Maybe (PairUpdateReader (WholeUpdate Text) ByteStringUpdate))
+            stateRefRead ReadHasOne = fmap (fmap (\_ -> ())) get
+            stateRefRead (ReadOne (MkTupleUpdateReader SelectFirst ReadWhole)) = do
                 mh <- get
                 for mh $ \h -> getMediaType h path
-            refRead (ReadOne (MkTupleUpdateReader SelectSecond ReadByteStringLength)) = do
+            stateRefRead (ReadOne (MkTupleUpdateReader SelectSecond ReadByteStringLength)) = do
                 mh <- get
                 for mh $ \h -> getLength h path
-            refRead (ReadOne (MkTupleUpdateReader SelectSecond (ReadByteStringSection start len))) = do
+            stateRefRead (ReadOne (MkTupleUpdateReader SelectSecond (ReadByteStringSection start len))) = do
                 mh <- get
                 for mh $ \h -> do
                     seek h start
@@ -120,10 +120,24 @@ giFileReference path = do
                 _ <- GI.outputStreamWrite st (toStrict bs) noCancellable
                 setLength h $ fromIntegral $ olength bs
                 setMediaType h path mediatype
-            refEdit ::
+            stateRefEdit ::
                 NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate)) ->
                 M (Maybe (EditSource -> M ()))
-            refEdit = singleAlwaysEdit objOneEdit
+            stateRefEdit = singleAlwaysEdit objOneEdit
+            refRead ::
+                Readable
+                    (ReaderT (ListProduct '[T]) IO)
+                    (OneReader Maybe (PairUpdateReader (WholeUpdate Text) ByteStringUpdate))
+            refRead r = runResourceStateT $ stateRefRead r
+            refEdit ::
+                NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate)) ->
+                ReaderT
+                    (ListProduct '[T])
+                    IO
+                    (Maybe (EditSource -> ReaderT (ListProduct '[T]) IO ()))
+            refEdit edits = do
+                maction <- runResourceStateT $ stateRefEdit edits
+                return $ fmap (\action esrc -> runResourceStateT $ action esrc) maction
             refCommitTask :: Task IO ()
             refCommitTask = mempty
-            in MkResource objRun $ mapResource runResourceStateT MkAReference{..}
+            in MkResource objRun MkAReference{..}

@@ -9,11 +9,11 @@ import Shapes.Test
 import Changes.Core
 import Test.Useful
 
-data AThing (m :: Type -> Type)
-    = MkAThing (m ())
+data AThing (t :: Type)
+    = MkAThing (ReaderT t IO ())
 
-instance MapResource AThing where
-    mapResource f (MkAThing mu) = MkAThing $ f mu
+instance Contravariant AThing where
+    contramap f (MkAThing mu) = MkAThing $ withReaderT f mu
 
 type Thing = Resource AThing
 

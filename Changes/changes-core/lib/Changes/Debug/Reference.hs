@@ -27,16 +27,15 @@ blankEditShower :: EditShower edit
 blankEditShower = MkEditShower{showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
 traceAReference ::
-    forall m edit.
-    MonadIO m =>
+    forall t edit.
     String ->
     EditShower edit ->
-    AReference edit m ->
-    AReference edit m
+    AReference edit t ->
+    AReference edit t
 traceAReference prefix MkEditShower{..} (MkAReference r e ct) = let
-    r' :: Readable m (EditReader edit)
+    r' :: Readable (ReaderT t IO) (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
-    e' :: NonEmpty edit -> m (Maybe (EditSource -> m ()))
+    e' :: NonEmpty edit -> ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
     e' edits =
         traceBracketArgs
             (contextStr prefix "edit.examine")

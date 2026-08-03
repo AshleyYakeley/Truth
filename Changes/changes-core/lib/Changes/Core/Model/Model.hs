@@ -29,29 +29,29 @@ import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
 
-data AModel update (m :: Type -> Type) = MkAModel
-    { aModelAReference :: AReference (UpdateEdit update) m
-    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO m ()
+data AModel update (t :: Type) = MkAModel
+    { aModelAReference :: AReference (UpdateEdit update) t
+    , aModelSubscribe ::
+        Task IO () ->
+        (ResourceContext -> NonEmpty update -> EditContext -> IO ()) ->
+        LifecycleT IO (ReaderT t IO) ()
     , aModelUpdatesTask :: Task IO ()
     }
 
-aModelRead :: AModel update m -> Readable m (UpdateReader update)
+aModelRead :: AModel update t -> Readable (ReaderT t IO) (UpdateReader update)
 aModelRead amodel = refRead $ aModelAReference amodel
 
 aModelEdit ::
-    AModel update m -> NonEmpty (UpdateEdit update) -> m (Maybe (EditSource -> m ()))
+    AModel update t ->
+    NonEmpty (UpdateEdit update) ->
+    ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
 aModelEdit = refEdit . aModelAReference
 
-instance MapResource (AModel update) where
-    mapResource ::
-        forall m1 m2.
-        (Monad m1, Monad m2) =>
-        (m1 --> m2) ->
-        AModel update m1 ->
-        AModel update m2
-    mapResource f (MkAModel obj1 sub1 utask) = let
-        obj2 = mapResource f obj1
-        sub2 recv task = hoist f $ sub1 recv task
+instance Contravariant (AModel update) where
+    contramap :: forall a b. (a -> b) -> AModel update b -> AModel update a
+    contramap f (MkAModel obj1 sub1 utask) = let
+        obj2 = contramap f obj1
+        sub2 task recv = hoist (withReaderT f) $ sub1 task recv
         in MkAModel obj2 sub2 utask
 
 type Model update = Resource (AModel update)
@@ -186,9 +186,9 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) = let
         in subA utask recvA
     in MkResource rr $ MkAModel objB subB utaskA
 
-aReferenceModel :: AReference (UpdateEdit update) IO -> Model update
+aReferenceModel :: AReference (UpdateEdit update) () -> Model update
 aReferenceModel anobj =
-    MkResource nilResourceRunner $ mapResource liftIO $ MkAModel anobj (\_ _ -> return ()) mempty
+    MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())
 unitModel = aReferenceModel $ MkAReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty

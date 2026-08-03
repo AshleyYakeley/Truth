@@ -85,15 +85,15 @@ createFile path bs = do
 
 fileSystemReference :: Reference FSEdit
 fileSystemReference = let
-    refRead :: Readable IO FSReader
-    refRead (FSReadDirectory path) = do
+    refReadIO :: Readable IO FSReader
+    refReadIO (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
         if isDir
             then do
                 names <- listDirectory path
                 return $ Just names
             else return Nothing
-    refRead (FSReadItem path) = do
+    refReadIO (FSReadItem path) = do
         isFile <- doesFileExist path
         if isFile
             then return $ Just $ FSFileItem $ fileReference path
@@ -106,13 +106,13 @@ fileSystemReference = let
                         if not exists
                             then return Nothing
                             else return $ Just FSOtherItem
-    refRead (FSReadSymbolicLink path) = do
+    refReadIO (FSReadSymbolicLink path) = do
         isSymLink <- pathIsSymbolicLink path
         if isSymLink
             then fmap Just $ getSymbolicLinkTarget path
             else return Nothing
-    refEdit :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
-    refEdit =
+    refEditIO :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
+    refEditIO =
         singleEdit $ \edit ->
             case edit of
                 FSEditCreateDirectory path -> do
@@ -134,8 +134,14 @@ fileSystemReference = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
+    refRead :: Readable (ReaderT () IO) FSReader
+    refRead r = liftIO $ refReadIO r
+    refEdit :: NonEmpty FSEdit -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
+    refEdit edits = do
+        maction <- liftIO $ refEditIO edits
+        return $ fmap (\action esrc -> liftIO $ action esrc) maction
     refCommitTask = mempty
-    in MkResource nilResourceRunner $ mapResource liftIO MkAReference{..}
+    in MkResource nilResourceRunner MkAReference{..}
 
 subdirCreateWitness :: IOWitness (MVar Bool)
 subdirCreateWitness = $(iowitness [t|MVar Bool|])
@@ -146,7 +152,7 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
         (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
         rr
         $ \(rr' :: ResourceRunner ttab) liftState liftBase -> let
-            MkAReference rdBase pushBase _ = mapResource (withReaderT liftBase) $ MkAReference rd push ctask
+            MkAReference rdBase pushBase _ = contramap liftBase $ MkAReference rd push ctask
             pushFirst :: ReaderT (ListProduct ttab) IO ()
             pushFirst = do
                 params <- ask

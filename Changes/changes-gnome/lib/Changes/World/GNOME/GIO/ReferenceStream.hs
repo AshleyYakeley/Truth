@@ -100,7 +100,7 @@ byteStringReferenceInputStream ref = do
     MkWRaised unliftIO <- lift askUnliftIO
     let
         privReadable :: Readable IO ByteStringReader
-        privReadable = refRead aref
+        privReadable r = runReaderT (refRead aref r) ()
 
         privClose :: IO ()
         privClose = unliftIO privCloseView

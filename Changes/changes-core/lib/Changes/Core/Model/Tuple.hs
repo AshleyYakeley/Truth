@@ -20,18 +20,17 @@ import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
 
-class (forall update. MapResource (f update)) => TupleResource (f :: Type -> (Type -> Type) -> Type) where
-    noneTupleAResource :: f (TupleUpdate (ListElementType '[])) IO
+class (forall update. Contravariant (f update)) => TupleResource (f :: Type -> Type -> Type) where
+    noneTupleAResource :: f (TupleUpdate (ListElementType '[])) ()
     consTupleAResource ::
-        forall m update updates.
-        Monad m =>
-        f update m ->
-        f (TupleUpdate (ListElementType updates)) m ->
-        f (TupleUpdate (ListElementType (update ': updates))) m
+        forall t update updates.
+        f update t ->
+        f (TupleUpdate (ListElementType updates)) t ->
+        f (TupleUpdate (ListElementType (update ': updates))) t
     mapResourceUpdate :: ChangeLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
-newtype UAReference (update :: Type) (m :: Type -> Type) = MkUAReference
-    { unUAReference :: AReference (UpdateEdit update) m
+newtype UAReference (update :: Type) (t :: Type) = MkUAReference
+    { unUAReference :: AReference (UpdateEdit update) t
     }
 
 type UReference update = Resource (UAReference update)
@@ -42,17 +41,11 @@ uObjToObj (MkResource rr (MkUAReference anobj)) = MkResource rr anobj
 objToUObj :: Reference (UpdateEdit update) -> UReference update
 objToUObj (MkResource rr anobj) = MkResource rr $ MkUAReference anobj
 
-instance MapResource (UAReference update) where
-    mapResource ::
-        forall m1 m2.
-        (Monad m1, Monad m2) =>
-        (m1 --> m2) ->
-        UAReference update m1 ->
-        UAReference update m2
-    mapResource f (MkUAReference obj) = MkUAReference $ mapResource f obj
+instance Contravariant (UAReference update) where
+    contramap f (MkUAReference obj) = MkUAReference $ contramap f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
-noneTupleResource = MkResource nilResourceRunner $ mapResource liftIO noneTupleAResource
+noneTupleResource = MkResource nilResourceRunner noneTupleAResource
 
 consTupleResource ::
     forall f update updates.
@@ -118,25 +111,26 @@ partitionListTupleUpdateEdits pes = let
 
 instance TupleResource UAReference where
     noneTupleAResource = let
-        refRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
+        refRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> ReaderT () IO t
         refRead (MkTupleUpdateReader sel _) = case sel of {}
-        refEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
+        refEdit ::
+            NonEmpty (TupleUpdateEdit (ListElementType '[])) ->
+            ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
         refEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
         refCommitTask = mempty
         in MkUAReference $ MkAReference{..}
     consTupleAResource ::
-        forall m update updates.
-        Monad m =>
-        UAReference update m ->
-        UAReference (TupleUpdate (ListElementType updates)) m ->
-        UAReference (TupleUpdate (ListElementType (update ': updates))) m
+        forall t update updates.
+        UAReference update t ->
+        UAReference (TupleUpdate (ListElementType updates)) t ->
+        UAReference (TupleUpdate (ListElementType (update ': updates))) t
     consTupleAResource (MkUAReference (MkAReference readA editA ctaskA)) (MkUAReference (MkAReference readB editB ctaskB)) = let
-        readAB :: Readable m (TupleUpdateReader (ListElementType (update ': updates)))
+        readAB :: Readable (ReaderT t IO) (TupleUpdateReader (ListElementType (update ': updates)))
         readAB (MkTupleUpdateReader FirstElementType r) = readA r
         readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
         editAB ::
             NonEmpty (TupleUpdateEdit (ListElementType (update ': updates))) ->
-            m (Maybe (EditSource -> m ()))
+            ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
         editAB edits = let
             (eas, ebs) = partitionListTupleUpdateEdits (toList edits)
             in case (nonEmpty eas, nonEmpty ebs) of
@@ -149,14 +143,13 @@ instance TupleResource UAReference where
     mapResourceUpdate plens uobj = objToUObj $ mapReference plens $ uObjToObj uobj
 
 instance TupleResource AModel where
-    noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) IO
+    noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) ()
     noneTupleAResource = MkAModel (unUAReference noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
-        forall m update updates.
-        Monad m =>
-        AModel update m ->
-        AModel (TupleUpdate (ListElementType updates)) m ->
-        AModel (TupleUpdate (ListElementType (update ': updates))) m
+        forall t update updates.
+        AModel update t ->
+        AModel (TupleUpdate (ListElementType updates)) t ->
+        AModel (TupleUpdate (ListElementType (update ': updates))) t
     consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) = let
         anobj12 = unUAReference $ consTupleAResource (MkUAReference anobj1) (MkUAReference anobj2)
         sub12 task recv12 = do

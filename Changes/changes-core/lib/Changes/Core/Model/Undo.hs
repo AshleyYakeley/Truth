@@ -108,14 +108,14 @@ undoHandlerRedo MkUndoHandler{..} rc esrc =
                     else return False
 
 undoHandlerAReference ::
-    forall edit m.
-    (InvertibleEdit edit, MonadIO m) =>
+    forall edit t.
+    InvertibleEdit edit =>
     Reference edit ->
-    m UndoRecorder ->
-    AReference edit m ->
-    AReference edit m
+    ReaderT t IO UndoRecorder ->
+    AReference edit t ->
+    AReference edit t
 undoHandlerAReference ref getRecorder (MkAReference read push ctask) = let
-    push' :: NonEmpty edit -> m (Maybe (EditSource -> m ()))
+    push' :: NonEmpty edit -> ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
     push' edits = do
         unedits <- invertEdits (toList edits) read
         maction <- push edits
@@ -144,7 +144,7 @@ undoHandlerReference MkUndoHandler{..} ref@(MkResource rr aref) =
             $ undoHandlerAReference
                 ref
                 (asks $ fst . liftw)
-            $ mapResource (withReaderT liftr) aref
+            $ contramap liftr aref
 
 undoHandlerModel ::
     forall update.
@@ -154,7 +154,7 @@ undoHandlerModel ::
     Model update
 undoHandlerModel MkUndoHandler{..} model@(MkResource rr amodel) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case mapResource (withReaderT liftr) amodel of
+        case contramap liftr amodel of
             MkAModel aref subscribe utask -> let
                 aref' =
                     undoHandlerAReference

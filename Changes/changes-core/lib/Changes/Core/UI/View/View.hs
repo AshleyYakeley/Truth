@@ -74,7 +74,7 @@ viewAskUnliftIOAsync = do
 viewRunResource ::
     forall f r.
     Resource f ->
-    (forall m. (MonadUnliftIO m, MonadFail m) => f m -> m r) ->
+    (forall t. f t -> ReaderT t IO r) ->
     View r
 viewRunResource resource call = do
     rc <- viewGetResourceContext
@@ -82,9 +82,9 @@ viewRunResource resource call = do
 
 viewRunResourceLifecycle ::
     forall f.
-    MapResource f =>
+    Contravariant f =>
     Resource f ->
-    View (f IO)
+    View (f ())
 viewRunResourceLifecycle resource = do
     rc <- viewGetResourceContext
     viewLiftLifecycle $ runResourceLifecycle rc resource
@@ -94,7 +94,7 @@ viewRunResourceContext ::
     Resource f ->
     ( forall tt.
       (ReaderT (ListProduct tt) IO --> IO) ->
-      f (ReaderT (ListProduct tt) IO) ->
+      f (ListProduct tt) ->
       View r
     ) ->
     View r

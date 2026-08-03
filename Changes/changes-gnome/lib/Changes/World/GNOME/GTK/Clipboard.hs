@@ -90,18 +90,24 @@ getClipboardModel :: GI.Clipboard -> GView 'Unlocked (Model (WholeUpdate [Media]
 getClipboardModel clipboard = do
     MkWRaised unlift <- gvAskUnliftLifecycle
     let
-        refRead :: Readable IO (WholeReader [Media])
-        refRead ReadWhole = runLifecycle $ unlift $ gvRunLocked $ readClipboard clipboard
-        refEdit :: NonEmpty (WholeEdit [Media]) -> IO (Maybe (EditSource -> IO ()))
-        refEdit edits =
+        refReadIO :: Readable IO (WholeReader [Media])
+        refReadIO ReadWhole = runLifecycle $ unlift $ gvRunLocked $ readClipboard clipboard
+        refEditIO :: NonEmpty (WholeEdit [Media]) -> IO (Maybe (EditSource -> IO ()))
+        refEditIO edits =
             case last edits of
                 MkWholeReaderEdit medias -> return $ Just $ \_ -> do
                     _ <- runLifecycle $ unlift $ gvRunLocked $ writeClipboard clipboard medias
                     return ()
+        refRead :: Readable (ReaderT () IO) (WholeReader [Media])
+        refRead r = liftIO $ refReadIO r
+        refEdit :: NonEmpty (WholeEdit [Media]) -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
+        refEdit edits = do
+            maction <- liftIO $ refEditIO edits
+            return $ fmap (\action esrc -> liftIO $ action esrc) maction
         refCommitTask :: Task IO ()
         refCommitTask = mempty
         ref :: Reference (WholeEdit [Media])
-        ref = MkResource nilResourceRunner $ mapResource liftIO MkAReference{..}
+        ref = MkResource nilResourceRunner MkAReference{..}
     gvLiftLifecycle $ makeReflectingModel ref
 
 getTheClipboardModel :: GView 'Unlocked (Model (WholeUpdate [Media]))

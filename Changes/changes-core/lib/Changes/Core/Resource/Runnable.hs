@@ -1,6 +1,5 @@
 module Changes.Core.Resource.Runnable
     ( Resource (..)
-    , MapResource (..)
     , joinResource_
     , joinResource
     , runResource
@@ -14,23 +13,15 @@ where
 import Changes.Core.Import
 import Changes.Core.Resource.ResourceRunner
 
-data Resource (f :: (Type -> Type) -> Type)
+data Resource (f :: Type -> Type)
     = forall (tt :: [Type]). MkResource
         (ResourceRunner tt)
-        (f (ReaderT (ListProduct tt) IO))
-
-class MapResource (f :: (Type -> Type) -> Type) where
-    mapResource ::
-        forall m1 m2.
-        (Monad m1, Monad m2) =>
-        (m1 --> m2) ->
-        f m1 ->
-        f m2
+        (f (ListProduct tt))
 
 joinResource_ ::
     forall f1 f2 r.
-    (MapResource f1, MapResource f2) =>
-    (forall tt. ResourceRunner tt -> f1 (ReaderT (ListProduct tt) IO) -> f2 (ReaderT (ListProduct tt) IO) -> r) ->
+    (Contravariant f1, Contravariant f2) =>
+    (forall tt. ResourceRunner tt -> f1 (ListProduct tt) -> f2 (ListProduct tt) -> r) ->
     Resource f1 ->
     Resource f2 ->
     r
@@ -38,13 +29,13 @@ joinResource_ ff (MkResource (run1 :: ResourceRunner tt1) fma1) (MkResource (run
     combineResourceRunners run1 run2 $ \(run12 :: ResourceRunner tt12) tf1 tf2 ->
         ff
             run12
-            (mapResource (withReaderT tf1) fma1)
-            (mapResource (withReaderT tf2) fma2)
+            (contramap tf1 fma1)
+            (contramap tf2 fma2)
 
 joinResource ::
     forall f1 f2 f3.
-    (MapResource f1, MapResource f2) =>
-    (forall m. Monad m => f1 m -> f2 m -> f3 m) ->
+    (Contravariant f1, Contravariant f2) =>
+    (forall t. f1 t -> f2 t -> f3 t) ->
     Resource f1 ->
     Resource f2 ->
     Resource f3
@@ -56,26 +47,28 @@ runResource ::
     forall f r.
     ResourceContext ->
     Resource f ->
-    (forall m. MonadUnliftIO m => f m -> m r) ->
+    (forall t. f t -> ReaderT t IO r) ->
     IO r
 runResource rc (MkResource (rr :: ResourceRunner tt) ftt) call =
-    runResourceRunner rc rr $ runReaderT $ call @(ReaderT (ListProduct tt) IO) ftt
+    runResourceRunner rc rr $ runReaderT $ call @(ListProduct tt) ftt
 
 runResourceUnlift ::
     forall f r.
-    MapResource f =>
+    Contravariant f =>
     ResourceContext ->
     Resource f ->
-    (f IO -> IO r) ->
+    (f () -> IO r) ->
     IO r
-runResourceUnlift rc resource call = runResource rc resource $ \fm -> liftIOWithUnlift $ \unlift -> call $ mapResource unlift fm
+runResourceUnlift rc resource call = runResource rc resource $ \ft -> do
+    t <- ask
+    liftIO $ call $ contramap (const t) ft
 
 runResourceLifecycle ::
     forall f.
-    MapResource f =>
+    Contravariant f =>
     ResourceContext ->
     Resource f ->
-    LifecycleT IO IO (f IO)
+    LifecycleT IO IO (f ())
 runResourceLifecycle rc resource = lifecycleWith $ runResourceUnlift rc resource
 
 runResourceContext ::
@@ -85,7 +78,7 @@ runResourceContext ::
     ( forall tt.
       ResourceContext ->
       (ReaderT (ListProduct tt) IO --> IO) ->
-      f (ReaderT (ListProduct tt) IO) ->
+      f (ListProduct tt) ->
       IO r
     ) ->
     IO r
@@ -94,10 +87,10 @@ runResourceContext rc (MkResource (rr :: ResourceRunner tt) ftt) call =
 
 exclusiveResource ::
     forall f.
-    MapResource f =>
+    Contravariant f =>
     ResourceContext ->
     Resource f ->
     LifecycleT IO IO (Resource f)
 exclusiveResource rc (MkResource (trun :: ResourceRunner tt) f) = do
     trun' <- exclusiveResourceRunner rc trun
-    return $ MkResource trun' $ mapResource (withReaderT fst) f
+    return $ MkResource trun' $ contramap fst f

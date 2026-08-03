@@ -20,15 +20,20 @@ makeMemoryCellReference = do
     let
         objRun :: ResourceRunner '[MVar ()]
         objRun = mvarResourceRunner iow var
-        refRead :: Readable (StateT () IO) (UpdateReader MemoryCellUpdate)
-        refRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
-        refEdit :: NonEmpty (UpdateEdit MemoryCellUpdate) -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
+        refRead :: Readable (ReaderT (ListProduct '[MVar ()]) IO) (UpdateReader MemoryCellUpdate)
+        refRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) =
+            runResourceStateT $ liftIO $ readIORef $ unWitnessed ioref
+        refEdit ::
+            NonEmpty (UpdateEdit MemoryCellUpdate) ->
+            ReaderT
+                (ListProduct '[MVar ()])
+                IO
+                (Maybe (EditSource -> ReaderT (ListProduct '[MVar ()]) IO ()))
         refEdit =
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
-                liftIO $ writeIORef (unWitnessed ioref) a
+                runResourceStateT $ liftIO $ writeIORef (unWitnessed ioref) a
         refCommitTask = mempty
-        anobj = MkAReference{..}
-    return $ MkResource objRun $ mapResource runResourceStateT anobj
+    return $ MkResource objRun MkAReference{..}
 
 makeMemoryCellChangeLens :: a -> IO (ChangeLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellChangeLens a = do
