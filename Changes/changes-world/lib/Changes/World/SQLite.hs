@@ -195,8 +195,8 @@ joinTableSchema schema (JoinTables OuterTupleJoinClause j1 j2) = do
     (t2, s2) <- joinTableSchema schema j2
     return $ (t1 ++ t2, eitherFiniteAllFor s1 s2)
 
-sqliteFilePathWitness :: IOWitness (ReaderT Connection)
-sqliteFilePathWitness = $(iowitness [t|ReaderT Connection|])
+sqliteFilePathWitness :: IOWitness Connection
+sqliteFilePathWitness = $(iowitness [t|Connection|])
 
 sqliteReference ::
     forall tablesel.
@@ -207,17 +207,18 @@ sqliteReference ::
 sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[ReaderT Connection]
+        objRun :: ResourceRunner '[Connection]
         objRun =
             mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
                 mVarRunLocked var $ do
                     exists <- liftIO $ doesFileExist path
-                    liftIOWithUnlift $ \unlift ->
-                        withConnection path $ \conn -> do
+                    liftIO
+                        $ withConnection path
+                        $ \conn -> do
                             if exists
                                 then return ()
                                 else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-                            runReaderT (hoist unlift call) conn
+                            call conn
         wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
         wherePart rowSchema wc =
             case wc of
@@ -278,14 +279,18 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
                 <> " SET "
                 <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis)
                 <> wherePart tableColumnRefs wc
-        refRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
+        refRead :: Readable (ReaderT (ListProduct '[Connection]) IO) (SQLiteReader tablesel)
         refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
                 MkQueryString s v -> do
-                    conn <- ask
+                    conn <- asks fst
                     lift $ query conn s v
         refEdit ::
-            NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
+            NonEmpty (SQLiteEdit tablesel) ->
+            ReaderT
+                (ListProduct '[Connection])
+                IO
+                (Maybe (EditSource -> ReaderT (ListProduct '[Connection]) IO ()))
         refEdit =
             alwaysEdit $ \edits _ -> let
                 queries :: [QueryString]
@@ -293,7 +298,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
                 pairs :: [(Query, NonEmpty [SQLData])]
                 pairs = mapToList $ groupQueryStringsMap queries
                 in for_ pairs $ \(s, vv) -> do
-                    conn <- ask
+                    conn <- asks fst
                     lift $ executeMany conn s (toList vv)
         refCommitTask = mempty
     return $ MkResource objRun MkAReference{..}

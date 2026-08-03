@@ -52,7 +52,7 @@ instance MapResource (UAReference update) where
     mapResource f (MkUAReference obj) = MkUAReference $ mapResource f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
-noneTupleResource = MkResource nilResourceRunner noneTupleAResource
+noneTupleResource = MkResource nilResourceRunner $ mapResource liftIO noneTupleAResource
 
 consTupleResource ::
     forall f update updates.

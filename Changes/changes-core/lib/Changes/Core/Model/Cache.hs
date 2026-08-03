@@ -40,4 +40,5 @@ cacheReference rc mus obj = do
                     editCacheUpdates edits
                     liftIO $ runAction $ Just edits
         refCommitTask = asyncTask <> referenceCommitTask obj
-        in MkResource objRun MkAReference{..}
+        anobj = MkAReference{..}
+        in MkResource objRun $ mapResource runResourceStateT anobj

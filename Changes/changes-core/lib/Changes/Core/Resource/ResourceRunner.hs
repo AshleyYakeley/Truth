@@ -1,17 +1,14 @@
 module Changes.Core.Resource.ResourceRunner
     ( ResourceRunner
     , nilResourceRunner
-    , combineIndependentResourceRunners
     , combineResourceRunners
-    , resourceRunnerUnliftDict
-    , resourceRunnerStackUnliftDict
     , mkResourceRunner
     , newResourceRunner
     , stateResourceRunner
     , mvarResourceRunner
     , discardingStateResourceRunner
+    , runResourceStateT
     , exclusiveResourceRunner
-    , discardingResourceRunner
     , ResourceContext
     , emptyResourceContext
     , resourceContextSize
@@ -21,124 +18,97 @@ module Changes.Core.Resource.ResourceRunner
 where
 
 import Changes.Core.Import
-import Changes.Core.Resource.Function
 import Changes.Core.Resource.SingleRunner
 
-newtype ResourceRunner (tt :: [TransKind])
+newtype ResourceRunner (tt :: [Type])
     = MkResourceRunner (ListType SingleRunner tt)
 
 nilResourceRunner :: ResourceRunner '[]
 nilResourceRunner = MkResourceRunner NilListType
 
-mapResourceRunner ::
-    forall (ct :: TransKind -> Constraint) (tt :: [TransKind]).
-    (forall t. MonadTransUnlift t => ct t) =>
-    ListType SingleRunner tt ->
-    ListType (Compose Dict ct) tt
-mapResourceRunner =
-    mapListType $ \sr ->
-        case singleRunnerUnliftDict sr of
-            Dict -> Compose Dict
+emptyListProductFunction :: ListProduct tt -> ListProduct '[]
+emptyListProductFunction _ = ()
 
-combineIndependentResourceRunners :: ResourceRunner tta -> ResourceRunner ttb -> ResourceRunner (Concat tta ttb)
-combineIndependentResourceRunners (MkResourceRunner la) (MkResourceRunner lb) = MkResourceRunner $ concatListType la lb
+consListProductFunction ::
+    (ListProduct ttb -> ListProduct tta) ->
+    ListProduct (t ': ttb) ->
+    ListProduct (t ': tta)
+consListProductFunction f (t, tt) = (t, f tt)
+
+tailListProductFunction :: ListProduct (t ': tt) -> ListProduct tt
+tailListProductFunction = snd
 
 combineLSR ::
     ListType SingleRunner tta ->
     ListType SingleRunner ttb ->
-    (forall ttab. ListType SingleRunner ttab -> TransListFunction tta ttab -> TransListFunction ttb ttab -> r) ->
+    (forall ttab. ListType SingleRunner ttab -> (ListProduct ttab -> ListProduct tta) -> (ListProduct ttab -> ListProduct ttb) -> r) ->
     r
-combineLSR NilListType rb call =
-    case lsrUnliftDict rb of
-        Dict -> call rb emptyTransListFunction id
-combineLSR ra NilListType call =
-    case lsrUnliftDict ra of
-        Dict -> call ra id emptyTransListFunction
-combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call =
-    case singleRunnerUnliftDict u1 of
-        Dict ->
-            case singleRunnerUnliftDict u2 of
-                Dict ->
-                    case testCompare u1 u2 of
-                        WEQ ->
-                            combineLSR uu1 uu2 $ \uu12 tf1 tf2 ->
-                                call
-                                    (ConsListType u1 uu12)
-                                    (consTransListFunction (mapResourceRunner uu1) (mapResourceRunner uu12) tf1)
-                                    (consTransListFunction (mapResourceRunner uu2) (mapResourceRunner uu12) tf2)
-                        WLT ->
-                            combineLSR uu1 au2 $ \uu12 tf1 tf2 ->
-                                case lsrUnliftDict uu12 of
-                                    Dict ->
-                                        call
-                                            (ConsListType u1 uu12)
-                                            (consTransListFunction (mapResourceRunner uu1) (mapResourceRunner uu12) tf1)
-                                            (liftTransListFunction . tf2)
-                        WGT ->
-                            combineLSR au1 uu2 $ \uu12 tf1 tf2 ->
-                                case lsrUnliftDict uu12 of
-                                    Dict ->
-                                        call
-                                            (ConsListType u2 uu12)
-                                            (liftTransListFunction . tf1)
-                                            (consTransListFunction (mapResourceRunner uu2) (mapResourceRunner uu12) tf2)
+combineLSR NilListType rb call = call rb emptyListProductFunction id
+combineLSR ra NilListType call = call ra id emptyListProductFunction
+combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call = case testCompare u1 u2 of
+    WEQ ->
+        combineLSR uu1 uu2 $ \uu12 tf1 tf2 ->
+            call
+                (ConsListType u1 uu12)
+                (consListProductFunction tf1)
+                (consListProductFunction tf2)
+    WLT ->
+        combineLSR uu1 au2 $ \uu12 tf1 tf2 ->
+            call
+                (ConsListType u1 uu12)
+                (consListProductFunction tf1)
+                (tf2 . tailListProductFunction)
+    WGT ->
+        combineLSR au1 uu2 $ \uu12 tf1 tf2 ->
+            call
+                (ConsListType u2 uu12)
+                (tf1 . tailListProductFunction)
+                (consListProductFunction tf2)
 
 combineResourceRunners ::
     ResourceRunner tta ->
     ResourceRunner ttb ->
-    (forall ttab. ResourceRunner ttab -> TransListFunction tta ttab -> TransListFunction ttb ttab -> r) ->
+    (forall ttab. ResourceRunner ttab -> (ListProduct ttab -> ListProduct tta) -> (ListProduct ttab -> ListProduct ttb) -> r) ->
     r
 combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
     combineLSR la lb $ \lab -> call (MkResourceRunner lab)
-
-lsrUnliftDict :: ListType SingleRunner tt -> Dict (MonadTransStackUnlift tt)
-lsrUnliftDict NilListType = Dict
-lsrUnliftDict (ConsListType (singleRunnerUnliftDict -> Dict) (lsrUnliftDict -> Dict)) = Dict
-
-resourceRunnerUnliftDict :: ResourceRunner tt -> Dict (MonadTransStackUnlift tt)
-resourceRunnerUnliftDict (MkResourceRunner lsr) = lsrUnliftDict lsr
-
-resourceRunnerStackUnliftDict ::
-    forall tt.
-    ResourceRunner tt ->
-    Dict (MonadUnliftIO (ApplyStack tt IO))
-resourceRunnerStackUnliftDict rr =
-    case resourceRunnerUnliftDict rr of
-        Dict -> transStackDict @MonadUnliftIO @tt @IO
 
 singleResourceRunner :: SingleRunner t -> ResourceRunner '[t]
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
 
 mkResourceRunner ::
     forall t.
-    MonadTransUnlift t =>
     IOWitness t ->
-    Unlift MonadUnliftIO t ->
+    With IO t ->
     ResourceRunner '[t]
 mkResourceRunner iow run = singleResourceRunner $ mkSingleRunner iow run
 
 newResourceRunner ::
     forall t.
-    MonadTransUnlift t =>
-    Unlift MonadUnliftIO t ->
+    With IO t ->
     IO (ResourceRunner '[t])
 newResourceRunner run = do
     iow <- newIOWitness
     return $ mkResourceRunner iow run
 
-stateResourceRunner :: s -> IO (ResourceRunner '[StateT s])
+stateResourceRunner :: s -> IO (ResourceRunner '[MVar s])
 stateResourceRunner s = do
     var <- newMVar s
-    newResourceRunner $ mVarRunStateT var
+    iow <- newIOWitness
+    return $ mvarResourceRunner iow var
 
-mvarResourceRunner :: IOWitness (StateT s) -> MVar s -> ResourceRunner '[StateT s]
-mvarResourceRunner iow var = mkResourceRunner iow $ mVarRunStateT var
+mvarResourceRunner :: IOWitness (MVar s) -> MVar s -> ResourceRunner '[MVar s]
+mvarResourceRunner iow var =
+    mkResourceRunner iow $ \call -> mVarRunStateT var $ liftWithMVarStateT call
 
-discardingStateResourceRunner :: IOWitness (StateT s) -> s -> ResourceRunner '[StateT s]
-discardingStateResourceRunner iow s = mkResourceRunner iow $ discardingStateTUnlift s
+discardingStateResourceRunner :: IOWitness (MVar s) -> s -> ResourceRunner '[MVar s]
+discardingStateResourceRunner iow s =
+    mkResourceRunner iow $ \call -> discardingStateTUnlift s $ liftWithMVarStateT call
 
-discardingResourceRunner :: ResourceRunner tt -> ResourceRunner tt
-discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType discardingSingleRunner run
+runResourceStateT :: StateT s IO --> ReaderT (ListProduct '[MVar s]) IO
+runResourceStateT ma = do
+    stateVar <- asks fst
+    liftIO $ mVarRunStateT stateVar ma
 
 newtype ResourceContext
     = MkResourceContext [Some SingleRunner]
@@ -155,61 +125,48 @@ runLSR ::
     MonadUnliftIO m =>
     [Some SingleRunner] ->
     ListType SingleRunner tt ->
-    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r) ->
+    (ListProduct tt -> m r) ->
     m r
-runLSR _ NilListType call = call
+runLSR _ NilListType call = call ()
 runLSR rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
-    case singleRunnerUnliftDict sr of
-        Dict ->
-            case hasTransConstraint @MonadUnliftIO @t @m of
-                Dict ->
-                    runLSR rc lsr
-                        $ runSingleRunner rc sr
-                        $ case hasTransConstraint @MonadUnliftIO @t @(ApplyStack tt0 m) of
-                            Dict -> call
+    runLSR rc lsr $ \ttr ->
+        runSingleRunner rc sr $ \t -> call (t, ttr)
 
 runResourceRunner ::
     forall tt r.
     ResourceContext ->
     ResourceRunner tt ->
-    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO)) => ApplyStack tt IO r) ->
+    (ListProduct tt -> IO r) ->
     IO r
-runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = runLSR rc rr call
+runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) = runLSR rc rr
 
 runLSRContext ::
     forall tt m r.
-    MonadUnliftIO m =>
+    MonadTunnelIO m =>
     [Some SingleRunner] ->
     ListType SingleRunner tt ->
-    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => [Some SingleRunner] -> WStackUnlift tt -> m r) ->
+    ([Some SingleRunner] -> ListProduct tt -> m r) ->
     m r
-runLSRContext rc NilListType call = call rc $ MkWStackUnlift id
+runLSRContext rc NilListType call = call rc ()
 runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
-    runLSRContext rc lsr $ \rc' unliftr ->
-        runSingleRunnerContext rc' sr $ \rc'' unlift1 ->
-            case hasTransConstraint @MonadUnliftIO @t @(ApplyStack tt0 m) of
-                Dict ->
-                    case transStackDict @MonadUnliftIO @tt0 @m of
-                        Dict -> call rc'' $ consWStackUnlift (MkWUnlift unlift1) unliftr
+    runLSRContext rc lsr $ \rc' ttr ->
+        runSingleRunnerContext rc' sr $ \rc'' t -> call rc'' (t, ttr)
 
 runResourceRunnerContext ::
-    forall tt m r.
-    MonadUnliftIO m =>
+    forall tt r.
     ResourceContext ->
     ResourceRunner tt ->
-    ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ResourceContext -> StackUnlift tt -> m r) ->
-    m r
+    (ResourceContext -> ListProduct tt -> IO r) ->
+    IO r
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
-    runLSRContext rc rr $ \rc' (MkWStackUnlift unlift) -> call (MkResourceContext rc') $ unlift
+    runLSRContext rc rr $ \rc' -> call (MkResourceContext rc')
 
 exclusiveResourceRunner ::
-    forall tt m.
-    (MonadCoroutine m, MonadAskUnliftIO m) =>
+    forall tt.
     ResourceContext ->
     ResourceRunner tt ->
-    LifecycleT m m (ResourceRunner '[StackT tt])
+    LifecycleT IO IO (ResourceRunner '[ListProduct tt])
 exclusiveResourceRunner rc rr = do
-    Dict <- return $ resourceRunnerUnliftDict rr
-    iow <- liftIO $ newIOWitness
+    iow <- liftIO newIOWitness
     lifecycleWith $ \call ->
-        runResourceRunnerContext rc rr $ \_ unlift -> call $ mkResourceRunner iow $ \(MkStackT tma) -> unlift tma
+        runResourceRunnerContext rc rr $ \_ tt -> call $ mkResourceRunner iow $ \use -> use tt

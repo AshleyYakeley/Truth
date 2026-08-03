@@ -44,9 +44,9 @@ noneReference = let
     refEdit :: NonEmpty (ConstEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
     refEdit = never
     refCommitTask = mempty
-    in MkResource nilResourceRunner $ MkAReference{..}
+    in MkResource nilResourceRunner $ mapResource liftIO $ MkAReference{..}
 
-mvarReference :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
+mvarReference :: forall a. IOWitness (MVar a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
 mvarReference iow var allowed = let
     refRead :: Readable (StateT a IO) (WholeReader a)
     refRead ReadWhole = get
@@ -60,7 +60,7 @@ mvarReference iow var allowed = let
     refCommitTask = mempty
     anobj :: AReference (WholeEdit a) (StateT a IO)
     anobj = MkAReference{..}
-    in MkResource (mvarResourceRunner iow var) anobj
+    in MkResource (mvarResourceRunner iow var) $ mapResource runResourceStateT anobj
 
 makeMemoryReference :: forall a. a -> (a -> Bool) -> IO (Reference (WholeEdit a))
 makeMemoryReference firsta allowed = do
@@ -112,8 +112,7 @@ mapReference ::
     Reference (UpdateEdit updateA) ->
     Reference (UpdateEdit updateB)
 mapReference plens (MkResource rr anobjA) =
-    case resourceRunnerStackUnliftDict rr of
-        Dict -> MkResource rr $ mapAReference plens anobjA
+    MkResource rr $ mapAReference plens anobjA
 
 floatMapAReference ::
     forall m updateA updateB.
@@ -132,7 +131,7 @@ floatMapReference ::
     Reference (UpdateEdit updateA) ->
     IO (Reference (UpdateEdit updateB))
 floatMapReference rc lens (MkResource rr anobjA) = do
-    anobjB <- runResourceRunner rc rr $ floatMapAReference lens anobjA
+    anobjB <- runResourceRunner rc rr $ runReaderT $ floatMapAReference lens anobjA
     return $ MkResource rr anobjB
 
 immutableAReference ::
@@ -143,7 +142,7 @@ immutableAReference ::
 immutableAReference mr = MkAReference mr (\_ -> return Nothing) mempty
 
 readConstantReference :: forall reader. Readable IO reader -> Reference (ConstEdit reader)
-readConstantReference mr = MkResource nilResourceRunner $ immutableAReference mr
+readConstantReference mr = MkResource nilResourceRunner $ mapResource liftIO $ immutableAReference mr
 
 constantReference ::
     forall reader.
@@ -177,22 +176,20 @@ convertReference ::
     (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb) =>
     Reference edita ->
     Reference editb
-convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) =
-    case resourceRunnerUnliftDict trun of
-        Dict ->
-            case transStackDict @MonadIO @tt @IO of
-                Dict -> let
-                    refRead :: Readable (ApplyStack tt IO) (EditReader editb)
-                    refRead = mSubjectToReadable $ readableToSubject mra
-                    refEdit :: NonEmpty editb -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                    refEdit ebs = do
-                        oldsubj <- readableToSubject mra
-                        newsubj <- mapSubjectEdits (toList ebs) oldsubj
-                        eas <- getReplaceEditsFromSubject newsubj
-                        case nonEmpty eas of
-                            Nothing -> return $ Just $ \_ -> return ()
-                            Just eaa -> pe eaa
-                    in MkResource trun MkAReference{..}
+convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) = let
+    refRead :: Readable (ReaderT (ListProduct tt) IO) (EditReader editb)
+    refRead = mSubjectToReadable $ readableToSubject mra
+    refEdit ::
+        NonEmpty editb ->
+        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+    refEdit ebs = do
+        oldsubj <- readableToSubject mra
+        newsubj <- mapSubjectEdits (toList ebs) oldsubj
+        eas <- getReplaceEditsFromSubject newsubj
+        case nonEmpty eas of
+            Nothing -> return $ Just $ \_ -> return ()
+            Just eaa -> pe eaa
+    in MkResource trun MkAReference{..}
 
 copyReference ::
     forall edit.
@@ -207,6 +204,7 @@ copyReference rc esrc =
         runLifecycle $ do
             liftIO
                 $ runResourceRunner rc rr
+                $ runReaderT
                 $ replaceEdit @edit readSrc
                 $ \edit -> pushOrFail "failed to copy reference" esrc $ pushDest $ pure edit
             return ctask

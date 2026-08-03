@@ -1,7 +1,6 @@
 module Changes.Core.Model.DeferActionT
-    ( DeferActionT
+    ( DeferAction
     , deferAction
-    , runDeferActionT
     , deferActionResourceRunner
     )
 where
@@ -9,69 +8,21 @@ where
 import Changes.Core.Import
 import Changes.Core.Resource
 
-newtype DeferActionT m a
-    = MkDeferActionT (WriterT [IO ()] m a)
+newtype DeferAction = MkDeferAction (IO () -> IO ())
 
-deriving newtype instance Functor m => Functor (DeferActionT m)
+deferAction :: DeferAction -> IO () -> IO ()
+deferAction (MkDeferAction addAction) = addAction
 
-deriving newtype instance Monad m => Applicative (DeferActionT m)
-
-deriving newtype instance Monad m => Monad (DeferActionT m)
-
-deriving newtype instance MonadFail m => MonadFail (DeferActionT m)
-
-deriving newtype instance MonadIO m => MonadIO (DeferActionT m)
-
-deriving newtype instance MonadFix m => MonadFix (DeferActionT m)
-
-deriving newtype instance
-    MonadPlus m => Alternative (DeferActionT m)
-
-deriving newtype instance MonadPlus m => MonadPlus (DeferActionT m)
-
-deriving newtype instance MonadTrans DeferActionT
-
-instance TransConstraint Monad DeferActionT where
-    hasTransConstraint = Dict
-
-instance TransConstraint MonadFail DeferActionT where
-    hasTransConstraint = Dict
-
-instance TransConstraint MonadIO DeferActionT where
-    hasTransConstraint = Dict
-
-instance TransConstraint MonadFix DeferActionT where
-    hasTransConstraint = Dict
-
-instance TransConstraint MonadPlus DeferActionT where
-    hasTransConstraint = Dict
-
-deriving newtype instance MonadTransHoist DeferActionT
-
-deriving newtype instance MonadTransTunnel DeferActionT
-
-instance MonadTransUnlift DeferActionT where
-    liftWithUnlift utmr = MkDeferActionT $ liftWithUnlift $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
-    getDiscardingUnlift =
-        MkDeferActionT $ do
-            MkWUnlift du <- getDiscardingUnlift
-            return $ MkWUnlift $ \(MkDeferActionT wma) -> du wma
-
-deferAction ::
-    forall m.
-    Monad m =>
-    IO () ->
-    DeferActionT m ()
-deferAction action = MkDeferActionT $ tell [action]
-
-runDeferActionT :: Unlift MonadTunnelIO DeferActionT
-runDeferActionT (MkDeferActionT (WriterT wma)) = do
-    (a, actions) <- wma
-    for_ actions liftIO
-    return a
+runDeferActions :: With IO DeferAction
+runDeferActions call = do
+    actionsVar <- newMVar []
+    result <- call $ MkDeferAction $ \action -> modifyMVar_ actionsVar $ \actions -> return $ action : actions
+    actions <- readMVar actionsVar
+    sequence_ $ reverse actions
+    return result
 
 deferActionResourceRunner ::
     forall mc m.
     MonadIO m =>
-    LifecycleT mc m (ResourceRunner '[DeferActionT])
-deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT
+    LifecycleT mc m (ResourceRunner '[DeferAction])
+deferActionResourceRunner = liftIO $ newResourceRunner runDeferActions

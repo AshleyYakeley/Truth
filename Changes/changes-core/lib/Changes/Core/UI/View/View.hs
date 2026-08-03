@@ -74,14 +74,11 @@ viewAskUnliftIOAsync = do
 viewRunResource ::
     forall f r.
     Resource f ->
-    ( forall tt.
-      (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
-      f (ApplyStack tt IO) -> ApplyStack tt IO r
-    ) ->
+    (forall m. (MonadUnliftIO m, MonadFail m) => f m -> m r) ->
     View r
 viewRunResource resource call = do
     rc <- viewGetResourceContext
-    liftIO $ runResource rc resource $ \ @tt ftt -> call @tt ftt
+    liftIO $ runResource rc resource call
 
 viewRunResourceLifecycle ::
     forall f.
@@ -96,13 +93,16 @@ viewRunResourceContext ::
     forall f r.
     Resource f ->
     ( forall tt.
-      (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) =>
-      StackUnlift tt -> f (ApplyStack tt IO) -> View r
+      (ReaderT (ListProduct tt) IO --> IO) ->
+      f (ReaderT (ListProduct tt) IO) ->
+      View r
     ) ->
     View r
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext
-    runResourceContext rc resource $ \ @tt rc' unlift ftt -> viewLocalResourceContext rc' $ call @tt unlift ftt
+    liftIOWithUnlift $ \unliftView ->
+        runResourceContext rc resource $ \ @tt rc' unlift ftt ->
+            unliftView $ viewLocalResourceContext rc' $ call @tt unlift ftt
 
 viewWithContext :: (ViewContext -> ViewContext) -> View --> View
 viewWithContext f ma = hoist (semiviewWithContext f) ma
@@ -140,9 +140,8 @@ viewBindModelUpdates model testesrc initv utask recv = do
     liftIOWithUnlift $ \unlift ->
         unlift
             $ viewRunResourceContext model
-            $ \ @tt stunlift amodel -> do
+            $ \stunlift amodel -> do
                 a <- initv
-                Dict <- return $ transStackDict @MonadIO @tt @IO
                 viewLiftLifecycle
                     $ hoist stunlift
                     $ aModelSubscribe amodel (utask a)

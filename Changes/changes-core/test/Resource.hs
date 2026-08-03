@@ -21,18 +21,18 @@ joinThings :: Thing -> Thing -> Thing
 joinThings =
     joinResource $ \(MkAThing m1) (MkAThing m2) -> MkAThing $ m1 >> m2
 
-stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner '[StateT s])
+stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner '[MVar s])
 stateResourceRunnerTrace name s = do
     var <- newMVar s
-    newResourceRunner $ \ma -> do
-        liftIO $ hPutStrLn ?handle $ name <> ": outside ["
+    newResourceRunner $ \call -> do
+        hPutStrLn ?handle $ name <> ": outside ["
         a <-
             mVarRunStateT var $ do
                 liftIO $ hPutStrLn ?handle $ name <> ": inside ["
-                a <- ma
+                a <- liftWithMVarStateT $ liftIO . call
                 liftIO $ hPutStrLn ?handle $ name <> ": inside ]"
                 return a
-        liftIO $ hPutStrLn ?handle $ name <> ": outside ]"
+        hPutStrLn ?handle $ name <> ": outside ]"
         return a
 
 simpleThing :: (?handle :: Handle) => String -> IO Thing
@@ -42,9 +42,13 @@ simpleThing name = do
         $ MkResource rr
         $ MkAThing
         $ do
-            i <- get
-            lift $ hPutStrLn ?handle $ name <> ": " <> show (succ i)
-            put $ succ i
+            var <- asks fst
+            liftIO
+                $ mVarRunStateT var
+                $ do
+                    i <- get
+                    lift $ hPutStrLn ?handle $ name <> ": " <> show (succ i)
+                    put $ succ i
 
 testIOWitness :: TestTree
 testIOWitness =

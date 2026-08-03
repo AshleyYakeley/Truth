@@ -33,30 +33,7 @@ saveBufferReference rc objP pmrUpdatesTask update = do
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     iow <- liftIO $ newIOWitness
     deferRunner <- deferActionResourceRunner
-    let rrC = combineIndependentResourceRunners (mvarResourceRunner iow sbVar) deferRunner
-    Dict <- return $ resourceRunnerUnliftDict rrC
     let
-        pmrReference :: Reference (UpdateEdit update)
-        pmrReference = let
-            readC :: Readable (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
-            readC = mSubjectToReadable $ fmap saveBuffer get
-            pushC ::
-                NonEmpty (UpdateEdit update) ->
-                StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
-            pushC edits =
-                return
-                    $ Just
-                    $ \esrc -> do
-                        newbuf <-
-                            readableToSubject
-                                $ applyEdits (toList edits)
-                                $ mSubjectToReadable
-                                $ do
-                                    MkSaveBuffer oldbuf _ <- get
-                                    return oldbuf
-                        put (MkSaveBuffer newbuf True)
-                        lift $ deferAction $ update emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
-            in MkResource rrC $ MkAReference readC pushC mempty
         saveAction :: ResourceContext -> EditSource -> IO Bool
         saveAction urc esrc =
             runResource urc objP $ \anobj -> do
@@ -87,4 +64,35 @@ saveBufferReference rc objP pmrUpdatesTask update = do
                     $ if changed
                         then Just (saveAction, revertAction)
                         else Nothing
-    return MkPremodelResult{..}
+    return
+        $ combineResourceRunners (mvarResourceRunner iow sbVar) deferRunner
+        $ \(rrC :: ResourceRunner tt) liftState liftDefer -> let
+            runS :: StateT (SaveBuffer (UpdateSubject update)) IO --> ReaderT (ListProduct tt) IO
+            runS ma = do
+                params <- ask
+                liftIO $ mVarRunStateT (fst $ liftState params) ma
+            readC :: Readable (ReaderT (ListProduct tt) IO) (UpdateReader update)
+            readC rt = runS $ mSubjectToReadable (fmap saveBuffer get) rt
+            pushC ::
+                NonEmpty (UpdateEdit update) ->
+                ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+            pushC edits =
+                return
+                    $ Just
+                    $ \esrc -> do
+                        runS $ do
+                            newbuf <-
+                                readableToSubject
+                                    $ applyEdits (toList edits)
+                                    $ mSubjectToReadable
+                                    $ do
+                                        MkSaveBuffer oldbuf _ <- get
+                                        return oldbuf
+                            put $ MkSaveBuffer newbuf True
+                        defer <- asks $ fst . liftDefer
+                        liftIO
+                            $ deferAction defer
+                            $ update emptyResourceContext (fmap editUpdate edits)
+                            $ editSourceContext esrc
+            pmrReference = MkResource rrC $ MkAReference readC pushC mempty
+            in MkPremodelResult{..}

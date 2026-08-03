@@ -18,7 +18,7 @@ makeMemoryCellReference = do
     iow <- newIOWitness
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[StateT ()]
+        objRun :: ResourceRunner '[MVar ()]
         objRun = mvarResourceRunner iow var
         refRead :: Readable (StateT () IO) (UpdateReader MemoryCellUpdate)
         refRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
@@ -27,7 +27,8 @@ makeMemoryCellReference = do
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 liftIO $ writeIORef (unWitnessed ioref) a
         refCommitTask = mempty
-    return $ MkResource objRun $ MkAReference{..}
+        anobj = MkAReference{..}
+    return $ MkResource objRun $ mapResource runResourceStateT anobj
 
 makeMemoryCellChangeLens :: a -> IO (ChangeLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellChangeLens a = do

@@ -20,7 +20,6 @@ library:
     other-modules:
       - Changes.Core.Import
       - Changes.Core.Sequence
-      - Changes.Core.Resource.Function
       - Changes.Core.Resource.SingleRunner
       - Changes.Core.Resource.ResourceRunner
       - Changes.Core.Resource.Runnable

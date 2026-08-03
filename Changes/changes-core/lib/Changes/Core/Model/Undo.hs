@@ -30,12 +30,19 @@ data UndoQueue = MkUndoQueue
 
 data UndoHandler = MkUndoHandler
     { uhVar :: MVar UndoQueue
-    , uhRunner :: ResourceRunner '[WriterT [RefEdits]]
+    , uhRunner :: ResourceRunner '[UndoRecorder]
     }
 
-undoVarUnlift :: MVar UndoQueue -> Unlift MonadTunnelIO (WriterT [RefEdits])
-undoVarUnlift var wma = do
-    (a, lrefedits) <- runWriterT wma
+newtype UndoRecorder = MkUndoRecorder (RefEdits -> IO ())
+
+recordUndo :: UndoRecorder -> RefEdits -> IO ()
+recordUndo (MkUndoRecorder record) = record
+
+undoVarWith :: MVar UndoQueue -> With IO UndoRecorder
+undoVarWith var call = do
+    editsVar <- newMVar []
+    a <- call $ MkUndoRecorder $ \refEdits -> modifyMVar_ editsVar $ \edits -> return $ refEdits : edits
+    lrefedits <- reverse <$> readMVar editsVar
     case nonEmpty lrefedits of
         Nothing -> return ()
         Just nrefedits ->
@@ -47,7 +54,7 @@ undoVarUnlift var wma = do
 newUndoHandler :: IO UndoHandler
 newUndoHandler = do
     uhVar <- newMVar $ MkUndoQueue [] []
-    uhRunner <- newResourceRunner $ undoVarUnlift uhVar
+    uhRunner <- newResourceRunner $ undoVarWith uhVar
     return MkUndoHandler{..}
 
 undoHandlerUndo :: UndoHandler -> ResourceContext -> EditSource -> IO Bool
@@ -61,6 +68,7 @@ undoHandlerUndo MkUndoHandler{..} rc esrc =
                     for entry $ \(MkRefEdits (MkResource rrP (MkAReference _readP pushP _ctaskP)) _ edits) ->
                         lift
                             $ runResourceRunner rc rrP
+                            $ runReaderT
                             $ do
                                 maction <- pushP edits
                                 case maction of
@@ -85,6 +93,7 @@ undoHandlerRedo MkUndoHandler{..} rc esrc =
                     for entry $ \(MkRefEdits (MkResource rrP (MkAReference _readP pushP _ctaskP)) edits _) ->
                         lift
                             $ runResourceRunner rc rrP
+                            $ runReaderT
                             $ do
                                 maction <- pushP edits
                                 case maction of
@@ -102,10 +111,10 @@ undoHandlerAReference ::
     forall edit m.
     (InvertibleEdit edit, MonadIO m) =>
     Reference edit ->
-    (WriterT [RefEdits] IO --> m) ->
+    m UndoRecorder ->
     AReference edit m ->
     AReference edit m
-undoHandlerAReference ref liftw (MkAReference read push ctask) = let
+undoHandlerAReference ref getRecorder (MkAReference read push ctask) = let
     push' :: NonEmpty edit -> m (Maybe (EditSource -> m ()))
     push' edits = do
         unedits <- invertEdits (toList edits) read
@@ -115,7 +124,9 @@ undoHandlerAReference ref liftw (MkAReference read push ctask) = let
                 Just action ->
                     Just $ \esrc -> do
                         case nonEmpty unedits of
-                            Just nunedits -> liftw $ tell $ pure $ MkRefEdits ref edits nunedits
+                            Just nunedits -> do
+                                recorder <- getRecorder
+                                liftIO $ recordUndo recorder $ MkRefEdits ref edits nunedits
                             Nothing -> return ()
                         action esrc
                 Nothing -> Nothing
@@ -129,17 +140,11 @@ undoHandlerReference ::
     Reference edit
 undoHandlerReference MkUndoHandler{..} ref@(MkResource rr aref) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerStackUnliftDict rr of
-            Dict ->
-                case resourceRunnerUnliftDict rr' of
-                    Dict ->
-                        case resourceRunnerStackUnliftDict rr' of
-                            Dict ->
-                                MkResource rr'
-                                    $ undoHandlerAReference
-                                        ref
-                                        (tlfFunction liftw (Proxy @IO))
-                                    $ mapResource (tlfFunction liftr (Proxy @IO)) aref
+        MkResource rr'
+            $ undoHandlerAReference
+                ref
+                (asks $ fst . liftw)
+            $ mapResource (withReaderT liftr) aref
 
 undoHandlerModel ::
     forall update.
@@ -149,17 +154,11 @@ undoHandlerModel ::
     Model update
 undoHandlerModel MkUndoHandler{..} model@(MkResource rr amodel) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerStackUnliftDict rr of
-            Dict ->
-                case resourceRunnerUnliftDict rr' of
-                    Dict ->
-                        case resourceRunnerStackUnliftDict rr' of
-                            Dict ->
-                                case mapResource (tlfFunction liftr (Proxy @IO)) amodel of
-                                    MkAModel aref subscribe utask -> let
-                                        aref' =
-                                            undoHandlerAReference
-                                                (modelReference model)
-                                                (tlfFunction liftw (Proxy @IO))
-                                                aref
-                                        in MkResource rr' $ MkAModel aref' subscribe utask
+        case mapResource (withReaderT liftr) amodel of
+            MkAModel aref subscribe utask -> let
+                aref' =
+                    undoHandlerAReference
+                        (modelReference model)
+                        (asks $ fst . liftw)
+                        aref
+                in MkResource rr' $ MkAModel aref' subscribe utask

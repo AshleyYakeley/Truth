@@ -258,193 +258,188 @@ instance CacheableEdit QTableEdit where
 
 -- can't be a Lens, because reads can cause edits
 qTableEntityReference :: Reference QTableEdit -> Reference QStorageEdit
-qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
-    case resourceRunnerUnliftDict trun of
-        Dict ->
-            case transStackDict @MonadIO @tt @IO of
-                Dict ->
-                    case transStackDict @MonadFail @tt @IO of
-                        Dict -> let
-                            tablePush :: EditSource -> QTableEdit -> ApplyStack tt IO ()
-                            tablePush esrc edit = pushOrFail "can't push table edit" esrc $ tableMPush $ pure edit
-                            acquireEntity :: EditSource -> Entity -> ApplyStack tt IO ()
-                            acquireEntity esrc entity = do
-                                mrc <- tableRead $ QTableReadEntityRefCount entity
-                                newrc <-
-                                    return
-                                        $ case mrc of
-                                            Nothing -> 1
-                                            Just oldrc -> succ oldrc
-                                tablePush esrc $ QTableEditEntityRefCount entity $ Just newrc
-                            releaseByFact ::
-                                forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
-                            releaseByFact esrc (MkFieldStorer p subdef) entity = do
-                                msubv <- tableRead $ QTableReadFactGet p entity
-                                for_ msubv $ \subv -> releaseByEntity esrc subdef subv
-                                tablePush esrc $ QTableEditFactSet p entity Nothing
-                            releaseByConstructor ::
-                                forall t.
-                                EditSource ->
-                                ConstructorStorer 'MultipleMode t ->
-                                Entity ->
-                                ApplyStack tt IO ()
-                            releaseByConstructor _ PlainConstructorStorer _ = return ()
-                            releaseByConstructor _ LiteralConstructorStorer entity
-                                | Just _ <- entityToLiteral entity = return ()
-                            releaseByConstructor esrc LiteralConstructorStorer entity =
-                                tablePush esrc $ QTableEditLiteralSet entity Nothing
-                            releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
-                                listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
-                            releaseByEntity ::
-                                forall t. EditSource -> MultipleEntityStorer t -> Entity -> ApplyStack tt IO ()
-                            releaseByEntity esrc (MkMultipleEntityStorer css) entity = do
-                                mrc <- tableRead $ QTableReadEntityRefCount entity
-                                case mrc of
-                                    Just 1 -> do
-                                        tablePush esrc $ QTableEditEntityRefCount entity Nothing
-                                        for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
-                                    Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
-                                    Nothing -> return ()
-                            releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ApplyStack tt IO ()
-                            releaseByAdapter esrc vtype entity =
-                                releaseByEntity esrc (storeAdapterDefinitions vtype) entity
-                            setFact ::
-                                forall (t :: Type).
-                                EditSource ->
-                                FieldStorer 'SingleMode t ->
-                                Entity ->
-                                t ->
-                                ApplyStack tt IO ()
-                            setFact esrc (MkFieldStorer p subdef) v t = do
-                                let subv = entityStorerToEntity subdef t
-                                moldsub <- tableRead $ QTableReadFactGet p v
-                                case moldsub of
-                                    Just _ -> return ()
-                                    Nothing -> do
-                                        tablePush esrc $ QTableEditFactSet p v $ Just subv
-                                        acquireEntity esrc subv
-                                setEntity esrc subdef subv t
-                            setFacts ::
-                                forall (t :: [Type]).
-                                EditSource ->
-                                ListType (FieldStorer 'SingleMode) t ->
-                                Entity ->
-                                ListProduct t ->
-                                ApplyStack tt IO ()
-                            setFacts _ NilListType _ () = return ()
-                            setFacts esrc (ConsListType f1 fr) v (a1, ar) = do
-                                setFact esrc f1 v a1
-                                setFacts esrc fr v ar
-                            setConstructor ::
-                                forall (t :: Type).
-                                EditSource ->
-                                ConstructorStorer 'SingleMode t ->
-                                Entity ->
-                                t ->
-                                ApplyStack tt IO ()
-                            setConstructor _ PlainConstructorStorer _ _ = return ()
-                            setConstructor _ LiteralConstructorStorer v _
-                                | Just _ <- entityToLiteral v = return ()
-                            setConstructor esrc LiteralConstructorStorer v l =
-                                tablePush esrc $ QTableEditLiteralSet v $ Just l
-                            setConstructor esrc (ConstructorConstructorStorer _ facts) v t = setFacts esrc facts v t
-                            setEntity ::
-                                forall (t :: Type).
-                                EditSource ->
-                                SingleEntityStorer t ->
-                                Entity ->
-                                t ->
-                                ApplyStack tt IO ()
-                            setEntity esrc (MkSingleEntityStorer cs) e t = setConstructor esrc cs e t
-                            setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ApplyStack tt IO ()
-                            setEntityFromAdapter esrc entity ea t = do
-                                case storeAdapterToDefinition ea t of
-                                    MkSomeOf def tt -> setEntity esrc def entity tt
-                            doEntityEdit :: EditSource -> QStorageEdit -> ApplyStack tt IO ()
-                            doEntityEdit esrc (MkQStorageEdit stype vtype p s (Known v)) = do
-                                let
-                                    se = storeAdapterConvert stype s
-                                    ve = storeAdapterConvert vtype v
-                                mroldv <- tableRead $ QTableReadPropertyGet p se
-                                case mroldv of
-                                    Just oldv
-                                        | oldv == ve -> return ()
-                                    Nothing -> do
-                                        setEntityFromAdapter esrc se stype s
-                                        acquireEntity esrc se
-                                        setEntityFromAdapter esrc ve vtype v
-                                        acquireEntity esrc ve
-                                    Just oldv -> do
-                                        setEntityFromAdapter esrc ve vtype v
-                                        acquireEntity esrc ve
-                                        releaseByAdapter esrc vtype oldv
-                                tablePush esrc $ QTableEditPropertySet p se $ Just ve
-                            doEntityEdit esrc (MkQStorageEdit stype vtype p s Unknown) = do
-                                let se = storeAdapterConvert stype s
-                                mroldv <- tableRead $ QTableReadPropertyGet p se
-                                case mroldv of
-                                    Nothing -> return ()
-                                    Just oldv -> do
-                                        releaseByAdapter esrc stype se
-                                        releaseByAdapter esrc vtype oldv
-                                        tablePush esrc $ QTableEditPropertySet p se Nothing
-                            readFact ::
-                                forall (t :: Type).
-                                FieldStorer 'MultipleMode t ->
-                                Entity ->
-                                ComposeInner Know (ApplyStack tt IO) t
-                            readFact (MkFieldStorer p subdef) entity = do
-                                subentity <- MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadFactGet p entity
-                                readEntity subdef subentity
-                            readFacts ::
-                                forall (t :: [Type]).
-                                ListType (FieldStorer 'MultipleMode) t ->
-                                Entity ->
-                                ComposeInner Know (ApplyStack tt IO) (ListProduct t)
-                            readFacts NilListType _ = return ()
-                            readFacts (ConsListType f1 fr) entity = do
-                                t1 <- readFact f1 entity
-                                tr <- readFacts fr entity
-                                return (t1, tr)
-                            readConstructor ::
-                                forall (t :: Type).
-                                ConstructorStorer 'MultipleMode t ->
-                                Entity ->
-                                ComposeInner Know (ApplyStack tt IO) t
-                            readConstructor PlainConstructorStorer entity = return entity
-                            readConstructor LiteralConstructorStorer entity
-                                | Just lit <- entityToLiteral entity = return lit
-                            readConstructor LiteralConstructorStorer entity =
-                                MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadLiteralGet entity
-                            readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity
-                            firstKnown :: MonadPlus m => [a] -> (a -> m b) -> m b
-                            firstKnown [] _ = empty
-                            firstKnown (a : aa) f = f a <|> firstKnown aa f
-                            readEntity ::
-                                forall (t :: Type).
-                                MultipleEntityStorer t ->
-                                Entity ->
-                                ComposeInner Know (ApplyStack tt IO) t
-                            readEntity (MkMultipleEntityStorer css) entity =
-                                firstKnown css $ \(MkKnowShim def f) -> do
-                                    dt <- readConstructor def entity
-                                    liftInner $ f dt
-                            refRead :: Readable (ApplyStack tt IO) QStorageRead
-                            refRead (QStorageReadGet stype prd subj) = do
-                                mval <- tableRead $ QTableReadPropertyGet prd $ storeAdapterConvert stype subj
-                                case mval of
-                                    Just val -> return val
-                                    Nothing -> do
-                                        val <- newEntity
-                                        doEntityEdit noEditSource
-                                            $ MkQStorageEdit stype plainStoreAdapter prd subj (Known val)
-                                        return val
-                            refRead (QStorageReadLookup prd val) = tableRead $ QTableReadPropertyLookup prd val
-                            refRead (QStorageReadEntity ea entity) =
-                                unComposeInner $ readEntity (storeAdapterDefinitions ea) entity
-                            refEdit ::
-                                NonEmpty QStorageEdit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                            refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit
-                            in MkResource trun MkAReference{..}
+qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) = let
+    tablePush :: EditSource -> QTableEdit -> ReaderT (ListProduct tt) IO ()
+    tablePush esrc edit = pushOrFail "can't push table edit" esrc $ tableMPush $ pure edit
+    acquireEntity :: EditSource -> Entity -> ReaderT (ListProduct tt) IO ()
+    acquireEntity esrc entity = do
+        mrc <- tableRead $ QTableReadEntityRefCount entity
+        newrc <-
+            return
+                $ case mrc of
+                    Nothing -> 1
+                    Just oldrc -> succ oldrc
+        tablePush esrc $ QTableEditEntityRefCount entity $ Just newrc
+    releaseByFact ::
+        forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ReaderT (ListProduct tt) IO ()
+    releaseByFact esrc (MkFieldStorer p subdef) entity = do
+        msubv <- tableRead $ QTableReadFactGet p entity
+        for_ msubv $ \subv -> releaseByEntity esrc subdef subv
+        tablePush esrc $ QTableEditFactSet p entity Nothing
+    releaseByConstructor ::
+        forall t.
+        EditSource ->
+        ConstructorStorer 'MultipleMode t ->
+        Entity ->
+        ReaderT (ListProduct tt) IO ()
+    releaseByConstructor _ PlainConstructorStorer _ = return ()
+    releaseByConstructor _ LiteralConstructorStorer entity
+        | Just _ <- entityToLiteral entity = return ()
+    releaseByConstructor esrc LiteralConstructorStorer entity =
+        tablePush esrc $ QTableEditLiteralSet entity Nothing
+    releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
+        listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
+    releaseByEntity ::
+        forall t. EditSource -> MultipleEntityStorer t -> Entity -> ReaderT (ListProduct tt) IO ()
+    releaseByEntity esrc (MkMultipleEntityStorer css) entity = do
+        mrc <- tableRead $ QTableReadEntityRefCount entity
+        case mrc of
+            Just 1 -> do
+                tablePush esrc $ QTableEditEntityRefCount entity Nothing
+                for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
+            Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
+            Nothing -> return ()
+    releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ReaderT (ListProduct tt) IO ()
+    releaseByAdapter esrc vtype entity =
+        releaseByEntity esrc (storeAdapterDefinitions vtype) entity
+    setFact ::
+        forall (t :: Type).
+        EditSource ->
+        FieldStorer 'SingleMode t ->
+        Entity ->
+        t ->
+        ReaderT (ListProduct tt) IO ()
+    setFact esrc (MkFieldStorer p subdef) v t = do
+        let subv = entityStorerToEntity subdef t
+        moldsub <- tableRead $ QTableReadFactGet p v
+        case moldsub of
+            Just _ -> return ()
+            Nothing -> do
+                tablePush esrc $ QTableEditFactSet p v $ Just subv
+                acquireEntity esrc subv
+        setEntity esrc subdef subv t
+    setFacts ::
+        forall (t :: [Type]).
+        EditSource ->
+        ListType (FieldStorer 'SingleMode) t ->
+        Entity ->
+        ListProduct t ->
+        ReaderT (ListProduct tt) IO ()
+    setFacts _ NilListType _ () = return ()
+    setFacts esrc (ConsListType f1 fr) v (a1, ar) = do
+        setFact esrc f1 v a1
+        setFacts esrc fr v ar
+    setConstructor ::
+        forall (t :: Type).
+        EditSource ->
+        ConstructorStorer 'SingleMode t ->
+        Entity ->
+        t ->
+        ReaderT (ListProduct tt) IO ()
+    setConstructor _ PlainConstructorStorer _ _ = return ()
+    setConstructor _ LiteralConstructorStorer v _
+        | Just _ <- entityToLiteral v = return ()
+    setConstructor esrc LiteralConstructorStorer v l =
+        tablePush esrc $ QTableEditLiteralSet v $ Just l
+    setConstructor esrc (ConstructorConstructorStorer _ facts) v t = setFacts esrc facts v t
+    setEntity ::
+        forall (t :: Type).
+        EditSource ->
+        SingleEntityStorer t ->
+        Entity ->
+        t ->
+        ReaderT (ListProduct tt) IO ()
+    setEntity esrc (MkSingleEntityStorer cs) e t = setConstructor esrc cs e t
+    setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ReaderT (ListProduct tt) IO ()
+    setEntityFromAdapter esrc entity ea t = do
+        case storeAdapterToDefinition ea t of
+            MkSomeOf def tt -> setEntity esrc def entity tt
+    doEntityEdit :: EditSource -> QStorageEdit -> ReaderT (ListProduct tt) IO ()
+    doEntityEdit esrc (MkQStorageEdit stype vtype p s (Known v)) = do
+        let
+            se = storeAdapterConvert stype s
+            ve = storeAdapterConvert vtype v
+        mroldv <- tableRead $ QTableReadPropertyGet p se
+        case mroldv of
+            Just oldv
+                | oldv == ve -> return ()
+            Nothing -> do
+                setEntityFromAdapter esrc se stype s
+                acquireEntity esrc se
+                setEntityFromAdapter esrc ve vtype v
+                acquireEntity esrc ve
+            Just oldv -> do
+                setEntityFromAdapter esrc ve vtype v
+                acquireEntity esrc ve
+                releaseByAdapter esrc vtype oldv
+        tablePush esrc $ QTableEditPropertySet p se $ Just ve
+    doEntityEdit esrc (MkQStorageEdit stype vtype p s Unknown) = do
+        let se = storeAdapterConvert stype s
+        mroldv <- tableRead $ QTableReadPropertyGet p se
+        case mroldv of
+            Nothing -> return ()
+            Just oldv -> do
+                releaseByAdapter esrc stype se
+                releaseByAdapter esrc vtype oldv
+                tablePush esrc $ QTableEditPropertySet p se Nothing
+    readFact ::
+        forall (t :: Type).
+        FieldStorer 'MultipleMode t ->
+        Entity ->
+        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+    readFact (MkFieldStorer p subdef) entity = do
+        subentity <- MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadFactGet p entity
+        readEntity subdef subentity
+    readFacts ::
+        forall (t :: [Type]).
+        ListType (FieldStorer 'MultipleMode) t ->
+        Entity ->
+        ComposeInner Know (ReaderT (ListProduct tt) IO) (ListProduct t)
+    readFacts NilListType _ = return ()
+    readFacts (ConsListType f1 fr) entity = do
+        t1 <- readFact f1 entity
+        tr <- readFacts fr entity
+        return (t1, tr)
+    readConstructor ::
+        forall (t :: Type).
+        ConstructorStorer 'MultipleMode t ->
+        Entity ->
+        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+    readConstructor PlainConstructorStorer entity = return entity
+    readConstructor LiteralConstructorStorer entity
+        | Just lit <- entityToLiteral entity = return lit
+    readConstructor LiteralConstructorStorer entity =
+        MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadLiteralGet entity
+    readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity
+    firstKnown :: MonadPlus m => [a] -> (a -> m b) -> m b
+    firstKnown [] _ = empty
+    firstKnown (a : aa) f = f a <|> firstKnown aa f
+    readEntity ::
+        forall (t :: Type).
+        MultipleEntityStorer t ->
+        Entity ->
+        ComposeInner Know (ReaderT (ListProduct tt) IO) t
+    readEntity (MkMultipleEntityStorer css) entity =
+        firstKnown css $ \(MkKnowShim def f) -> do
+            dt <- readConstructor def entity
+            liftInner $ f dt
+    refRead :: Readable (ReaderT (ListProduct tt) IO) QStorageRead
+    refRead (QStorageReadGet stype prd subj) = do
+        mval <- tableRead $ QTableReadPropertyGet prd $ storeAdapterConvert stype subj
+        case mval of
+            Just val -> return val
+            Nothing -> do
+                val <- newEntity
+                doEntityEdit noEditSource
+                    $ MkQStorageEdit stype plainStoreAdapter prd subj (Known val)
+                return val
+    refRead (QStorageReadLookup prd val) = tableRead $ QTableReadPropertyLookup prd val
+    refRead (QStorageReadEntity ea entity) =
+        unComposeInner $ readEntity (storeAdapterDefinitions ea) entity
+    refEdit ::
+        NonEmpty QStorageEdit ->
+        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+    refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit
+    in MkResource trun MkAReference{..}
 
 type QTableUpdate = EditUpdate QTableEdit

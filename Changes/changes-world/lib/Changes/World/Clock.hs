@@ -16,12 +16,12 @@ clockPremodel cm pmrUpdatesTask update = do
     run <-
         liftIO
             $ newResourceRunner
-            $ \rt -> do
-                t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while reference is open
-                runReaderT rt t
+            $ \call -> do
+                t <- readIORef ref -- read once before opening, to keep value consistent while reference is open
+                call t
     let
         pmrReference :: Reference (ConstEdit (WholeReader a))
-        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> ask
+        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> asks fst
         pmrValue = ()
     return MkPremodelResult{..}
 

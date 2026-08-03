@@ -3,6 +3,5 @@ module Changes.Core.Resource
     )
 where
 
-import Changes.Core.Resource.Function as I
 import Changes.Core.Resource.ResourceRunner as I
 import Changes.Core.Resource.Runnable as I

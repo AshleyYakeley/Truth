@@ -71,70 +71,68 @@ directoryReferenceStore ::
     Reference FSEdit ->
     (name -> String) ->
     Reference (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
-directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd push refCommitTask)) nameStr =
-    case resourceRunnerStackUnliftDict rr of
-        Dict -> let
-            undoName :: String -> Int -> FilePath
-            undoName name i = "undo/" ++ name ++ show i
-            findUndoCode :: String -> Int -> ApplyStack tt IO Int
-            findUndoCode name i = do
-                mitem <- rd $ FSReadItem $ undoName name i
-                case mitem of
-                    Nothing -> return i
-                    Just _ -> findUndoCode name $ succ i
-            refRead :: Readable (ApplyStack tt IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
-            refRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
-                case edit of
-                    ReadSingleReferenceStore -> do
-                        mitem <- rd $ FSReadItem name
-                        return
-                            $ case mitem of
-                                Just (FSFileItem fileobj) -> Just fileobj
-                                _ -> Nothing
-                    GetSingleReferenceRecoveryCode -> do
-                        mitem <- rd $ FSReadItem name
-                        case mitem of
-                            Just (FSFileItem _) -> do
-                                code <- findUndoCode name 0
-                                return $ Just code
-                            _ -> return $ Nothing
-            refEdit ::
-                NonEmpty (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit)) ->
-                ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-            refEdit edits =
+directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd push refCommitTask)) nameStr = let
+    undoName :: String -> Int -> FilePath
+    undoName name i = "undo/" ++ name ++ show i
+    findUndoCode :: String -> Int -> ReaderT (ListProduct tt) IO Int
+    findUndoCode name i = do
+        mitem <- rd $ FSReadItem $ undoName name i
+        case mitem of
+            Nothing -> return i
+            Just _ -> findUndoCode name $ succ i
+    refRead :: Readable (ReaderT (ListProduct tt) IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
+    refRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
+        case edit of
+            ReadSingleReferenceStore -> do
+                mitem <- rd $ FSReadItem name
                 return
-                    $ Just
-                    $ \esrc ->
-                        case last edits of
-                            MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit ->
-                                case edit of
-                                    SingleReferenceDelete -> do
-                                        mitem <- rd $ FSReadItem name
-                                        case mitem of
-                                            Just (FSFileItem _) -> do
-                                                code <- findUndoCode name 0
-                                                pushOrFail ("couldn't rename FS item " <> show name) esrc
-                                                    $ push
-                                                    $ pure
-                                                    $ FSEditRenameItem name (undoName name code)
-                                            _ -> return ()
-                                    SingleReferenceDeleteCreate -> do
-                                        mitem <- rd $ FSReadItem name
-                                        case mitem of
-                                            Just (FSFileItem _) -> do
-                                                code <- findUndoCode name 0
-                                                pushOrFail ("couldn't rename FS item " <> show name) esrc
-                                                    $ push
-                                                    $ (FSEditRenameItem name (undoName name code))
-                                                    :| [FSEditCreateFile name mempty]
-                                            _ ->
-                                                pushOrFail ("couldn't create FS item " <> show name) esrc
-                                                    $ push
-                                                    $ pure
-                                                    $ FSEditCreateFile name mempty
-                                    SingleReferenceRecover code ->
+                    $ case mitem of
+                        Just (FSFileItem fileobj) -> Just fileobj
+                        _ -> Nothing
+            GetSingleReferenceRecoveryCode -> do
+                mitem <- rd $ FSReadItem name
+                case mitem of
+                    Just (FSFileItem _) -> do
+                        code <- findUndoCode name 0
+                        return $ Just code
+                    _ -> return $ Nothing
+    refEdit ::
+        NonEmpty (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit)) ->
+        ReaderT (ListProduct tt) IO (Maybe (EditSource -> ReaderT (ListProduct tt) IO ()))
+    refEdit edits =
+        return
+            $ Just
+            $ \esrc ->
+                case last edits of
+                    MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit ->
+                        case edit of
+                            SingleReferenceDelete -> do
+                                mitem <- rd $ FSReadItem name
+                                case mitem of
+                                    Just (FSFileItem _) -> do
+                                        code <- findUndoCode name 0
                                         pushOrFail ("couldn't rename FS item " <> show name) esrc
                                             $ push
                                             $ pure
-                                            $ FSEditRenameItem (undoName name code) name
-            in MkResource rr MkAReference{..}
+                                            $ FSEditRenameItem name (undoName name code)
+                                    _ -> return ()
+                            SingleReferenceDeleteCreate -> do
+                                mitem <- rd $ FSReadItem name
+                                case mitem of
+                                    Just (FSFileItem _) -> do
+                                        code <- findUndoCode name 0
+                                        pushOrFail ("couldn't rename FS item " <> show name) esrc
+                                            $ push
+                                            $ (FSEditRenameItem name (undoName name code))
+                                            :| [FSEditCreateFile name mempty]
+                                    _ ->
+                                        pushOrFail ("couldn't create FS item " <> show name) esrc
+                                            $ push
+                                            $ pure
+                                            $ FSEditCreateFile name mempty
+                            SingleReferenceRecover code ->
+                                pushOrFail ("couldn't rename FS item " <> show name) esrc
+                                    $ push
+                                    $ pure
+                                    $ FSEditRenameItem (undoName name code) name
+    in MkResource rr MkAReference{..}

@@ -59,8 +59,7 @@ traceAReference prefix MkEditShower{..} (MkAReference r e ct) = let
 
 traceReference :: forall edit. String -> EditShower edit -> Reference edit -> Reference edit
 traceReference prefix shower (MkResource rr anobj) =
-    case resourceRunnerStackUnliftDict rr of
-        Dict -> MkResource rr $ traceAReference prefix shower anobj
+    MkResource rr $ traceAReference prefix shower anobj
 
 showEditShower ::
     forall edit.
@@ -118,19 +117,17 @@ instance TraceThing (LifeState mc) where
     traceThing _ ls = ls
 
 slowObject :: Int -> Reference edit -> Reference edit
-slowObject mus (MkResource rr (MkAReference rd push ct)) =
-    case resourceRunnerStackUnliftDict rr of
-        Dict -> let
-            push' edits = do
-                maction <- push edits
-                return
-                    $ case maction of
-                        Nothing -> Nothing
-                        Just action ->
-                            Just $ \esrc -> do
-                                traceBracket_ "slow: delay" $ liftIO $ threadDelay mus
-                                traceBracket_ "slow: action" $ action esrc
-            in MkResource rr $ MkAReference rd push' ct
+slowObject mus (MkResource rr (MkAReference rd push ct)) = let
+    push' edits = do
+        maction <- push edits
+        return
+            $ case maction of
+                Nothing -> Nothing
+                Just action ->
+                    Just $ \esrc -> do
+                        traceBracket_ "slow: delay" $ liftIO $ threadDelay mus
+                        traceBracket_ "slow: action" $ action esrc
+    in MkResource rr $ MkAReference rd push' ct
 
 instance TraceThing (FloatingChangeLens updateA updateB) where
     traceThing prefix (MkFloatingChangeLens finit lens) = let

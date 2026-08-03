@@ -101,7 +101,7 @@ getClipboardModel clipboard = do
         refCommitTask :: Task IO ()
         refCommitTask = mempty
         ref :: Reference (WholeEdit [Media])
-        ref = MkResource nilResourceRunner $ MkAReference{..}
+        ref = MkResource nilResourceRunner $ mapResource liftIO MkAReference{..}
     gvLiftLifecycle $ makeReflectingModel ref
 
 getTheClipboardModel :: GView 'Unlocked (Model (WholeUpdate [Media]))

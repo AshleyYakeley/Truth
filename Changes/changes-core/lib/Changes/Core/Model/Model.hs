@@ -94,8 +94,7 @@ singleUpdateQueue updates ec = MkUpdateQueue $ pure (ec, updates)
 
 modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
 modelPremodel rc (MkResource rr MkAModel{..}) val update utask = do
-    Dict <- return $ resourceRunnerStackUnliftDict rr
-    hoist (\ma -> runResourceRunner rc rr ma) $ aModelSubscribe update utask
+    hoist (runResourceRunner rc rr . runReaderT) $ aModelSubscribe update utask
     return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
 makeSharedModel :: forall update a. Premodel update a -> Lifecycle (Model update, a)
@@ -114,13 +113,13 @@ makeSharedModel premodel = do
         utaskP = ioTask (fmap mconcat getTasks)
     MkPremodelResult{..} <- premodel utaskP updateP
     MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
-    Dict <- return $ resourceRunnerUnliftDict trunC
-    Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
-            Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifecycleT IO (ApplyStack tt IO) ()
+            Task IO () ->
+            (ResourceContext -> NonEmpty update -> EditContext -> IO ()) ->
+            LifecycleT IO (ReaderT (ListProduct tt) IO) ()
         aModelSubscribe taskC updateC =
-            hoist (stackLift @tt @IO) $ do
+            hoist liftIO $ do
                 key <-
                     liftIO
                         $ mVarRunStateT var
@@ -172,22 +171,24 @@ floatMapModel rc lens modelA = do
     return modelB
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
-mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
-    case resourceRunnerStackUnliftDict rr of
-        Dict -> let
-            objB = mapAReference plens objA
-            subB utask recvB = let
-                recvA rc updatesA ec = do
-                    updatessB <-
-                        runResourceRunner rc rr $ for updatesA $ \updateA -> clUpdate plens updateA (refRead objA)
-                    case nonEmpty $ mconcat $ toList updatessB of
-                        Nothing -> return ()
-                        Just updatesB' -> recvB rc updatesB' ec
-                in subA utask recvA
-            in MkResource rr $ MkAModel objB subB utaskA
+mapModel plens (MkResource rr (MkAModel objA subA utaskA)) = let
+    objB = mapAReference plens objA
+    subB utask recvB = let
+        recvA rc updatesA ec = do
+            updatessB <-
+                runResourceRunner rc rr
+                    $ runReaderT
+                    $ for updatesA
+                    $ \updateA -> clUpdate plens updateA (refRead objA)
+            case nonEmpty $ mconcat $ toList updatessB of
+                Nothing -> return ()
+                Just updatesB' -> recvB rc updatesB' ec
+        in subA utask recvA
+    in MkResource rr $ MkAModel objB subB utaskA
 
 aReferenceModel :: AReference (UpdateEdit update) IO -> Model update
-aReferenceModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
+aReferenceModel anobj =
+    MkResource nilResourceRunner $ mapResource liftIO $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())
 unitModel = aReferenceModel $ MkAReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
