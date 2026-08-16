@@ -3,6 +3,7 @@ module Control.Task
     , hoistTask
     , taskIsDone
     , execTask
+    , wrapTask
     , ioTask
     , forkTask
     , forkOSTask
@@ -57,22 +58,22 @@ instance RepresentationalRole m => RepresentationalRole (Task m) where
     representationalCoercion cab = case representationalCoercion @_ @_ @m cab of
         MkCoercion -> MkCoercion
 -}
+
+wrapTask :: forall m m' a. (forall b. (Task m' a -> m' b) -> m b) -> Task m a
+wrapTask f =
+    MkTask
+        { taskWait = f taskWait
+        , taskCheck = f taskCheck
+        }
+
 ioTask ::
     forall m a.
     Monad m =>
     m (Task m a) ->
     Task m a
-ioTask mt =
-    MkTask
-        { taskWait =
-            do
-                t <- mt
-                taskWait t
-        , taskCheck =
-            do
-                t <- mt
-                taskCheck t
-        }
+ioTask mt = wrapTask $ \tm -> do
+    t <- mt
+    tm t
 
 mvarTask ::
     forall m a.
