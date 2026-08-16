@@ -120,37 +120,16 @@ emptyResourceContext = MkResourceContext []
 resourceContextSize :: ResourceContext -> Int
 resourceContextSize (MkResourceContext rc) = length rc
 
-runLSR ::
-    forall tt m r.
-    MonadUnliftIO m =>
-    [Some SingleRunner] ->
-    ListType SingleRunner tt ->
-    (ListProduct tt -> m r) ->
-    m r
-runLSR _ NilListType call = call ()
-runLSR rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
-    runLSR rc lsr $ \ttr ->
-        runSingleRunner rc sr $ \t -> call (t, ttr)
-
-runResourceRunner ::
-    forall t r.
-    ResourceContext ->
-    ResourceRunner t ->
-    (t -> IO r) ->
-    IO r
-runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) = runLSR rc rr
-
 runLSRContext ::
-    forall tt m r.
-    MonadTunnelIO m =>
+    forall tt r.
     [Some SingleRunner] ->
     ListType SingleRunner tt ->
-    ([Some SingleRunner] -> ListProduct tt -> m r) ->
-    m r
+    ([Some SingleRunner] -> ListProduct tt -> IO r) ->
+    IO r
 runLSRContext rc NilListType call = call rc ()
 runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
     runLSRContext rc lsr $ \rc' ttr ->
-        runSingleRunnerContext rc' sr $ \rc'' t -> call rc'' (t, ttr)
+        runSingleRunner rc' sr $ \rc'' t -> call rc'' (t, ttr)
 
 runResourceRunnerContext ::
     forall t r.
@@ -160,6 +139,14 @@ runResourceRunnerContext ::
     IO r
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
     runLSRContext rc rr $ \rc' -> call (MkResourceContext rc')
+
+runResourceRunner ::
+    forall t r.
+    ResourceContext ->
+    ResourceRunner t ->
+    (t -> IO r) ->
+    IO r
+runResourceRunner rc runner call = runResourceRunnerContext rc runner $ \_ t -> call t
 
 exclusiveResourceRunner ::
     forall t.

@@ -2,7 +2,6 @@ module Changes.Core.Resource.SingleRunner
     ( SingleRunner
     , mkSingleRunner
     , runSingleRunner
-    , runSingleRunnerContext
     )
 where
 
@@ -42,23 +41,11 @@ fetchSingleRunner rr sr@(MkSingleRunner swit srun) =
         Just (MkSingleRunner cwit crun, f) -> (\run -> f (MkSingleRunner cwit run), crun)
 
 runSingleRunner ::
-    forall t m r.
-    MonadTunnelIO m =>
+    forall t r.
     [Some SingleRunner] ->
     SingleRunner t ->
-    (t -> m r) ->
-    m r
-runSingleRunner rr sr = let
-    (_, run) = fetchSingleRunner rr sr
-    in unWithT (liftIOWithT run)
-
-runSingleRunnerContext ::
-    forall t m r.
-    MonadTunnelIO m =>
-    [Some SingleRunner] ->
-    SingleRunner t ->
-    ([Some SingleRunner] -> t -> m r) ->
-    m r
-runSingleRunnerContext rr sr call = let
+    ([Some SingleRunner] -> t -> IO r) ->
+    IO r
+runSingleRunner rr sr call = let
     (rr', run) = fetchSingleRunner rr sr
     in unWithT (liftIOWithT run) $ \t -> call (rr' $ pure t) t
