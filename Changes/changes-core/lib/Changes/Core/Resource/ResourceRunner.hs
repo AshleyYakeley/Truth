@@ -14,6 +14,7 @@ module Changes.Core.Resource.ResourceRunner
     , resourceContextSize
     , runResourceRunner
     , runResourceRunnerContext
+    , dependentResourceRunner
     )
 where
 
@@ -22,6 +23,7 @@ import Changes.Core.Resource.SingleRunner
 
 data ResourceRunner (t :: Type) where
     MkResourceRunner :: forall (tt :: [Type]). ListType SingleRunner tt -> ResourceRunner (ListProduct tt)
+    DependentResourceRunner :: ResourceRunner a -> (a -> IO (ResourceRunner b)) -> ResourceRunner b
 
 nilResourceRunner :: ResourceRunner ()
 nilResourceRunner = MkResourceRunner NilListType
@@ -72,9 +74,13 @@ combineResourceRunners ::
     r
 combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
     combineLSR la lb $ \lab -> call (MkResourceRunner lab)
+combineResourceRunners _ _ _ = undefined
 
 singleResourceRunner :: SingleRunner t -> ResourceRunner (t, ())
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
+
+dependentResourceRunner :: ResourceRunner a -> (a -> IO (ResourceRunner b)) -> ResourceRunner b
+dependentResourceRunner = DependentResourceRunner
 
 mkResourceRunner ::
     forall t.
@@ -139,6 +145,10 @@ runResourceRunnerContext ::
     IO r
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
     runLSRContext rc rr $ \rc' -> call (MkResourceContext rc')
+runResourceRunnerContext rc (DependentResourceRunner ra arb) call =
+    runResourceRunnerContext rc ra $ \rc' a -> do
+        rb <- arb a
+        runResourceRunnerContext rc' rb call
 
 runResourceRunner ::
     forall t r.
