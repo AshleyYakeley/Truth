@@ -3,6 +3,7 @@ module Main
     )
 where
 
+import Changes.World.GNOME.GTK.Test
 import Shapes
 import Shapes.Test
 
@@ -14,4 +15,6 @@ tests :: [TestTree]
 tests = [testGolden] <> ifpure flag_TestX11 testUI
 
 main :: IO ()
-main = testMainNoSignalHandler $ inOrderTestGroup "gnome" tests
+main = do
+    setGTKTestEnvironment
+    testMainNoSignalHandler $ inOrderTestGroup "gnome" tests

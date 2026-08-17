@@ -11,10 +11,24 @@ import Import
 import Import.GI qualified as GI
 
 withSignalBlocked :: (Is LockStateType ls, GI.IsObject obj) => obj -> GI.SignalHandlerId -> GView ls --> GView ls
-withSignalBlocked obj conn =
-    bracketNoMask_
-        (gvRunLocked' $ gvLiftIO $ GI.signalHandlerBlock obj conn)
-        (gvRunLocked' $ gvLiftIO $ GI.signalHandlerUnblock obj conn)
+withSignalBlocked obj conn thing =
+    bracketNoMask
+        ( gvRunLocked'
+            $ gvLiftIO
+            $ do
+                isConnected <- GI.signalHandlerIsConnected obj conn
+                when isConnected $ GI.signalHandlerBlock obj conn
+                return isConnected
+        )
+        ( \wasBlocked ->
+            gvRunLocked'
+                $ gvLiftIO
+                $ when wasBlocked
+                $ do
+                    isConnected <- GI.signalHandlerIsConnected obj conn
+                    when isConnected $ GI.signalHandlerUnblock obj conn
+        )
+        (const thing)
 
 withSignalsBlocked :: (Is LockStateType ls, GI.IsObject obj) => obj -> [GI.SignalHandlerId] -> GView ls --> GView ls
 withSignalsBlocked _obj [] = id
