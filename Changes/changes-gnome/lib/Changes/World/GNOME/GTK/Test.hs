@@ -1,5 +1,7 @@
 module Changes.World.GNOME.GTK.Test (module I, module Changes.World.GNOME.GTK.Test) where
 
+import System.Environment
+
 import Changes.World.GNOME.GI
 import Changes.World.GNOME.GTK.Widget.TextEntry as I (testTextEntry)
 import Import
@@ -56,3 +58,10 @@ clickOnlyWindowButton = do
                 [b] -> gobjectEmitClicked b
                 _ -> fail $ show (length bb) <> " Buttons"
         _ -> fail $ show (length ww) <> " visible windows"
+
+setGTKTestEnvironment :: IO ()
+setGTKTestEnvironment = do
+    mRenderer <- lookupEnv "GSK_RENDERER"
+    case mRenderer of
+        Just _ -> return ()
+        Nothing -> setEnv "GSK_RENDERER" "cairo"
