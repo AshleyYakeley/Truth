@@ -33,16 +33,13 @@ dynamicAModel ctask utask =
         , aModelUpdatesTask = utask
         }
 
-mapResourceRunner :: (a -> b) -> ResourceRunner a -> ResourceRunner b
-mapResourceRunner _ _ = error "NYI"
-
 dynamicModel :: forall update. Model (ROWUpdate (Model update)) -> Model update
 dynamicModel (MkResource runner1 am1) = let
     runner :: ResourceRunner (AModel update ())
     runner = dependentResourceRunner runner1
         $ \t -> do
             MkResource runner2 am2 <- runReaderT (aModelRead am1 ReadWhole) t
-            return $ mapResourceRunner (\t2 -> contramap (\() -> t2) am2) runner2
+            return $ fmap (\t2 -> contramap (\() -> t2) am2) runner2
     ctask :: Task IO ()
     ctask = runResourceTask runner1 $ \t -> ioTask $ do
         m2 <- runReaderT (aModelRead am1 ReadWhole) t

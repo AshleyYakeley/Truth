@@ -25,6 +25,10 @@ data ResourceRunner (t :: Type) where
     MkResourceRunner :: forall (tt :: [Type]). ListType SingleRunner tt -> ResourceRunner (ListProduct tt)
     DependentResourceRunner :: ResourceRunner a -> (a -> IO (ResourceRunner b)) -> ResourceRunner b
 
+instance Functor ResourceRunner where
+    fmap _ (MkResourceRunner _) = error "NYI"
+    fmap ab (DependentResourceRunner rx xira) = DependentResourceRunner rx $ (fmap $ fmap $ fmap ab) xira
+
 nilResourceRunner :: ResourceRunner ()
 nilResourceRunner = MkResourceRunner NilListType
 
@@ -74,7 +78,7 @@ combineResourceRunners ::
     r
 combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
     combineLSR la lb $ \lab -> call (MkResourceRunner lab)
-combineResourceRunners _ _ _ = undefined
+combineResourceRunners _ _ _ = error "NYI"
 
 singleResourceRunner :: SingleRunner t -> ResourceRunner (t, ())
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
