@@ -9,6 +9,9 @@ import Changes.Core.Resource
 import Changes.Core.Types.None
 import Changes.Core.Types.Whole
 
+runResourceTask :: ResourceRunner t -> (t -> Task IO a) -> Task IO a
+runResourceTask rr ttask = wrapTask $ \call -> runResourceRunner emptyResourceContext rr $ \t -> call $ ttask t
+
 data AReference edit (t :: Type) = MkAReference
     { refRead :: Readable (ReaderT t IO) (EditReader edit)
     , refEdit :: NonEmpty edit -> ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))

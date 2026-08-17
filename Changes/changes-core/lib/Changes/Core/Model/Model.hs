@@ -68,10 +68,10 @@ modelReference :: Model update -> Reference (UpdateEdit update)
 modelReference (MkResource rr amodel) = MkResource rr $ aModelAReference amodel
 
 modelUpdatesTask :: Model update -> Task IO ()
-modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
+modelUpdatesTask (MkResource _ amodel) = aModelUpdatesTask amodel
 
 modelCommitsTask :: Model update -> Task IO ()
-modelCommitsTask (MkResource _ asub) = refCommitTask $ aModelAReference asub
+modelCommitsTask (MkResource _ amodel) = refCommitTask $ aModelAReference amodel
 
 newtype UpdateQueue update
     = MkUpdateQueue [(EditContext, NonEmpty update)]
