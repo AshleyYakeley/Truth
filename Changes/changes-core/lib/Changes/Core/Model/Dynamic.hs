@@ -40,17 +40,20 @@ dynamicModel :: forall update. Model (ROWUpdate (Model update)) -> Model update
 dynamicModel (MkResource runner1 am1) = let
     runner :: ResourceRunner (AModel update ())
     runner = dependentResourceRunner runner1
-            $ \t -> do
-                MkResource runner2 am2 <- runReaderT (aModelRead am1 ReadWhole) t
-                return $ mapResourceRunner (\t2 -> contramap (\() -> t2) am2) runner2
+        $ \t -> do
+            MkResource runner2 am2 <- runReaderT (aModelRead am1 ReadWhole) t
+            return $ mapResourceRunner (\t2 -> contramap (\() -> t2) am2) runner2
     ctask :: Task IO ()
     ctask = runResourceTask runner1 $ \t -> ioTask $ do
         m2 <- runReaderT (aModelRead am1 ReadWhole) t
         pure $ modelCommitsTask m2
     utask :: Task IO ()
-    utask = runResourceTask runner1 $ \t -> ioTask $ do
-        m2 <- runReaderT (aModelRead am1 ReadWhole) t
-        pure $ modelUpdatesTask m2
+    utask =
+        aModelUpdatesTask am1
+            <> ( runResourceTask runner1 $ \t -> ioTask $ do
+                    m2 <- runReaderT (aModelRead am1 ReadWhole) t
+                    pure $ modelUpdatesTask m2
+               )
     in MkResource runner $ dynamicAModel ctask utask
 
 dynamicWModel :: forall update. WModel (ROWUpdate (WModel update)) -> WModel update
