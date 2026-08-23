@@ -45,7 +45,7 @@ instance Contravariant (UAReference update) where
     contramap f (MkUAReference obj) = MkUAReference $ contramap f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
-noneTupleResource = MkResource nilResourceRunner noneTupleAResource
+noneTupleResource = MkResource (pure ()) noneTupleAResource
 
 consTupleResource ::
     forall f update updates.

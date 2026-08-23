@@ -21,7 +21,7 @@ joinThings :: Thing -> Thing -> Thing
 joinThings =
     joinResource $ \(MkAThing m1) (MkAThing m2) -> MkAThing $ m1 >> m2
 
-stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner (MVar s, ()))
+stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner (MVar s))
 stateResourceRunnerTrace name s = do
     var <- newMVar s
     newResourceRunner $ \call -> do
@@ -42,7 +42,7 @@ simpleThing name = do
         $ MkResource rr
         $ MkAThing
         $ do
-            var <- asks fst
+            var <- ask
             liftIO
                 $ mVarRunStateT var
                 $ do

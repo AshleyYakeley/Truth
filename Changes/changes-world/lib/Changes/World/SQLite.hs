@@ -207,7 +207,7 @@ sqliteReference ::
 sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
     var <- newMVar ()
     let
-        objRun :: ResourceRunner (Connection, ())
+        objRun :: ResourceRunner Connection
         objRun =
             mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
                 mVarRunLocked var $ do
@@ -279,18 +279,18 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
                 <> " SET "
                 <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis)
                 <> wherePart tableColumnRefs wc
-        refRead :: Readable (ReaderT (Connection, ()) IO) (SQLiteReader tablesel)
+        refRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
         refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
                 MkQueryString s v -> do
-                    conn <- asks fst
+                    conn <- ask
                     lift $ query conn s v
         refEdit ::
             NonEmpty (SQLiteEdit tablesel) ->
             ReaderT
-                (Connection, ())
+                Connection
                 IO
-                (Maybe (EditSource -> ReaderT (Connection, ()) IO ()))
+                (Maybe (EditSource -> ReaderT Connection IO ()))
         refEdit =
             alwaysEdit $ \edits _ -> let
                 queries :: [QueryString]
@@ -298,7 +298,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
                 pairs :: [(Query, NonEmpty [SQLData])]
                 pairs = mapToList $ groupQueryStringsMap queries
                 in for_ pairs $ \(s, vv) -> do
-                    conn <- asks fst
+                    conn <- ask
                     lift $ executeMany conn s (toList vv)
         refCommitTask = mempty
     return $ MkResource objRun MkAReference{..}

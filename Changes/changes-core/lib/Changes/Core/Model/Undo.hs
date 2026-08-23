@@ -30,7 +30,7 @@ data UndoQueue = MkUndoQueue
 
 data UndoHandler = MkUndoHandler
     { uhVar :: MVar UndoQueue
-    , uhRunner :: ResourceRunner (UndoRecorder, ())
+    , uhRunner :: ResourceRunner UndoRecorder
     }
 
 newtype UndoRecorder = MkUndoRecorder (RefEdits -> IO ())
@@ -139,12 +139,11 @@ undoHandlerReference ::
     Reference edit ->
     Reference edit
 undoHandlerReference MkUndoHandler{..} ref@(MkResource rr aref) =
-    combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        MkResource rr'
-            $ undoHandlerAReference
-                ref
-                (asks $ fst . liftw)
-            $ contramap liftr aref
+    MkResource (liftA2 (,) uhRunner rr)
+        $ undoHandlerAReference
+            ref
+            (asks fst)
+        $ contramap snd aref
 
 undoHandlerModel ::
     forall update.
@@ -153,12 +152,11 @@ undoHandlerModel ::
     Model update ->
     Model update
 undoHandlerModel MkUndoHandler{..} model@(MkResource rr amodel) =
-    combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case contramap liftr amodel of
-            MkAModel aref subscribe utask -> let
-                aref' =
-                    undoHandlerAReference
-                        (modelReference model)
-                        (asks $ fst . liftw)
-                        aref
-                in MkResource rr' $ MkAModel aref' subscribe utask
+    case contramap snd amodel of
+        MkAModel aref subscribe utask -> let
+            aref' =
+                undoHandlerAReference
+                    (modelReference model)
+                    (asks fst)
+                    aref
+            in MkResource (liftA2 (,) uhRunner rr) $ MkAModel aref' subscribe utask

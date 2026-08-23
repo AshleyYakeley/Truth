@@ -26,11 +26,10 @@ joinResource_ ::
     Resource f2 ->
     r
 joinResource_ ff (MkResource run1 fma1) (MkResource run2 fma2) =
-    combineResourceRunners run1 run2 $ \run12 tf1 tf2 ->
-        ff
-            run12
-            (contramap tf1 fma1)
-            (contramap tf2 fma2)
+    ff
+        (liftA2 (,) run1 run2)
+        (contramap fst fma1)
+        (contramap snd fma2)
 
 joinResource ::
     forall f1 f2 f3.
@@ -87,10 +86,9 @@ runResourceContext rc (MkResource rr ft) call =
 
 exclusiveResource ::
     forall f.
-    Contravariant f =>
     ResourceContext ->
     Resource f ->
     LifecycleT IO IO (Resource f)
 exclusiveResource rc (MkResource trun f) = do
     trun' <- exclusiveResourceRunner rc trun
-    return $ MkResource trun' $ contramap fst f
+    return $ MkResource trun' f

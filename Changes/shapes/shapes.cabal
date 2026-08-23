@@ -63,6 +63,7 @@ library
       Control.Category.Dual
       Control.Category.Lifted
       Control.Clock
+      Data.Free
       Control.Task
       Control.Stream.Filter
       Control.Stream.Sink
@@ -122,6 +123,7 @@ library
     , countable
     , directory
     , filepath
+    , free
     , hashable
     , invariant
     , lattices

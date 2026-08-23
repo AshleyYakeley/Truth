@@ -113,27 +113,26 @@ fileSystemReference = let
             else return Nothing
     refEditIO :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
     refEditIO =
-        singleEdit $ \edit ->
-            case edit of
-                FSEditCreateDirectory path -> do
-                    isDir <- doesDirectoryExist path
-                    if isDir
-                        then return $ Just $ \_ -> return ()
-                        else do
-                            exists <- doesPathExist path
-                            if exists
-                                then return Nothing
-                                else return $ Just $ \_ -> createDirectory path
-                FSEditCreateFile path bs ->
-                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFile path bs
-                FSEditCreateSymbolicLink path target ->
-                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFileLink target path
-                FSEditDeleteNonDirectory path ->
-                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> removeFile path
-                FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ \_ -> removeDirectory path
-                FSEditRenameItem fromPath toPath ->
-                    testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
-                        renamePath fromPath toPath
+        singleEdit $ \case
+            FSEditCreateDirectory path -> do
+                isDir <- doesDirectoryExist path
+                if isDir
+                    then return $ Just $ \_ -> return ()
+                    else do
+                        exists <- doesPathExist path
+                        if exists
+                            then return Nothing
+                            else return $ Just $ \_ -> createDirectory path
+            FSEditCreateFile path bs ->
+                testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFile path bs
+            FSEditCreateSymbolicLink path target ->
+                testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFileLink target path
+            FSEditDeleteNonDirectory path ->
+                testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> removeFile path
+            FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ \_ -> removeDirectory path
+            FSEditRenameItem fromPath toPath ->
+                testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
+                    renamePath fromPath toPath
     refRead :: Readable (ReaderT () IO) FSReader
     refRead r = liftIO $ refReadIO r
     refEdit :: NonEmpty FSEdit -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
@@ -141,73 +140,70 @@ fileSystemReference = let
         maction <- liftIO $ refEditIO edits
         return $ fmap (\action esrc -> liftIO $ action esrc) maction
     refCommitTask = mempty
-    in MkResource nilResourceRunner MkAReference{..}
+    in MkResource (pure ()) MkAReference{..}
 
 subdirCreateWitness :: IOWitness (MVar Bool)
 subdirCreateWitness = $(iowitness [t|MVar Bool|])
 
 subdirectoryReference :: Bool -> FilePath -> Reference FSEdit -> Reference FSEdit
 subdirectoryReference create dir (MkResource (rr :: ResourceRunner t) (MkAReference rd push ctask)) =
-    combineResourceRunners
-        (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
-        rr
-        $ \(rr' :: ResourceRunner tab) liftState liftBase -> let
-            MkAReference rdBase pushBase _ = contramap liftBase $ MkAReference rd push ctask
-            pushFirst :: ReaderT tab IO ()
-            pushFirst = do
-                params <- ask
-                liftIO
-                    $ mVarRunStateT (fst $ liftState params)
-                    $ do
-                        c <- get
-                        when c $ do
-                            liftIO
-                                $ runReaderT
-                                    ( pushOrFail ("couldn't create directory " <> show dir) noEditSource
-                                        $ pushBase
-                                        $ pure
-                                        $ FSEditCreateDirectory dir
-                                    )
-                                    params
-                            put False
-            insideToOutside :: FilePath -> FilePath
-            insideToOutside path = let
-                relpath = makeRelative "/" path
-                in dir </> relpath
-            outsideToInside :: FilePath -> Maybe FilePath
-            outsideToInside path = let
-                relpath = makeRelative dir $ "/" </> path
-                in if isRelative relpath
-                    then Just relpath
-                    else Nothing
-            rd' :: Readable (ReaderT tab IO) FSReader
-            rd' (FSReadDirectory path) = do
-                pushFirst
-                rdBase $ FSReadDirectory $ insideToOutside path
-            rd' (FSReadItem path) = do
-                pushFirst
-                rdBase $ FSReadItem $ insideToOutside path
-            rd' (FSReadSymbolicLink path) = do
-                pushFirst
-                mspath <- rdBase $ FSReadSymbolicLink $ insideToOutside path
-                return
-                    $ case mspath of
-                        Nothing -> Nothing
-                        Just spath ->
-                            Just
-                                $ case outsideToInside spath of
-                                    Just ipath -> ipath
-                                    Nothing -> ""
-            mapPath :: FSEdit -> FSEdit
-            mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
-            mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
-            mapPath (FSEditCreateSymbolicLink path1 path2) =
-                FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
-            mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
-            mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
-            mapPath (FSEditRenameItem path1 path2) =
-                FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
-            push' edits = do
-                pushFirst
-                pushBase $ fmap mapPath edits
-            in MkResource rr' $ MkAReference rd' push' ctask
+    let
+        MkAReference rdBase pushBase _ = contramap snd $ MkAReference rd push ctask
+        pushFirst :: ReaderT (MVar Bool, t) IO ()
+        pushFirst = do
+            params <- ask
+            liftIO
+                $ mVarRunStateT (fst params)
+                $ do
+                    c <- get
+                    when c $ do
+                        liftIO
+                            $ runReaderT
+                                ( pushOrFail ("couldn't create directory " <> show dir) noEditSource
+                                    $ pushBase
+                                    $ pure
+                                    $ FSEditCreateDirectory dir
+                                )
+                                params
+                        put False
+        insideToOutside :: FilePath -> FilePath
+        insideToOutside path = let
+            relpath = makeRelative "/" path
+            in dir </> relpath
+        outsideToInside :: FilePath -> Maybe FilePath
+        outsideToInside path = let
+            relpath = makeRelative dir $ "/" </> path
+            in if isRelative relpath
+                then Just relpath
+                else Nothing
+        rd' :: Readable (ReaderT (MVar Bool, t) IO) FSReader
+        rd' (FSReadDirectory path) = do
+            pushFirst
+            rdBase $ FSReadDirectory $ insideToOutside path
+        rd' (FSReadItem path) = do
+            pushFirst
+            rdBase $ FSReadItem $ insideToOutside path
+        rd' (FSReadSymbolicLink path) = do
+            pushFirst
+            mspath <- rdBase $ FSReadSymbolicLink $ insideToOutside path
+            return
+                $ case mspath of
+                    Nothing -> Nothing
+                    Just spath ->
+                        Just
+                            $ case outsideToInside spath of
+                                Just ipath -> ipath
+                                Nothing -> ""
+        mapPath :: FSEdit -> FSEdit
+        mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
+        mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
+        mapPath (FSEditCreateSymbolicLink path1 path2) =
+            FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
+        mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
+        mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
+        mapPath (FSEditRenameItem path1 path2) =
+            FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
+        push' edits = do
+            pushFirst
+            pushBase $ fmap mapPath edits
+        in MkResource (liftA2 (,) (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create) rr) $ MkAReference rd' push' ctask

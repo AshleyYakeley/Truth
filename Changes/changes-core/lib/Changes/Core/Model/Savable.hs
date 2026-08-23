@@ -65,17 +65,16 @@ saveBufferReference rc objP pmrUpdatesTask update = do
                         then Just (saveAction, revertAction)
                         else Nothing
     return
-        $ combineResourceRunners (mvarResourceRunner iow sbVar) deferRunner
-        $ \(rrC :: ResourceRunner t) liftState liftDefer -> let
-            runS :: StateT (SaveBuffer (UpdateSubject update)) IO --> ReaderT t IO
+        $ let
+            runS :: StateT (SaveBuffer (UpdateSubject update)) IO --> ReaderT _ IO
             runS ma = do
                 params <- ask
-                liftIO $ mVarRunStateT (fst $ liftState params) ma
-            readC :: Readable (ReaderT t IO) (UpdateReader update)
+                liftIO $ mVarRunStateT (fst params) ma
+            readC :: Readable (ReaderT _ IO) (UpdateReader update)
             readC rt = runS $ mSubjectToReadable (fmap saveBuffer get) rt
             pushC ::
                 NonEmpty (UpdateEdit update) ->
-                ReaderT t IO (Maybe (EditSource -> ReaderT t IO ()))
+                ReaderT t IO (Maybe (EditSource -> ReaderT _ IO ()))
             pushC edits =
                 return
                     $ Just
@@ -89,10 +88,10 @@ saveBufferReference rc objP pmrUpdatesTask update = do
                                         MkSaveBuffer oldbuf _ <- get
                                         return oldbuf
                             put $ MkSaveBuffer newbuf True
-                        defer <- asks $ fst . liftDefer
+                        defer <- asks snd
                         liftIO
                             $ deferAction defer
                             $ update emptyResourceContext (fmap editUpdate edits)
                             $ editSourceContext esrc
-            pmrReference = MkResource rrC $ MkAReference readC pushC mempty
+            pmrReference = MkResource (liftA2 (,) (mvarResourceRunner iow sbVar) deferRunner) $ MkAReference readC pushC mempty
             in MkPremodelResult{..}

@@ -42,18 +42,18 @@ noneReference = let
     refEdit :: NonEmpty (ConstEdit (NoReader t)) -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
     refEdit = never
     refCommitTask = mempty
-    in MkResource nilResourceRunner MkAReference{..}
+    in MkResource (pure ()) MkAReference{..}
 
 mvarReference :: forall a. IOWitness (MVar a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
 mvarReference iow var allowed = let
-    refRead :: Readable (ReaderT (MVar a, ()) IO) (WholeReader a)
+    refRead :: Readable (ReaderT (MVar a) IO) (WholeReader a)
     refRead ReadWhole = runResourceStateT get
     refEdit ::
         NonEmpty (WholeEdit a) ->
         ReaderT
-            (MVar a, ())
+            (MVar a)
             IO
-            (Maybe (EditSource -> ReaderT (MVar a, ()) IO ()))
+            (Maybe (EditSource -> ReaderT (MVar a) IO ()))
     refEdit edits = do
         na <- runResourceStateT $ applyEdits (toList edits) (mSubjectToReadable get) ReadWhole
         return
@@ -142,7 +142,7 @@ immutableAReference ::
 immutableAReference mr = MkAReference mr (\_ -> return Nothing) mempty
 
 readConstantReference :: forall reader. Readable IO reader -> Reference (ConstEdit reader)
-readConstantReference mr = MkResource nilResourceRunner $ immutableAReference $ \r -> liftIO $ mr r
+readConstantReference mr = MkResource (pure ()) $ immutableAReference $ \r -> liftIO $ mr r
 
 constantReference ::
     forall reader.

@@ -21,7 +21,7 @@ clockPremodel cm pmrUpdatesTask update = do
                 call t
     let
         pmrReference :: Reference (ConstEdit (WholeReader a))
-        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> asks fst
+        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> ask
         pmrValue = ()
     return MkPremodelResult{..}
 

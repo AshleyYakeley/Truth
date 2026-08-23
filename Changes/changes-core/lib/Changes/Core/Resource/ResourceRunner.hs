@@ -1,7 +1,5 @@
 module Changes.Core.Resource.ResourceRunner
     ( ResourceRunner
-    , nilResourceRunner
-    , combineResourceRunners
     , mkResourceRunner
     , newResourceRunner
     , stateResourceRunner
@@ -21,103 +19,74 @@ where
 import Changes.Core.Import
 import Changes.Core.Resource.SingleRunner
 
+combineFreeApplicative :: forall w a b c. TestOrder w => (a -> b -> c) -> FreeApplicative w a -> FreeApplicative w b -> FreeApplicative w c
+combineFreeApplicative abc (PureFreeApplicative a) fb = fmap (\b -> abc a b) fb
+combineFreeApplicative abc fa (PureFreeApplicative b) = fmap (\a -> abc a b) fa
+combineFreeApplicative abc fa@(ApFreeApplicative wa fa1) fb@(ApFreeApplicative wb fb1) = case testCompare wa wb of
+    WEQ -> ApFreeApplicative wa $ combineFreeApplicative (\xa xb x -> abc (xa x) (xb x)) fa1 fb1
+    WLT -> ApFreeApplicative wa $ combineFreeApplicative (\xa b x -> abc (xa x) b) fa1 fb
+    WGT -> ApFreeApplicative wb $ combineFreeApplicative (\a xb x -> abc a (xb x)) fa fb1
+
 data ResourceRunner (t :: Type) where
-    MkResourceRunner :: forall (tt :: [Type]). ListType SingleRunner tt -> ResourceRunner (ListProduct tt)
-    DependentResourceRunner :: ResourceRunner a -> (a -> IO (ResourceRunner b)) -> ResourceRunner b
+    SimpleResourceRunner :: FreeApplicative SingleRunner a -> ResourceRunner a
+    DependentResourceRunner :: FreeApplicative SingleRunner (IO (ResourceRunner a)) -> ResourceRunner a
 
 instance Functor ResourceRunner where
-    fmap _ (MkResourceRunner _) = error "NYI"
-    fmap ab (DependentResourceRunner rx xira) = DependentResourceRunner rx $ (fmap $ fmap $ fmap ab) xira
+    fmap ab (SimpleResourceRunner ast) = SimpleResourceRunner $ fmap ab ast
+    fmap ab (DependentResourceRunner fira) = DependentResourceRunner $ fmap (fmap $ fmap ab) fira
 
-nilResourceRunner :: ResourceRunner ()
-nilResourceRunner = MkResourceRunner NilListType
+instance Applicative ResourceRunner where
+    pure a = SimpleResourceRunner $ pure a
+    liftA2 abc (SimpleResourceRunner fa) (SimpleResourceRunner fb) = SimpleResourceRunner $ combineFreeApplicative abc fa fb
+    liftA2 abc (SimpleResourceRunner fa) (DependentResourceRunner fiorb) =
+        DependentResourceRunner $ combineFreeApplicative (\a iorb -> fmap (fmap $ \b -> abc a b) iorb) fa fiorb
+    liftA2 abc (DependentResourceRunner fiora) (SimpleResourceRunner fb) =
+        DependentResourceRunner $ combineFreeApplicative (\iora b -> fmap (fmap $ \a -> abc a b) iora) fiora fb
+    liftA2 abc (DependentResourceRunner fiora) (DependentResourceRunner fiorb) =
+        DependentResourceRunner $ combineFreeApplicative (liftA2 $ liftA2 abc) fiora fiorb
 
-emptyListProductFunction :: ListProduct tt -> ListProduct '[]
-emptyListProductFunction _ = ()
-
-consListProductFunction ::
-    (ListProduct ttb -> ListProduct tta) ->
-    ListProduct (t ': ttb) ->
-    ListProduct (t ': tta)
-consListProductFunction f (t, tt) = (t, f tt)
-
-tailListProductFunction :: ListProduct (t ': tt) -> ListProduct tt
-tailListProductFunction = snd
-
-combineLSR ::
-    ListType SingleRunner tta ->
-    ListType SingleRunner ttb ->
-    (forall ttab. ListType SingleRunner ttab -> (ListProduct ttab -> ListProduct tta) -> (ListProduct ttab -> ListProduct ttb) -> r) ->
-    r
-combineLSR NilListType rb call = call rb emptyListProductFunction id
-combineLSR ra NilListType call = call ra id emptyListProductFunction
-combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call = case testCompare u1 u2 of
-    WEQ ->
-        combineLSR uu1 uu2 $ \uu12 tf1 tf2 ->
-            call
-                (ConsListType u1 uu12)
-                (consListProductFunction tf1)
-                (consListProductFunction tf2)
-    WLT ->
-        combineLSR uu1 au2 $ \uu12 tf1 tf2 ->
-            call
-                (ConsListType u1 uu12)
-                (consListProductFunction tf1)
-                (tf2 . tailListProductFunction)
-    WGT ->
-        combineLSR au1 uu2 $ \uu12 tf1 tf2 ->
-            call
-                (ConsListType u2 uu12)
-                (tf1 . tailListProductFunction)
-                (consListProductFunction tf2)
-
-combineResourceRunners ::
-    ResourceRunner ta ->
-    ResourceRunner tb ->
-    (forall tab. ResourceRunner tab -> (tab -> ta) -> (tab -> tb) -> r) ->
-    r
-combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
-    combineLSR la lb $ \lab -> call (MkResourceRunner lab)
-combineResourceRunners _ _ _ = error "NYI"
-
-singleResourceRunner :: SingleRunner t -> ResourceRunner (t, ())
-singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
+singleResourceRunner :: SingleRunner t -> ResourceRunner t
+singleResourceRunner sr = SimpleResourceRunner $ toFree1 @_ @_ @Applicative sr
 
 dependentResourceRunner :: ResourceRunner a -> (a -> IO (ResourceRunner b)) -> ResourceRunner b
-dependentResourceRunner = DependentResourceRunner
+dependentResourceRunner (SimpleResourceRunner fa) aiorb = DependentResourceRunner $ fmap aiorb fa
+dependentResourceRunner (DependentResourceRunner fiora) aiorb =
+    DependentResourceRunner $ fiora <&> \iora -> do
+        ra <- iora
+        pure $ dependentResourceRunner ra aiorb
 
 mkResourceRunner ::
     forall t.
     IOWitness t ->
     With IO t ->
-    ResourceRunner (t, ())
+    ResourceRunner t
 mkResourceRunner iow run = singleResourceRunner $ mkSingleRunner iow run
 
 newResourceRunner ::
     forall t.
     With IO t ->
-    IO (ResourceRunner (t, ()))
+    IO (ResourceRunner t)
 newResourceRunner run = do
     iow <- newIOWitness
     return $ mkResourceRunner iow run
 
-stateResourceRunner :: s -> IO (ResourceRunner (MVar s, ()))
+stateResourceRunner :: s -> IO (ResourceRunner (MVar s))
 stateResourceRunner s = do
     var <- newMVar s
     iow <- newIOWitness
     return $ mvarResourceRunner iow var
 
-mvarResourceRunner :: IOWitness (MVar s) -> MVar s -> ResourceRunner (MVar s, ())
+mvarResourceRunner :: IOWitness (MVar s) -> MVar s -> ResourceRunner (MVar s)
 mvarResourceRunner iow var =
     mkResourceRunner iow $ \call -> mVarRunStateT var $ liftWithMVarStateT call
 
-discardingStateResourceRunner :: IOWitness (MVar s) -> s -> ResourceRunner (MVar s, ())
+discardingStateResourceRunner :: IOWitness (MVar s) -> s -> ResourceRunner (MVar s)
 discardingStateResourceRunner iow s =
     mkResourceRunner iow $ \call -> discardingStateTUnlift s $ liftWithMVarStateT call
 
-runResourceStateT :: StateT s IO --> ReaderT (MVar s, ()) IO
+runResourceStateT :: StateT s IO --> ReaderT (MVar s) IO
 runResourceStateT ma = do
-    stateVar <- asks fst
+    stateVar <- ask
     liftIO $ mVarRunStateT stateVar ma
 
 newtype ResourceContext
@@ -130,16 +99,15 @@ emptyResourceContext = MkResourceContext []
 resourceContextSize :: ResourceContext -> Int
 resourceContextSize (MkResourceContext rc) = length rc
 
-runLSRContext ::
-    forall tt r.
+runSimpleContext ::
     [Some SingleRunner] ->
-    ListType SingleRunner tt ->
-    ([Some SingleRunner] -> ListProduct tt -> IO r) ->
+    FreeApplicative SingleRunner t ->
+    ([Some SingleRunner] -> t -> IO r) ->
     IO r
-runLSRContext rc NilListType call = call rc ()
-runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
-    runLSRContext rc lsr $ \rc' ttr ->
-        runSingleRunner rc' sr $ \rc'' t -> call rc'' (t, ttr)
+runSimpleContext rc (PureFreeApplicative a) call = call rc a
+runSimpleContext rc (ApFreeApplicative a fa) call =
+    runSimpleContext rc fa $ \rc' ttr ->
+        runSingleRunner rc' a $ \rc'' t -> call rc'' $ ttr t
 
 runResourceRunnerContext ::
     forall t r.
@@ -147,12 +115,12 @@ runResourceRunnerContext ::
     ResourceRunner t ->
     (ResourceContext -> t -> IO r) ->
     IO r
-runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
-    runLSRContext rc rr $ \rc' -> call (MkResourceContext rc')
-runResourceRunnerContext rc (DependentResourceRunner ra arb) call =
-    runResourceRunnerContext rc ra $ \rc' a -> do
-        rb <- arb a
-        runResourceRunnerContext rc' rb call
+runResourceRunnerContext (MkResourceContext rc) (SimpleResourceRunner rr) call =
+    runSimpleContext rc rr $ \rc' -> call (MkResourceContext rc')
+runResourceRunnerContext (MkResourceContext rc) (DependentResourceRunner rra) call =
+    runSimpleContext rc rra $ \rc' iora -> do
+        ra <- iora
+        runResourceRunnerContext (MkResourceContext rc') ra call
 
 runResourceRunner ::
     forall t r.
@@ -166,7 +134,7 @@ exclusiveResourceRunner ::
     forall t.
     ResourceContext ->
     ResourceRunner t ->
-    LifecycleT IO IO (ResourceRunner (t, ()))
+    LifecycleT IO IO (ResourceRunner t)
 exclusiveResourceRunner rc rr = do
     iow <- liftIO newIOWitness
     lifecycleWith $ \call ->

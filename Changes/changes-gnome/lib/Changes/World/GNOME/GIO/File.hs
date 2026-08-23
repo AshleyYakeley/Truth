@@ -55,7 +55,7 @@ giFileReference path = do
         $ let
             iow :: IOWitness T
             iow = hashOpenWitness fileWitness uri
-            objRun :: ResourceRunner (T, ())
+            objRun :: ResourceRunner T
             objRun =
                 mkResourceRunner iow $ \call -> do
                     oldmh <- openGIFile path
@@ -91,9 +91,7 @@ giFileReference path = do
                 mh <- get
                 for_ mh $ \h -> do
                     oldlen <- getLength h path
-                    if start > oldlen
-                        then setLength h start
-                        else return ()
+                    when (start > oldlen) $ setLength h start
                     seek h start
                     st <- GI.iOStreamGetOutputStream h
                     _ <- GI.outputStreamWrite st (toStrict bs) noCancellable
@@ -126,15 +124,15 @@ giFileReference path = do
             stateRefEdit = singleAlwaysEdit objOneEdit
             refRead ::
                 Readable
-                    (ReaderT (T, ()) IO)
+                    (ReaderT T IO)
                     (OneReader Maybe (PairUpdateReader (WholeUpdate Text) ByteStringUpdate))
             refRead r = runResourceStateT $ stateRefRead r
             refEdit ::
                 NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate)) ->
                 ReaderT
-                    (T, ())
+                    T
                     IO
-                    (Maybe (EditSource -> ReaderT (T, ()) IO ()))
+                    (Maybe (EditSource -> ReaderT T IO ()))
             refEdit edits = do
                 maction <- runResourceStateT $ stateRefEdit edits
                 return $ fmap (\action esrc -> runResourceStateT $ action esrc) maction

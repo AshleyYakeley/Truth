@@ -30,6 +30,7 @@ import Data.Coerce.Role as I
 import Data.Comparison as I
 import Data.EndoM as I
 import Data.Filterable as I
+import Data.Free as I
 import Data.Givable as I
 import Data.HasNewValue as I
 import Data.Hexadecimal as I

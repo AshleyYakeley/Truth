@@ -28,6 +28,7 @@ library:
       - leb128
       - reflection
       - parsec
+      - free
       # test
       - directory
       - filepath
@@ -94,6 +95,7 @@ library:
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Clock
+      - Data.Free
       - Control.Task
       - Control.Stream.Filter
       - Control.Stream.Sink

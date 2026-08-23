@@ -42,30 +42,30 @@ reflectingPremodel ::
     Premodel update ()
 reflectingPremodel (MkResource (trun :: ResourceRunner t) (MkAReference r e ctask)) utask recv = do
     deferRR <- deferActionResourceRunner
-    combineResourceRunners trun deferRR $ \(trun' :: ResourceRunner tab) liftResource liftDefer -> let
-        r' :: Readable (ReaderT tab IO) (UpdateReader update)
-        r' rt = withReaderT liftResource $ r rt
+    let
+        r' :: Readable (ReaderT _ IO) (UpdateReader update)
+        r' rt = withReaderT fst $ r rt
         e' ::
             NonEmpty (UpdateEdit update) ->
-            ReaderT tab IO (Maybe (EditSource -> ReaderT tab IO ()))
+            ReaderT _ IO (Maybe (EditSource -> ReaderT _ IO ()))
         e' edits = do
-            maction <- withReaderT liftResource $ e edits
+            maction <- withReaderT fst $ e edits
             return
                 $ fmap
                     ( \action esrc -> do
-                        withReaderT liftResource $ action esrc
-                        defer <- asks $ fst . liftDefer
+                        withReaderT fst $ action esrc
+                        defer <- asks snd
                         liftIO
                             $ deferAction defer
                             $ recv emptyResourceContext (fmap editUpdate edits)
                             $ editSourceContext esrc
                     )
                     maction
-        anobj :: AReference (UpdateEdit update) tab
+        anobj :: AReference (UpdateEdit update) _
         anobj = MkAReference r' e' ctask
         pmrUpdatesTask = utask
         pmrValue = ()
-        pmrReference = MkResource trun' anobj
+        pmrReference = MkResource (liftA2 (,) trun deferRR) anobj
         in return MkPremodelResult{..}
 
 notifyingPremodel :: forall a. a -> Premodel (ROWUpdate a) ((a -> IO a) -> IO ())

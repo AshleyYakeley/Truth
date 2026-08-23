@@ -188,7 +188,7 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) = let
 
 aReferenceModel :: AReference (UpdateEdit update) () -> Model update
 aReferenceModel anobj =
-    MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
+    MkResource (pure ()) $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())
 unitModel = aReferenceModel $ MkAReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty

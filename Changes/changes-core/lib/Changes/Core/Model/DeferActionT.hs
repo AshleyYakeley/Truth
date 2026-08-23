@@ -24,5 +24,5 @@ runDeferActions call = do
 deferActionResourceRunner ::
     forall mc m.
     MonadIO m =>
-    LifecycleT mc m (ResourceRunner (DeferAction, ()))
+    LifecycleT mc m (ResourceRunner DeferAction)
 deferActionResourceRunner = liftIO $ newResourceRunner runDeferActions

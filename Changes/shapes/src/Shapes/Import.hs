@@ -9,7 +9,7 @@ import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Monad as I (Monad (return, (>>), (>>=)), MonadPlus (..), foldM, forever, guard, unless, void, when)
+import Control.Monad as I (Monad (return, (>>), (>>=)), MonadPlus (..), foldM, forever, guard, unless, when)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -20,6 +20,7 @@ import Data.Coerce as I
 import Data.Either as I
 import Data.Eq as I
 import Data.Foldable as I hiding (find)
+import Data.Functor as I
 import Data.Functor.Compose as I
 import Data.Functor.Contravariant as I hiding (Predicate (..))
 import Data.Functor.Identity as I

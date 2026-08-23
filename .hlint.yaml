@@ -63,6 +63,7 @@
 - ignore: {name: "Avoid lambda"}
 - ignore: {name: "Use <$>"}
 - ignore: {name: "Move brackets to avoid $"}
+- ignore: {name: "Use tuple-section"}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~
