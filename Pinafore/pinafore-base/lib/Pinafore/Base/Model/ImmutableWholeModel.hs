@@ -24,6 +24,12 @@ instance Alternative ImmutableWholeModel where
     (MkImmutableWholeModel sa) <|> (MkImmutableWholeModel sb) =
         MkImmutableWholeModel $ eaMapReadOnlyWhole (\(ma, mb) -> ma <|> mb) $ eaPairReadOnlyWhole sa sb
 
+instance Semigroup a => Semigroup (ImmutableWholeModel a) where
+    (<>) = liftA2 (<>)
+
+instance Monoid a => Monoid (ImmutableWholeModel a) where
+    mempty = pure mempty
+
 immutableModelToReadOnlyModel :: ImmutableWholeModel a -> WROWModel (Know a)
 immutableModelToReadOnlyModel (MkImmutableWholeModel fv) = fv
 
