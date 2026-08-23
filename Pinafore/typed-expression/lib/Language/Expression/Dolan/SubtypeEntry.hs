@@ -342,37 +342,117 @@ data SubtypeConversionPair ground
         (SubtypeConversion ground dva gta dvb gtb)
         (SubtypeConversion ground dva gta dvb gtb)
 
-findConsistencyPair ::
+type SubtypeConversionCandidate :: GroundTypeKind -> Type
+data SubtypeConversionCandidate ground
+    = forall dva gta dvb gtb. MkSubtypeConversionCandidate
+        (ground dva gta)
+        (ground dvb gtb)
+        (SubtypeConversion ground dva gta dvb gtb)
+        (SubtypeConversion ground dva gta dvb gtb)
+        [GreaterConversionWit ground dva gta]
+        [GreaterConversionWit ground dvb gtb]
+
+mkSubtypeConversionCandidate ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    [SubtypeConversionEntry ground] ->
+    SubtypeConversionPair ground ->
+    SubtypeConversionCandidate ground
+mkSubtypeConversionCandidate entries (MkSubtypeConversionPair ta tb conv1 conv2) =
+    MkSubtypeConversionCandidate
+        ta
+        tb
+        conv1
+        conv2
+        (getAllGreaters entries [mkGreaterConversionWit ta])
+        (getAllGreaters entries [mkGreaterConversionWit tb])
+
+subtypeConversionCandidateImplies ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    SubtypeConversionCandidate ground ->
+    SubtypeConversionCandidate ground ->
+    Bool
+-- Commutativity of (source1, target1) implies commutativity of
+-- (source2, target2) by precomposition when source2 <: source1 and
+-- postcomposition when target1 <: target2.
+subtypeConversionCandidateImplies
+    (MkSubtypeConversionCandidate source1 _ _ _ _ target1Greaters)
+    (MkSubtypeConversionCandidate _ target2 _ _ source2Greaters _) =
+        any (\greater -> isJust $ greaterContains source1 greater) source2Greaters
+            && any (\greater -> isJust $ greaterContains target2 greater) target1Greaters
+
+subtypeConversionCandidateStrictlyImplies ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    SubtypeConversionCandidate ground ->
+    SubtypeConversionCandidate ground ->
+    Bool
+subtypeConversionCandidateStrictlyImplies c1 c2 =
+    subtypeConversionCandidateImplies c1 c2
+        && not (subtypeConversionCandidateImplies c2 c1)
+
+subtypeConversionCandidateEquivalent ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    SubtypeConversionCandidate ground ->
+    SubtypeConversionCandidate ground ->
+    Bool
+subtypeConversionCandidateEquivalent c1 c2 =
+    subtypeConversionCandidateImplies c1 c2
+        && subtypeConversionCandidateImplies c2 c1
+
+subtypeConversionCandidateIsKnownConsistent ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    SubtypeConversionCandidate ground ->
+    Bool
+subtypeConversionCandidateIsKnownConsistent (MkSubtypeConversionCandidate _ _ conv1 conv2 _ _) =
+    conv1 == conv2
+
+findInconsistentPair ::
     forall (ground :: GroundTypeKind).
     IsDolanSubtypeEntriesGroundType ground =>
     [SubtypeConversionEntry ground] ->
     SubtypeConversionEntry ground ->
     Maybe (SubtypeConversionPair ground)
-findConsistencyPair entries (MkSubtypeConversionEntry _ (ta :: ground dva gta) (tb :: ground dvb gtb) tconv) = let
+findInconsistentPair entries (MkSubtypeConversionEntry _ (ta :: ground dva gta) (tb :: ground dvb gtb) tconv) = let
     bgreaters :: [GreaterConversionWit ground dvb gtb]
     bgreaters = getAllGreaters entries [mkGreaterConversionWit tb]
     alessers :: [LesserConversionWit ground dva gta]
     alessers = getAllLessers entries [mkLesserConversionWit ta]
-    tryLessers ::
-        [SomeSubtypeGroup ground] -> [LesserConversionWit ground dva gta] -> Maybe (SubtypeConversionPair ground)
-    tryLessers _ [] = Nothing
-    tryLessers missed (MkLesserConversionWit (ea :: ground dva' gta') aconv : eaa) = let
-        allagreaters :: [GreaterConversionWit ground dva' gta']
-        allagreaters = getAllGreaters entries [mkGreaterConversionWit ea]
-        agreaters :: [GreaterConversionWit ground dva' gta']
-        agreaters = filter (\ag -> not $ elem (greaterCWGroup ag) missed) allagreaters
-        matches = do
-            MkGreaterConversionWit eb conv <- agreaters
-            MkGreaterConversionWit maxb bconv <- bgreaters
-            (Refl, HRefl) <- mpure $ matchSubtypeGroup eb maxb
-            return
-                $ MkSubtypeConversionPair ea eb conv
-                $ composeSubtypeConversion bconv
-                $ composeSubtypeConversion tconv aconv
-        in case matches of
-            m : _ -> Just m
-            [] -> tryLessers (missed <> fmap greaterCWGroup agreaters) eaa
-    in tryLessers [] alessers
+    pairs :: [SubtypeConversionPair ground]
+    pairs = do
+        MkLesserConversionWit (ea :: ground dva' gta') aconv <- alessers
+        let
+            allagreaters :: [GreaterConversionWit ground dva' gta']
+            allagreaters = getAllGreaters entries [mkGreaterConversionWit ea]
+        MkGreaterConversionWit eb conv <- allagreaters
+        MkGreaterConversionWit maxb bconv <- bgreaters
+        (Refl, HRefl) <- mpure $ matchSubtypeGroup eb maxb
+        return
+            $ MkSubtypeConversionPair ea eb conv
+            $ composeSubtypeConversion bconv
+            $ composeSubtypeConversion tconv aconv
+    candidates :: [SubtypeConversionCandidate ground]
+    candidates = fmap (mkSubtypeConversionCandidate entries) pairs
+    -- A strictly implied square follows by pre/postcomposition, so only the
+    -- implication frontier contains independent consistency obligations.
+    isCritical candidate =
+        not $ any (`subtypeConversionCandidateStrictlyImplies` candidate) candidates
+    -- Mutually implying squares are the same obligation. One known-consistent
+    -- representative proves the class, even if the others have UnknownSK.
+    equivalentClassIsKnownConsistent candidate =
+        any
+            ( \candidate' ->
+                subtypeConversionCandidateEquivalent candidate candidate'
+                    && subtypeConversionCandidateIsKnownConsistent candidate'
+            )
+            candidates
+    in case find (\candidate -> isCritical candidate && not (equivalentClassIsKnownConsistent candidate)) candidates of
+        Just (MkSubtypeConversionCandidate source target conv1 conv2 _ _) ->
+            Just $ MkSubtypeConversionPair source target conv1 conv2
+        Nothing -> Nothing
 
 checkSubtypeConsistency ::
     forall (ground :: GroundTypeKind).
@@ -382,7 +462,5 @@ checkSubtypeConsistency ::
     Maybe (SomeGroundType ground, SomeGroundType ground)
 checkSubtypeConsistency _ (MkSubtypeConversionEntry TrustMe _ _ _) = Nothing
 checkSubtypeConsistency entries sce@(MkSubtypeConversionEntry Verify _ _ _) = do
-    MkSubtypeConversionPair ta tb conv1 conv2 <- findConsistencyPair entries sce
-    if conv1 == conv2
-        then Nothing
-        else return (MkSomeGroundType ta, MkSomeGroundType tb)
+    MkSubtypeConversionPair ta tb _ _ <- findInconsistentPair entries sce
+    return (MkSomeGroundType ta, MkSomeGroundType tb)

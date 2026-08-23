@@ -1509,14 +1509,33 @@ testEntity =
                                         , tDecls ["datatype D <: B & C {Mk {Mk1.B; Mk2.C;}}"]
                                             $ tGroup "inconsistent" [testExpectReject "pass"]
                                         ]
-                                , tDecls
-                                    [ "datatype Q {Q1 {}; Q2 {}}"
-                                    , "datatype S {S1 {}; S2 {}}"
-                                    , "datatype A <: Q & S {A1 {Q1.Q; S1.S}}"
-                                    , "datatype B <: Q & S {B2 {Q1.Q; S2.S}}"
-                                    , "datatype D <: A & B {Mk {A1.A; B2.B}}"
+                                , tGroup
+                                    "multiple-diamond"
+                                    [ tDecls
+                                        [ "datatype Q {Q1 {}; Q2 {}}"
+                                        , "datatype S {S1 {}; S2 {}}"
+                                        , "datatype A <: Q & S {A1 {Q1.Q; S1.S}}"
+                                        , "datatype B <: Q & S {B2 {Q1.Q; S2.S}}"
+                                        , "datatype D <: A & B {Mk {A1.A; B2.B}}"
+                                        ]
+                                        $ tGroup "inconsistent-1" [testExpectReject "pass"]
+                                    , tDecls
+                                        [ "datatype Q {Q1 {}; Q2 {}}"
+                                        , "datatype S {S1 {}; S2 {}}"
+                                        , "datatype A <: S & Q {A1 {S1.S; Q1.Q}}"
+                                        , "datatype B <: S & Q {B2 {S2.S; Q1.Q}}"
+                                        , "datatype D <: A & B {Mk {A1.A; B2.B}}"
+                                        ]
+                                        $ tGroup "inconsistent-2" [testExpectReject "pass"]
+                                    , tDecls
+                                        [ "datatype Q {Q1 {}; Q2 {}}"
+                                        , "datatype S {S1 {}; S2 {}}"
+                                        , "datatype A <: Q & S {A1 {Q1.Q; S1.S}}"
+                                        , "datatype B <: Q & S {B2 {Q1.Q; S1.S}}"
+                                        , "datatype D <: A & B {Mk {A1.A; B2.B}}"
+                                        ]
+                                        $ tGroup "consistent" [testExpectSuccess "pass"]
                                     ]
-                                    $ tGroup "multiple-diamond" [testExpectReject "pass"]
                                 ]
                             ]
                         , tGroup
