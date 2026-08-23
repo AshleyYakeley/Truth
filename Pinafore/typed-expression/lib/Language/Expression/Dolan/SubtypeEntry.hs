@@ -349,23 +349,71 @@ data SubtypeConversionCandidate ground
         (ground dvb gtb)
         (SubtypeConversion ground dva gta dvb gtb)
         (SubtypeConversion ground dva gta dvb gtb)
-        [GreaterConversionWit ground dva gta]
-        [GreaterConversionWit ground dvb gtb]
+        [SomeGroundType ground]
+        [SomeGroundType ground]
 
-mkSubtypeConversionCandidate ::
+type GreaterConversionClosure :: GroundTypeKind -> Type
+-- Keep the typed closure for candidate construction and its endpoint-only
+-- projection for the implication frontier.
+data GreaterConversionClosure ground
+    = forall dv gt. MkGreaterConversionClosure
+        (ground dv gt)
+        [GreaterConversionWit ground dv gt]
+        [SomeGroundType ground]
+
+greaterConversionGroundType ::
+    forall (ground :: GroundTypeKind) dv gt.
+    GreaterConversionWit ground dv gt ->
+    SomeGroundType ground
+greaterConversionGroundType (MkGreaterConversionWit groundType _) = MkSomeGroundType groundType
+
+getGroundTypeClosure ::
     forall (ground :: GroundTypeKind).
     IsDolanSubtypeEntriesGroundType ground =>
     [SubtypeConversionEntry ground] ->
-    SubtypeConversionPair ground ->
-    SubtypeConversionCandidate ground
-mkSubtypeConversionCandidate entries (MkSubtypeConversionPair ta tb conv1 conv2) =
-    MkSubtypeConversionCandidate
-        ta
-        tb
-        conv1
-        conv2
-        (getAllGreaters entries [mkGreaterConversionWit ta])
-        (getAllGreaters entries [mkGreaterConversionWit tb])
+    SomeGroundType ground ->
+    [SomeGroundType ground]
+getGroundTypeClosure entries (MkSomeGroundType groundType) =
+    fmap greaterConversionGroundType $ getAllGreaters entries [mkGreaterConversionWit groundType]
+
+mkGreaterConversionClosure ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    [SubtypeConversionEntry ground] ->
+    SomeGroundType ground ->
+    GreaterConversionClosure ground
+mkGreaterConversionClosure entries (MkSomeGroundType groundType) =
+    let
+        closure = getAllGreaters entries [mkGreaterConversionWit groundType]
+        in MkGreaterConversionClosure groundType closure $ fmap greaterConversionGroundType closure
+
+lookupGreaterConversionClosure ::
+    forall (ground :: GroundTypeKind) dv gt.
+    IsDolanGroundType ground =>
+    ground dv gt ->
+    [GreaterConversionClosure ground] ->
+    Maybe ([GreaterConversionWit ground dv gt], [SomeGroundType ground])
+lookupGreaterConversionClosure _ [] = Nothing
+lookupGreaterConversionClosure target (MkGreaterConversionClosure source closure groundTypes : closures) =
+    case groundTypeTestEquality target source of
+        Just (Refl, HRefl) -> Just (closure, groundTypes)
+        Nothing -> lookupGreaterConversionClosure target closures
+
+groundTypesFromGreaterConversionClosure ::
+    forall (ground :: GroundTypeKind).
+    GreaterConversionClosure ground ->
+    (SomeGroundType ground, [SomeGroundType ground])
+groundTypesFromGreaterConversionClosure (MkGreaterConversionClosure source _ groundTypes) =
+    (MkSomeGroundType source, groundTypes)
+
+groundTypeClosureContains ::
+    forall (ground :: GroundTypeKind) dv gt.
+    IsDolanSubtypeEntriesGroundType ground =>
+    ground dv gt ->
+    [SomeGroundType ground] ->
+    Bool
+groundTypeClosureContains target =
+    any $ \(MkSomeGroundType groundType) -> isJust $ matchSubtypeGroup groundType target
 
 subtypeConversionCandidateImplies ::
     forall (ground :: GroundTypeKind).
@@ -379,8 +427,8 @@ subtypeConversionCandidateImplies ::
 subtypeConversionCandidateImplies
     (MkSubtypeConversionCandidate source1 _ _ _ _ target1Greaters)
     (MkSubtypeConversionCandidate _ target2 _ _ source2Greaters _) =
-        any (\greater -> isJust $ greaterContains source1 greater) source2Greaters
-            && any (\greater -> isJust $ greaterContains target2 greater) target1Greaters
+        groundTypeClosureContains source1 source2Greaters
+            && groundTypeClosureContains target2 target1Greaters
 
 subtypeConversionCandidateStrictlyImplies ::
     forall (ground :: GroundTypeKind).
@@ -421,21 +469,57 @@ findInconsistentPair entries (MkSubtypeConversionEntry _ (ta :: ground dva gta) 
     bgreaters = getAllGreaters entries [mkGreaterConversionWit tb]
     alessers :: [LesserConversionWit ground dva gta]
     alessers = getAllLessers entries [mkLesserConversionWit ta]
-    pairs :: [SubtypeConversionPair ground]
-    pairs = do
+    sourceGroundTypes :: [SomeGroundType ground]
+    sourceGroundTypes = nub $ do
+        MkLesserConversionWit source _ <- alessers
+        return $ MkSomeGroundType source
+    groundTargetType :: SomeGroundType ground
+    groundTargetType = MkSomeGroundType tb
+    availableConversionClosures :: [GreaterConversionClosure ground]
+    availableConversionClosures =
+        MkGreaterConversionClosure tb bgreaters (fmap greaterConversionGroundType bgreaters)
+            : fmap (mkGreaterConversionClosure entries) (filter (/= groundTargetType) sourceGroundTypes)
+    pairClosures :: [(SubtypeConversionPair ground, [SomeGroundType ground])]
+    pairClosures = do
         MkLesserConversionWit (ea :: ground dva' gta') aconv <- alessers
         let
-            allagreaters :: [GreaterConversionWit ground dva' gta']
-            allagreaters = getAllGreaters entries [mkGreaterConversionWit ea]
+            calculatedClosure :: ([GreaterConversionWit ground dva' gta'], [SomeGroundType ground])
+            calculatedClosure =
+                let
+                    closure = getAllGreaters entries [mkGreaterConversionWit ea]
+                    in (closure, fmap greaterConversionGroundType closure)
+            (allagreaters, sourceClosure) =
+                fromMaybe
+                    calculatedClosure
+                    $ lookupGreaterConversionClosure ea availableConversionClosures
         MkGreaterConversionWit eb conv <- allagreaters
         MkGreaterConversionWit maxb bconv <- bgreaters
         (Refl, HRefl) <- mpure $ matchSubtypeGroup eb maxb
         return
-            $ MkSubtypeConversionPair ea eb conv
-            $ composeSubtypeConversion bconv
-            $ composeSubtypeConversion tconv aconv
+            ( MkSubtypeConversionPair ea eb conv
+                $ composeSubtypeConversion bconv
+                $ composeSubtypeConversion tconv aconv
+            , sourceClosure
+            )
+    availableClosures :: [(SomeGroundType ground, [SomeGroundType ground])]
+    availableClosures = fmap groundTypesFromGreaterConversionClosure availableConversionClosures
+    targets :: [SomeGroundType ground]
+    targets = nub $ do
+        (MkSubtypeConversionPair _ target _ _, _) <- pairClosures
+        return $ MkSomeGroundType target
+    targetClosures :: [(SomeGroundType ground, [SomeGroundType ground])]
+    targetClosures =
+        fmap
+            (\target -> (target, fromMaybe (getGroundTypeClosure entries target) $ lookup target availableClosures))
+            targets
     candidates :: [SubtypeConversionCandidate ground]
-    candidates = fmap (mkSubtypeConversionCandidate entries) pairs
+    candidates = do
+        (MkSubtypeConversionPair source target conv1 conv2, sourceClosure) <- pairClosures
+        let
+            groundTarget = MkSomeGroundType target
+            targetClosure =
+                fromMaybe (getGroundTypeClosure entries groundTarget) $ lookup groundTarget targetClosures
+        return $ MkSubtypeConversionCandidate source target conv1 conv2 sourceClosure targetClosure
     -- A strictly implied square follows by pre/postcomposition, so only the
     -- implication frontier contains independent consistency obligations.
     isCritical candidate =
