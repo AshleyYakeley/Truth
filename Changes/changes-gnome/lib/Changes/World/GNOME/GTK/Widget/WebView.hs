@@ -27,7 +27,6 @@ createWebView MkWebViewOptions{..} lmod = do
         gvRunLocked $ do
             let _ = wvoURISchemes
             webView <- gvNew GI.WebView []
-            gvBind webView
             widget <- GI.toWidget webView
             return (webView, widget)
     gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ GI.webViewLoadHtml wv text Nothing
