@@ -23,7 +23,7 @@ testFile inpath = let
 
 items :: [String]
 items =
-    ["uri"]
+    ["uri", "commonmark"]
 
 testItem :: String -> TestTree
 testItem item = let

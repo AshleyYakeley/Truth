@@ -52,7 +52,8 @@ toHTML (MkCommonMarkText t) =
             customSyntax :: C.SyntaxSpec Identity (C.Html ()) (C.Html ())
             customSyntax =
                 mconcat
-                    [ mif False C.hardLineBreaksSpec
+                    [ C.defaultSyntaxSpec
+                    , mif False C.hardLineBreaksSpec
                     , mif True C.smartPunctuationSpec
                     , mif True C.strikethroughSpec
                     , mif True C.superscriptSpec

@@ -1,0 +1,11 @@
+#!/usr/bin/env pinafore1
+import "media"
+let {
+    showCM: Text -> Action Unit
+    = fn text => outputLn.Env $ show $ toHTML.CommonMarkText $ Mk.CommonMarkText text;
+}
+do {
+    showCM "hello";
+    showCM "# H1";
+    showCM "This *emphasised* word.";
+}
