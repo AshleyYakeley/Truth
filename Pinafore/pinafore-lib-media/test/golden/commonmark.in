@@ -2,10 +2,22 @@
 import "media"
 let {
     showCM: Text -> Action Unit
-    = fn text => outputLn.Env $ show $ toHTML.CommonMarkText $ Mk.CommonMarkText text;
+    = fn text => do {
+        outputLn.Env "- PLAIN";
+        outputLn.Env $ show $ toHTML.CommonMarkText $ Mk.CommonMarkText text;
+        outputLn.Env "- LIVE";
+        toHTMLModel.CommonMarkText (Mk.CommonMarkText text) >- fn {
+            Failure.Result r => outputLn.Env "FAIL";
+            Success.Result model => do {
+                htmlText <- get model;
+                outputLn.Env $ show htmlText;
+            };
+        };
+    };
 }
 do {
     showCM "hello";
     showCM "# H1";
     showCM "This *emphasised* word.";
+    pure ();
 }

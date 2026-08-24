@@ -1,7 +1,20 @@
+- PLAIN
 <p>hello</p>
 
+- LIVE
+<p>hello</p>
+
+- PLAIN
 <h1 id="h1">H1</h1>
 <p></p>
 
+- LIVE
+<h1>H1</h1>
+<p></p>
+
+- PLAIN
+<p>This <em>emphasised</em> word.</p>
+
+- LIVE
 <p>This <em>emphasised</em> word.</p>
 
