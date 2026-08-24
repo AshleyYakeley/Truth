@@ -10,6 +10,7 @@ library:
     dependencies:
       - shapes
       - base64
+      - parsec
       - commonmark
       - commonmark-extensions
       - Color

@@ -11,6 +11,8 @@ import Commonmark.Inlines qualified as C
 import Data.Shim
 import Pinafore.API
 import Shapes
+import Text.Parsec qualified as P
+import Text.Parsec.Pos qualified as P
 
 import Pinafore.Library.Media.HTML
 import Pinafore.Library.Media.Media
@@ -241,8 +243,28 @@ toHTML (MkCommonMarkText t) = do
     html :: C.Html () <- mapResultFailure parseErrorToLS $ eitherToResult ehtml
     return $ MkHTMLText $ toStrict $ C.renderHtml html
 
+parseToken :: forall s m a. Monad m => (C.Tok -> Maybe a) -> P.ParsecT [C.Tok] s m a
+parseToken matcher = let
+    updatePos :: P.SourcePos -> C.Tok -> [C.Tok] -> P.SourcePos
+    updatePos _spos _ (C.Tok _ pos _ : _) = pos
+    updatePos !spos (C.Tok _ _pos t) [] =
+        P.updatePosString spos (unpack t)
+    in P.tokenPrim (unpack . C.tokContents) updatePos matcher
+
+symbol :: forall s m. Monad m => Char -> P.ParsecT [C.Tok] s m ()
+symbol ec = parseToken $ \case
+    C.Tok (C.Symbol fc) _ _ | fc == ec -> Just ()
+    _ -> Nothing
+
 modelInlineSpec :: C.InlineParser (Result (Located Showable)) (ImmutableWholeModel (C.Html ()))
-modelInlineSpec = empty
+modelInlineSpec = do
+    symbol '@'
+    symbol '`'
+    texts <- P.many $ parseToken $ \case
+        C.Tok (C.Symbol '`') _ _ -> Nothing
+        C.Tok _ _ t -> Just t
+    symbol '`'
+    return $ pure $ C.htmlText $ mconcat texts
 
 toHTMLModel :: CommonMarkText -> Result (Located Showable) (ImmutableWholeModel HTMLText)
 toHTMLModel (MkCommonMarkText t) = do

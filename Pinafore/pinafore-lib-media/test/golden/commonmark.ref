@@ -18,3 +18,27 @@
 - LIVE
 <p>This <em>emphasised</em> word.</p>
 
+- PLAIN
+<p>p q r @<code>ap{pure &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r  ap{pure &quot;34&quot;}  x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{pure &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r  ap{pure “34”} `` x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{pure &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r ap{pure &quot;34&quot;} x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{pure &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r ap{pure “34”}`` x y z</p>
+

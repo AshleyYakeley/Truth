@@ -19,5 +19,9 @@ do {
     showCM "hello";
     showCM "# H1";
     showCM "This *emphasised* word.";
+    showCM "p q r @` ap{pure \"34\"} ` x y z";
+    showCM "p q r @`` ap{pure \"34\"} `` x y z";
+    showCM "p q r @`ap{pure \"34\"}` x y z";
+    showCM "p q r @``ap{pure \"34\"}`` x y z";
     pure ();
 }
