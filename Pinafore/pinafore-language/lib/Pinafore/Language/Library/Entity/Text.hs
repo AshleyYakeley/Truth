@@ -8,10 +8,10 @@ import Text.Collate qualified
 
 import Import
 import Pinafore.Language.Convert
-import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Blob ()
 import Pinafore.Language.Library.Entity.Literal
+import Pinafore.Language.Library.Exception
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Library.Showable

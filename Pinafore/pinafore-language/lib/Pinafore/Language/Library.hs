@@ -20,6 +20,7 @@ import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Entity
 import Pinafore.Language.Library.EntityMap
 import Pinafore.Language.Library.Env
+import Pinafore.Language.Library.Exception
 import Pinafore.Language.Library.Function
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.LibraryModule
@@ -56,6 +57,7 @@ pinaforeLibrary =
           , mapLibSection
           , resultLibSection
           , actionLibSection
+          , exceptionLibSection
           , lifecycleLibSection
           , interpretLibSection
           , modelLibSection

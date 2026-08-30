@@ -1,27 +1,33 @@
 #!/usr/bin/env pinafore1
 import "media"
 let {
+    mkModel: Text -> Action (WholeModel HTMLText)
+    = fn text =>
+    with Pinafore. do {
+        rmodel <- run.Interpreter !{this.Context} $ do.Interpreter {
+            val <- interpret.Value text;
+            unify.Value !{this.Scope} @(WholeModel HTMLText) val;
+        };
+        rmodel
+    };
+
     showCM: Text -> Action Unit
     = fn text => do {
         outputLn.Env "- PLAIN";
         outputLn.Env $ show $ toHTML.CommonMarkText $ Mk.CommonMarkText text;
         outputLn.Env "- LIVE";
-        toHTMLModel.CommonMarkText (Mk.CommonMarkText text) >- fn {
-            Failure.Result r => outputLn.Env "FAIL";
-            Success.Result model => do {
-                htmlText <- get model;
-                outputLn.Env $ show htmlText;
-            };
-        };
+        model <- toHTMLModel.CommonMarkText mkModel $ Mk.CommonMarkText text;
+        htmlText <- get model;
+        outputLn.Env $ show htmlText;
     };
 }
 do {
     showCM "hello";
     showCM "# H1";
     showCM "This *emphasised* word.";
-    showCM "p q r @` ap{pure \"34\"} ` x y z";
-    showCM "p q r @`` ap{pure \"34\"} `` x y z";
-    showCM "p q r @`ap{pure \"34\"}` x y z";
-    showCM "p q r @``ap{pure \"34\"}`` x y z";
+    showCM "p q r @`import \"media\" ap{Mk.HTMLText \"34\"} ` x y z";
+    #showCM "p q r @`` ap{Mk.HTMLText \"34\"} `` x y z";
+    showCM "p q r @`import \"media\" ap{Mk.HTMLText \"34\"}` x y z";
+    #showCM "p q r @``ap{Mk.HTMLText \"34\"}`` x y z";
     pure ();
 }

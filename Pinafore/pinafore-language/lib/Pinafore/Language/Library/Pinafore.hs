@@ -6,8 +6,6 @@ module Pinafore.Language.Library.Pinafore
     )
 where
 
-import Text.Parsec.Pos
-
 import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
@@ -16,8 +14,8 @@ import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Exception ()
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Library.Showable
 import Pinafore.Language.Library.ToSource
 import Pinafore.Language.Type
 
@@ -133,12 +131,6 @@ interpretModuleFromSource src = do
     m <- parseModule src
     return $ moduleDeclarations m
 
-toLocated :: Text -> Int -> Int -> A -> Located A
-toLocated n r c i = MkLocated (newPos (unpack n) r c) toText i
-
-fromLocated :: Located A -> (Text, (Int, (Int, (A, ()))))
-fromLocated (MkLocated spos _ item) = (pack $ sourceName spos, (sourceLine spos, (sourceColumn spos, (item, ()))))
-
 itemValue :: QItem -> Maybe LangExpression
 itemValue item = do
     bval <- getBoundValue item
@@ -160,25 +152,6 @@ pinaforeLibSection =
         "Pinafore"
         "Functions for working with Pinafore source code."
         [ headingBDS
-            "Located"
-            ""
-            [ typeBDS
-                "Located"
-                "Something located in textual source."
-                (qSomeGroundType @_ @Located)
-                [ valPatBDS
-                    "Mk"
-                    "Construct a `Located` from source, line, column, item."
-                    toLocated
-                    $ PureFunction
-                    $ pure fromLocated
-                ]
-            , showableSubtypeRelationEntry
-                @(Located Showable)
-                ""
-                $ functionToShim "showText" showText
-            ]
-        , headingBDS
             "PrecText"
             ""
             [ typeBDS
@@ -348,7 +321,10 @@ pinaforeLibSection =
                 "Error"
                 ""
                 [ typeBDS "Error" "" (qSomeGroundType @_ @QError) []
-                , showableSubtypeRelationEntry @QError "" $ toText . showNamedText
+                , hasSubtypeRelationBDS @QError @ActionException Verify ""
+                    $ functionToShim "toException"
+                    $ ExActionException
+                    . toException
                 ]
             , headingBDS
                 "Expression"

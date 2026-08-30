@@ -121,6 +121,7 @@ library
       Pinafore.Language.Library.EntityMap
       Pinafore.Language.Library.Result
       Pinafore.Language.Library.Action
+      Pinafore.Language.Library.Exception
       Pinafore.Language.Library.Lifecycle
       Pinafore.Language.Library.Interpret
       Pinafore.Language.Library.Model

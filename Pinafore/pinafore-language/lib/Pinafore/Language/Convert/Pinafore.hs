@@ -8,6 +8,9 @@ import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
+instance HasQGroundType '[] ActionException where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ActionException)|]) "Exception"
+
 data LangType
     = forall a. MkLangType (QNonpolarType a)
 
@@ -70,16 +73,28 @@ instance HasQGroundType '[] QDeclarations where
 instance HasQGroundType '[] QScope where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScope)|]) "Scope.Pinafore."
 
+instance Exception QError
+
 -- QError
 instance HasQGroundType '[] QError where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QError)|]) "Error.Pinafore."
+    qGroundType = let
+        gds :: QPolyGreatestDynamicSupertype '[] QError
+        gds =
+            varPolyGreatestDynamicSupertype
+                NilCCRArguments
+                $ mapNegShimWit
+                    ( functionToShim "" $ \case
+                        ExActionException se -> fromException se
+                        _ -> Nothing
+                    )
+                    (qGroundedType :: _ ActionException)
+        in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QError)|]) "Error.Pinafore.")
+            { qgtGreatestDynamicSupertype = gds
+            }
 
 -- Located
 instance HasVariance Located where
     type VarianceOf Located = 'Covariance
-
-instance HasQGroundType '[CoCCRVariance] Located where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Located)|]) "Located."
 
 -- QItem
 instance HasQGroundType '[] QItem where

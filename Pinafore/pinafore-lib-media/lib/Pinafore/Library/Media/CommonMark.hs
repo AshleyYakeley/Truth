@@ -256,20 +256,21 @@ symbol ec = parseToken $ \case
     C.Tok (C.Symbol fc) _ _ | fc == ec -> Just ()
     _ -> Nothing
 
-modelInlineSpec :: C.InlineParser (Result (Located Showable)) (ImmutableWholeModel (C.Html ()))
-modelInlineSpec = do
+modelInlineSpec :: (Text -> Action (ImmutableWholeModel HTMLText)) -> C.InlineParser Action (ImmutableWholeModel (C.Html ()))
+modelInlineSpec mkModel = do
     symbol '@'
     symbol '`'
     texts <- P.many $ parseToken $ \case
         C.Tok (C.Symbol '`') _ _ -> Nothing
         C.Tok _ _ t -> Just t
     symbol '`'
-    return $ pure $ C.htmlText $ mconcat texts
+    model <- lift $ lift $ mkModel $ mconcat texts
+    return $ fmap (C.htmlRaw . unHTMLText) model
 
-toHTMLModel :: CommonMarkText -> Result (Located Showable) (ImmutableWholeModel HTMLText)
-toHTMLModel (MkCommonMarkText t) = do
+toHTMLModel :: (Text -> Action (ImmutableWholeModel HTMLText)) -> CommonMarkText -> Action (ImmutableWholeModel HTMLText)
+toHTMLModel mkModel (MkCommonMarkText t) = do
     let
-        customSyntax :: C.SyntaxSpec (Result (Located Showable)) (ImmutableWholeModel (C.Html ())) (ImmutableWholeModel (C.Html ()))
+        customSyntax :: C.SyntaxSpec Action (ImmutableWholeModel (C.Html ())) (ImmutableWholeModel (C.Html ()))
         customSyntax =
             mconcat
                 [ C.defaultSyntaxSpec
@@ -294,10 +295,12 @@ toHTMLModel (MkCommonMarkText t) = do
                 , mif False $ C.wikilinksSpec C.TitleBeforePipe
                 , mif True C.alertSpec
                 , mif False C.rebaseRelativePathsSpec
-                , inlineSyntaxSpec modelInlineSpec
+                , inlineSyntaxSpec $ modelInlineSpec mkModel
                 ]
     emh <- C.commonmarkWith customSyntax "" t
-    htmlModel :: ImmutableWholeModel (C.Html ()) <- mapResultFailure parseErrorToLS $ eitherToResult emh
+    htmlModel :: ImmutableWholeModel (C.Html ()) <- case emh of
+        Right a -> pure a
+        Left err -> fail $ show $ parseErrorToLS err
     return $ fmap (MkHTMLText . toStrict . C.renderHtml) htmlModel
 
 commonMarkStuff :: LibraryStuff

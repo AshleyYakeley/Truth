@@ -187,6 +187,12 @@ instance ShowNamedText QError where
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
+instance ShowText QError where
+    showText = toText . showNamedText
+
+instance Show QError where
+    show = unpack . showText
+
 type QLocatedError = Located QError
 
 instance Exception QLocatedError
