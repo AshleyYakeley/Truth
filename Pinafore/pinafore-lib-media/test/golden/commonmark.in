@@ -29,8 +29,11 @@ do {
     showCM "# H1";
     showCM "This *emphasised* word.";
     showCM "p q r @` ap{Mk.HTMLText \"34\"} ` x y z";
-    #showCM "p q r @`` ap{Mk.HTMLText \"34\"} `` x y z";
+    showCM "p q r @`` ap{Mk.HTMLText \"34\"} `` x y z";
     showCM "p q r @`ap{Mk.HTMLText \"34\"}` x y z";
-    #showCM "p q r @``ap{Mk.HTMLText \"34\"}`` x y z";
+    showCM "p q r @``ap{Mk.HTMLText \"34\"}`` x y z";
+    showCM "p q r @```ap{Mk.HTMLText \"34\"}``` x y z";
+    showCM "p q r @``ap{Mk.HTMLText \"`\"}`` x y z";
+    showCM "p q r @```ap{Mk.HTMLText $ \"``\" <>.Text \"`\"}``` x y z";
     pure ();
 }

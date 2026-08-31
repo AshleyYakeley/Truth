@@ -30,3 +30,33 @@
 - LIVE
 <p>p q r 34 x y z</p>
 
+- PLAIN
+<p>p q r @<code>ap{Mk.HTMLText &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r 34 x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{Mk.HTMLText &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r 34 x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{Mk.HTMLText &quot;34&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r 34 x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{Mk.HTMLText &quot;`&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r ` x y z</p>
+
+- PLAIN
+<p>p q r @<code>ap{Mk.HTMLText $ &quot;``&quot; &lt;&gt;.Text &quot;`&quot;}</code> x y z</p>
+
+- LIVE
+<p>p q r ``` x y z</p>
+

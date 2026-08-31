@@ -256,14 +256,34 @@ symbol ec = parseToken $ \case
     C.Tok (C.Symbol fc) _ _ | fc == ec -> Just ()
     _ -> Nothing
 
+backtickRun :: forall s m. Monad m => P.ParsecT [C.Tok] s m [Text]
+backtickRun = P.many1 $ parseToken $ \case
+    C.Tok (C.Symbol '`') _ t -> Just t
+    _ -> Nothing
+
 modelInlineSpec :: (Text -> Action (ImmutableWholeModel HTMLText)) -> C.InlineParser Action (ImmutableWholeModel (C.Html ()))
 modelInlineSpec mkModel = do
     symbol '@'
-    symbol '`'
-    texts <- P.many $ parseToken $ \case
-        C.Tok (C.Symbol '`') _ _ -> Nothing
-        C.Tok _ _ t -> Just t
-    symbol '`'
+    openingTicks <- backtickRun
+    let
+        delimiterLength = length openingTicks
+        closingDelimiter = P.try $ do
+            closingTicks <- backtickRun
+            if length closingTicks == delimiterLength
+                then pure ()
+                else P.unexpected "non-matching backtick delimiter"
+        contentToken =
+            ( do
+                ticks <- backtickRun
+                if length ticks == delimiterLength
+                    then P.unexpected "closing backtick delimiter"
+                    else pure $ mconcat ticks
+            )
+                <|> parseToken (\case
+                    C.Tok (C.Symbol '`') _ _ -> Nothing
+                    C.Tok _ _ t -> Just t
+                )
+    texts <- P.manyTill contentToken closingDelimiter
     model <- lift $ lift $ mkModel $ mconcat texts
     return $ fmap (C.htmlRaw . unHTMLText) model
 
