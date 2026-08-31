@@ -361,11 +361,11 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 $ for_ decls interpretDeclaration
         DocSectionSyntaxDeclaration heading decls -> sectionHeading heading doc $ for_ decls interpretDeclaration
         SpliceSyntaxDeclaration sexpr -> do
-            sd <-
+            scope <-
                 builderLift $ do
                     expr <- interpretExpression sexpr
-                    spliceDecls expr
-            registerDeclarations sd
+                    spliceScope expr
+            registerScope scope
         DebugSyntaxDeclaration nameref -> do
             mfd <- builderLift $ lookupDebugBindingInfo nameref
             liftIO
@@ -559,7 +559,9 @@ interpretExpression' (SESplice sexpr) = do
     expr <- interpretExpression sexpr
     spliceExpression expr
 interpretExpression' (SEQuoteExpression sexpr) = return $ qConst $ fmap MkLangExpression $ interpretExpression sexpr
-interpretExpression' (SEQuoteDeclarations sdecls) = return $ qConst $ interpretDeclarations sdecls
+interpretExpression' (SEQuoteScope sdecls) = return $ qConst $ do
+    decls <- interpretDeclarations sdecls
+    declarationsToScope decls
 interpretExpression' (SEQuoteType stype) = do
     t <- interpretNonpolarType stype
     return $ qConstValue $ mkLangTypeValue t
@@ -571,10 +573,10 @@ spliceExpression spliceexpr = do
     mexpr <- qUnifyValue @(QInterpreter LangExpression) val
     fmap unLangExpression mexpr
 
-spliceDecls :: QExpression -> QInterpreter QDeclarations
-spliceDecls spliceexpr = do
+spliceScope :: QExpression -> QInterpreter QScope
+spliceScope spliceexpr = do
     val <- qEvalExpr spliceexpr
-    msd <- qUnifyValue @(QInterpreter QDeclarations) val
+    msd <- qUnifyValue @(QInterpreter QScope) val
     msd
 
 checkExprVars :: QExpression -> QInterpreter ()

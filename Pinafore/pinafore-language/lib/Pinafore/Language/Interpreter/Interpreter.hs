@@ -17,6 +17,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , getBindingInfoLookup
     , getNamespaceWithScope
     , exportScope
+    , withScope
     , getModule
     , getSubtypeScope
     , newTypeID
@@ -289,6 +290,9 @@ loadModuleInScope mname =
         $ do
             loadModule <- paramAsk loadModuleParam
             runLoadModule loadModule mname
+
+withScope :: QScope -> QInterpreter --> QInterpreter
+withScope scope = paramLocalM scopeParam $ \oldscope -> joinScopes oldscope scope
 
 getModule :: ModuleName -> QInterpreter QModule
 getModule mname = do

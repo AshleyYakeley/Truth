@@ -361,7 +361,7 @@ data SyntaxExpression'
     | -- macro stuff
       SESplice SyntaxExpression
     | SEQuoteExpression SyntaxExpression
-    | SEQuoteDeclarations [SyntaxDeclaration]
+    | SEQuoteScope [SyntaxDeclaration]
     | SEQuoteType SyntaxType
     | SEQuoteAnchor Anchor
     | -- debug

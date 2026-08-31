@@ -5,8 +5,11 @@ let {
     = fn text =>
     with Pinafore. do {
         rmodel <- run.Interpreter !{this.Context} $ do.Interpreter {
-            val <- interpret.Value text;
-            unify.Value !{this.Scope} @(WholeModel HTMLText) val;
+            media <- interpret.Scope "import \"media\"";
+            apply.Scope media $ do.Interpreter {
+                val <- interpret.Value text;
+                unify.Value !{this.Scope} @(WholeModel HTMLText) val;
+            }
         };
         rmodel
     };
@@ -25,9 +28,9 @@ do {
     showCM "hello";
     showCM "# H1";
     showCM "This *emphasised* word.";
-    showCM "p q r @`import \"media\" ap{Mk.HTMLText \"34\"} ` x y z";
+    showCM "p q r @` ap{Mk.HTMLText \"34\"} ` x y z";
     #showCM "p q r @`` ap{Mk.HTMLText \"34\"} `` x y z";
-    showCM "p q r @`import \"media\" ap{Mk.HTMLText \"34\"}` x y z";
+    showCM "p q r @`ap{Mk.HTMLText \"34\"}` x y z";
     #showCM "p q r @``ap{Mk.HTMLText \"34\"}`` x y z";
     pure ();
 }

@@ -65,10 +65,6 @@ instance HasQGroundType '[] LangExpression where
     qGroundType =
         stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangExpression)|]) "Expression.Pinafore."
 
--- QDeclarations
-instance HasQGroundType '[] QDeclarations where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QDeclarations)|]) "Declarations.Pinafore."
-
 -- QScope
 instance HasQGroundType '[] QScope where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScope)|]) "Scope.Pinafore."

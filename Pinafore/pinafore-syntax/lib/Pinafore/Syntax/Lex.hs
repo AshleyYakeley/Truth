@@ -115,7 +115,7 @@ keywordClasses =
     ]
 
 extraKeywords :: [(Text, Text)]
-extraKeywords = [("!expression", "keyword.other.pinafore"), ("!declarations", "keyword.other.pinafore")]
+extraKeywords = [("!expression", "keyword.other.pinafore"), ("!scope", "keyword.other.pinafore")]
 
 allKeywords :: [(Text, Text)]
 allKeywords =

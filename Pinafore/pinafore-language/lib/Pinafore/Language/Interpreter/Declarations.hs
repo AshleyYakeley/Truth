@@ -13,6 +13,9 @@ data QDeclarations = MkQDeclarations
 declarations :: QScope -> QDeclarations
 declarations scope = mempty{declsScopes = [scope]}
 
+declarationsToScope :: QDeclarations -> QInterpreter QScope
+declarationsToScope decls = joinAllScopes $ declsScopes decls
+
 instance Semigroup QDeclarations where
     MkQDeclarations sa da <> MkQDeclarations sb db = MkQDeclarations (sa <> sb) (da <> db)
 
@@ -20,9 +23,9 @@ instance Monoid QDeclarations where
     mempty = MkQDeclarations mempty mempty
 
 withDeclarations :: QDeclarations -> QInterpreter --> QInterpreter
-withDeclarations sd ma = do
-    scope <- joinAllScopes $ declsScopes sd
-    paramLocalM scopeParam (\oldscope -> joinScopes oldscope scope) ma
+withDeclarations decls ma = do
+    scope <- declarationsToScope decls
+    withScope scope ma
 
 moduleDeclarations :: QModule -> QDeclarations
 moduleDeclarations MkQModule{..} = let
@@ -31,7 +34,7 @@ moduleDeclarations MkQModule{..} = let
     in MkQDeclarations{..}
 
 declarationsModule :: QDeclarations -> QInterpreter QModule
-declarationsModule MkQDeclarations{..} = do
-    moduleScope <- joinAllScopes declsScopes
-    let moduleDoc = declsDocs
+declarationsModule decls = do
+    moduleScope <- declarationsToScope decls
+    let moduleDoc = declsDocs decls
     return MkQModule{..}

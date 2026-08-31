@@ -113,23 +113,23 @@ interpretToType src = do
 langUnifyValue :: QScope -> LangOpenType '(BottomType, A) -> LangValue -> Result QError A
 langUnifyValue scope t (MkLangValue v) = runQTypeM scope $ tsUnifyValueTo @QTypeSystem (langTypeNegative t) v
 
-langWithScope :: QDeclarations -> QInterpreter A -> QInterpreter A
-langWithScope sdocs = withDeclarations sdocs
+langWithScope :: QScope -> QInterpreter A -> QInterpreter A
+langWithScope scope = withScope scope
 
-bindScope :: Text -> LangExpression -> QDeclarations
+bindScope :: Text -> LangExpression -> QScope
 bindScope name (MkLangExpression expr@(MkSealedExpression t _)) = let
     fname = fromString $ unpack name
     doc :: DefDoc
     doc = MkDefDoc{docItem = ValueDocItem (pure $ fullNameRef fname) $ exprShow t, docDescription = ""}
-    in declarations $ bindingInfosToScope $ pure $ (fname, MkQScopeItem fname doc $ ValueItem expr)
+    in bindingInfosToScope $ pure $ (fname, MkQScopeItem fname doc $ ValueItem expr)
 
 bindInterpreter :: Text -> LangExpression -> QInterpreter A -> QInterpreter A
 bindInterpreter name expr = langWithScope $ bindScope name expr
 
-interpretModuleFromSource :: Text -> QInterpreter QDeclarations
+interpretModuleFromSource :: Text -> QInterpreter QScope
 interpretModuleFromSource src = do
     m <- parseModule src
-    return $ moduleDeclarations m
+    return $ moduleScope m
 
 itemValue :: QItem -> Maybe LangExpression
 itemValue item = do
@@ -205,33 +205,33 @@ pinaforeLibSection =
                     "The context used for running `Interpreter`."
                     (qSomeGroundType @_ @QContext)
                     [ let
-                        defaultloadModule :: Text -> QInterpreter (Maybe QDeclarations)
+                        defaultloadModule :: Text -> QInterpreter (Maybe QScope)
                         defaultloadModule _ = return Nothing
-                        rtype :: ListType QDocSignature '[Text -> QInterpreter (Maybe QDeclarations)]
+                        rtype :: ListType QDocSignature '[Text -> QInterpreter (Maybe QScope)]
                         rtype =
                             ConsListType
-                                ( mkValueDocSignature @(Text -> QInterpreter (Maybe QDeclarations)) "loadModule" ""
+                                ( mkValueDocSignature @(Text -> QInterpreter (Maybe QScope)) "loadModule" ""
                                     $ Just defaultloadModule
                                 )
                                 NilListType
-                        qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QDeclarations)
+                        qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QScope)
                         qContextLoadModule (MkQContext lc) name = do
                             mqm <- runLoadModule (lcLoadModule lc) $ MkModuleName name
-                            return $ fmap moduleDeclarations mqm
-                        toLoadModule :: (Text -> QInterpreter (Maybe QDeclarations)) -> LoadModule
+                            return $ fmap moduleScope mqm
+                        toLoadModule :: (Text -> QInterpreter (Maybe QScope)) -> LoadModule
                         toLoadModule lm =
                             MkLoadModule $ \(MkModuleName name) -> do
-                                msdocs <- lm name
-                                for msdocs declarationsModule
-                        fromQContext :: QContext -> Maybe (ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)])
+                                mscope <- lm name
+                                return $ fmap (\scope -> MkQModule mempty scope) mscope
+                        fromQContext :: QContext -> Maybe (ListVProduct '[Text -> QInterpreter (Maybe QScope)])
                         fromQContext qc =
                             Just $ listProductToVProduct (listTypeToVType rtype) (qContextLoadModule qc, ())
-                        toQContext :: ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)] -> QContext
+                        toQContext :: ListVProduct '[Text -> QInterpreter (Maybe QScope)] -> QContext
                         toQContext lvp = let
                             (lm, ()) = listVProductToProduct lvp
                             lcLoadModule = toLoadModule lm
                             in MkQContext $ MkLibraryContext{..}
-                        codec :: Codec QContext (ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)])
+                        codec :: Codec QContext (ListVProduct '[Text -> QInterpreter (Maybe QScope)])
                         codec = MkCodec fromQContext toQContext
                         in recordConsBDS "Mk" "" rtype codec
                     ]
@@ -286,9 +286,13 @@ pinaforeLibSection =
                 [ typeBDS "Scope" "" (qSomeGroundType @_ @QScope) []
                 , namespaceBDS
                     "Scope"
-                    [ valBDS "get" "The current scope." getScope
+                    [ valBDS "join" "Join scopes." joinAllScopes
+                    , valBDS "get" "The current scope." getScope
                     , valBDS "this" "`!{this.Scope.Pinafore}: Scope.Pinafore`  \nThe scope at this point in source." thisScope
                     , valBDS "lookup" "Look up an item in this scope by full name." scopeLookup
+                    , valBDS "interpret" "Interpret a Pinafore module (list of declarations)." interpretModuleFromSource
+                    , valBDS "apply" "Interpret within a given scope." langWithScope
+                    , valBDS "bind" "Let-bind a name to an expression." bindScope
                     ]
                 ]
             , headingBDS
@@ -348,17 +352,6 @@ pinaforeLibSection =
                     , valBDS "unify" "Unify a `Type` with a `Value`." langUnifyValue
                     , valBDS "interpret" "Interpret a Pinafore value." interpretToValue
                     ]
-                ]
-            , headingBDS
-                "Declarations"
-                ""
-                [ typeBDS "Declarations" "" (qSomeGroundType @_ @QDeclarations) []
-                , namespaceBDS "Declarations"
-                    $ monoidEntries @QDeclarations
-                    <> [ valBDS "interpret" "Interpret a Pinafore module (list of declarations)." interpretModuleFromSource
-                       , valBDS "apply" "Interpret within a given scope." langWithScope
-                       , valBDS "bind" "Let-bind a name to an expression." bindScope
-                       ]
                 ]
             , valBDS "bind" "Let-bind a name to a expression." bindInterpreter
             , valBDS "implyIn" "Set the value of an implicit variable for this expression.  \nName should not include the initial '?'." langImply

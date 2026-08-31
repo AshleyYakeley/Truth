@@ -85,6 +85,12 @@ varIDStateRef = builderLiftRef varIDStateParam
 scopeSetSourcePos :: SourcePos -> QScopeBuilder ()
 scopeSetSourcePos = refPut (builderLiftRef sourcePosParam)
 
+registerScopes :: [QScope] -> QScopeBuilder ()
+registerScopes scopes = refModifyM scopeRef $ \oldScope -> builderLift $ joinAllScopes $ oldScope : scopes
+
+registerScope :: QScope -> QScopeBuilder ()
+registerScope scope = registerScopes [scope]
+
 allocateVar :: (VarIDState -> (VarID, FullName)) -> QScopeBuilder (FullName, VarID)
 allocateVar mkvar = do
     vs <- refSucc varIDStateRef
@@ -94,7 +100,7 @@ allocateVar mkvar = do
         siDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
         siItem = ValueItem $ tsVar @QTypeSystem vid
         insertScope = MkQScope (bindingInfoToMap (name, MkQScopeItem{..})) mempty
-    refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
+    registerScope insertScope
     return (name, vid)
 
 allocateLambdaVar :: Maybe FullName -> QScopeBuilder (FullName, VarID)
@@ -111,5 +117,5 @@ outputDeclarations sd = prodTell builderDeclarationsProd sd
 
 registerDeclarations :: QDeclarations -> QScopeBuilder ()
 registerDeclarations sd = do
-    refModifyM scopeRef $ \oldScope -> builderLift $ joinAllScopes $ oldScope : declsScopes sd
+    registerScopes $ declsScopes sd
     outputDeclarations sd

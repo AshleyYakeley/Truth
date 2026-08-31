@@ -627,7 +627,7 @@ readExpression3 =
                 sname <- readThis TokSpecialName
                 case sname of
                     "expression" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteExpression readExpression
-                    "declarations" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteDeclarations $ readLines readDeclaration
+                    "scope" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteScope $ readLines readDeclaration
                     _ -> mzero
             )
         <|> readWithSourcePos
