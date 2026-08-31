@@ -5,13 +5,25 @@ do {
     cmRef <- newMem.WholeModel;
     htmlErr: Showable -> HTMLText =
         fn err => with HTMLText tag "em" $ plain "error: " <> plain (show err);
-    htmlRef = ap{from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
+    htmlRef: WholeModel +HTMLText =
+        ap{from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
+    cmWidget: Widget.GTK =
+        scrolled.Widget $
+        textView.Widget $
+        fromWhole.TextModel $
+        asText.CommonMarkText !$ cmRef;
+    htmlWidget: Widget.GTK =
+        scrolled.Widget $
+        textView.Widget $
+        fromWhole.TextModel ap{%htmlRef >- fn Mk.HTMLText t => t};
+    webWidget: Widget.GTK =
+        webView.WebKit htmlRef;
     run $
         fn gtk =>
         open.Window gtk (400,600) ap{"CommonMark / WebKit"} $
         notebook.Widget unknown.WholeModel [
-            (label.Widget ap{"CommonMark Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel $ asText.CommonMarkText !$ cmRef),
-            (label.Widget ap{"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel ap{%htmlRef >- fn Mk.HTMLText t => t}),
-            (label.Widget ap{"Rendered"},webView.WebKit htmlRef)
+            (label.Widget ap{"CommonMark Text"}, cmWidget),
+            (label.Widget ap{"HTML Text"}, htmlWidget),
+            (label.Widget ap{"Rendered"}, webWidget)
         ];
 }
