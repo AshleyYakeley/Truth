@@ -42,10 +42,6 @@ import Data.Void as I
 import Data.Word as I
 import GHC.Stack as I (HasCallStack)
 import Numeric.Natural as I
-import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
-import Text.ParserCombinators.ReadPrec as I (ReadPrec)
-import Text.Read as I (Read (..), readMaybe)
-import Text.Show as I (Show (..))
 import Prelude as I
     ( Bounded (..)
     , Enum (..)
@@ -69,6 +65,10 @@ import Prelude as I
     , (^)
     , (^^)
     )
+import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
+import Text.ParserCombinators.ReadPrec as I (ReadPrec)
+import Text.Read as I (Read (..), readMaybe)
+import Text.Show as I (Show (..))
 
 -- stm
 import Control.Concurrent.STM as I
@@ -350,11 +350,11 @@ lifecycleOnAllDone onzero = do
     let
         ondone :: LifecycleT mc m ()
         ondone = do
-            liftIO
-                $ mVarRunStateT var
-                $ do
-                    olda <- get
-                    put $ succ olda
+            liftIO $
+                mVarRunStateT var $
+                    do
+                        olda <- get
+                        put $ succ olda
             lifecycleOnClose $ do
                 iszero <-
                     mVarRunStateT var $ do

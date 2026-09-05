@@ -11,9 +11,9 @@ import Data.Kind
 import Data.Type.OpenWitness
 import GHC.Conc
 import GHC.Exts (Any)
+import Prelude
 import System.IO.Unsafe
 import Unsafe.Coerce
-import Prelude
 
 type MVarDict a = MVar [a]
 

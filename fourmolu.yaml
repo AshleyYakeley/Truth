@@ -4,6 +4,7 @@ indentation: 4
 column-limit: none
 function-arrows: trailing
 comma-style: leading
+record-style: aligned
 import-export-style: leading
 import-grouping: by-scope
 indent-wheres: true
@@ -11,14 +12,16 @@ record-brace-space: false
 newlines-between-decls: 1
 haddock-style: single-line
 haddock-style-module: single-line
+haddock-location-signature: auto
 let-style: like-do
 in-style: no-space
+if-style: indented
 single-constraint-parens: never
 single-deriving-parens: never
 sort-constraints: false
 sort-derived-classes: false
 sort-deriving-clauses: false
-trailing-section-operators: false  # true doesn't work with NoImplicitPrelude
+trailing-section-operators: true
 unicode: never
 respectful: false
 fixities: []

@@ -44,9 +44,9 @@ import Data.Time.Clock.System
 import Data.Word
 import Debug.Trace (traceIO)
 import GHC.Conc
+import Prelude
 import System.Clock qualified as Clock
 import System.IO.Unsafe
-import Prelude
 
 import Debug.ThreadTrace.Lookup
 
@@ -81,8 +81,8 @@ threadGetData :: IO ThreadData
 threadGetData = do
     tid <- myThreadId
     tdmap <- readMVar traceThreadData
-    return
-        $ case Map.lookup tid tdmap of
+    return $
+        case Map.lookup tid tdmap of
             Just tdata -> tdata
             Nothing -> defaultThreadData
 
@@ -160,8 +160,8 @@ traceIOM msg =
                             showMod :: Int -> Word32 -> String
                             showMod 0 _ = ""
                             showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-                        traceIO
-                            $ show s
+                        traceIO $
+                            show s
                                 <> "."
                                 <> showMod 9 ns
                                 <> ": "
@@ -176,8 +176,8 @@ traceIOM msg =
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
-    traceIOM
-        $ s
+    traceIOM $
+        s
             ++ " ["
             ++ ( if null args
                     then ""
@@ -185,8 +185,8 @@ traceBracketArgs s args showr ma = do
                )
     a <- ma
     let ret = showr a
-    traceIOM
-        $ s
+    traceIOM $
+        s
             ++ " ]"
             ++ ( if null ret
                     then ""
@@ -265,8 +265,8 @@ traceCosts sh ma = do
         maxw = maximum $ fmap (length . fst) costs
     traceIOM "-- Costs --"
     for_ costs $ \(k, (i, c)) ->
-        traceIOM
-            $ k
+        traceIOM $
+            k
                 <> replicate (maxw - length k) ' '
                 <> ": "
                 <> show (realToFrac $ c * 1000 :: Micro)

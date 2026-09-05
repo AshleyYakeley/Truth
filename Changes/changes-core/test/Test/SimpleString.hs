@@ -3,8 +3,8 @@ module Test.SimpleString
     )
 where
 
-import Shapes.Test
 import Prelude
+import Shapes.Test
 
 newtype SimpleString = MkSimpleString
     { getSimpleString :: String

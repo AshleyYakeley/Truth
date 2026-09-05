@@ -17,7 +17,6 @@ import Text.Parsec.Pos qualified as P
 import Pinafore.Library.Media.HTML
 import Pinafore.Library.Media.Media
 
-
 instance
     {-# OVERLAPPABLE #-}
     (Applicative f, Monoid (f a), Show (f a), C.HasQuoted a) =>
@@ -234,10 +233,11 @@ modelInlineSpec mkModel = do
                     then P.unexpected "closing backtick delimiter"
                     else pure $ mconcat ticks
             )
-                <|> parseToken (\case
-                    C.Tok (C.Symbol '`') _ _ -> Nothing
-                    C.Tok _ _ t -> Just t
-                )
+                <|> parseToken
+                    ( \case
+                        C.Tok (C.Symbol '`') _ _ -> Nothing
+                        C.Tok _ _ t -> Just t
+                    )
     texts <- P.manyTill contentToken closingDelimiter
     model <- lift $ lift $ mkModel $ mconcat texts
     return $ fmap (C.htmlRaw . unHTMLText) model
