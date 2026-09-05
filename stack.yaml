@@ -31,7 +31,7 @@ packages:
 - Pinafore/pinafore-docgen
 
 # Haskell.nix does not recognise "snapshot"
-resolver: lts-24.45
+resolver: nightly-2026-08-31
 
 local-bin-path: .build/bin
 
@@ -52,9 +52,9 @@ extra-deps:
 - optparse-applicative-0.17.1.0
 
 # format
-- ghc-lib-parser-9.10.2.20250515
+- ghc-lib-parser-9.14.1.20251220
 - github: AshleyYakeley/fourmolu
-  commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
+  commit: fb3abc83f3c746ac5c6f2db200c839d9b21035b7
 
 # my stuff
 #- witness-0.8
@@ -65,7 +65,7 @@ flags:
 
 docker:
     enable: true
-    image: "local-build_lts-24.45"
+    image: "local-build_nightly-2026-08-31"
     env:
     - "DISPLAY"
     - "LIBGL_ALWAYS_SOFTWARE=1"  # don't attempt to use DRM

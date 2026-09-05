@@ -55,15 +55,16 @@ instance AllConstraint Show (CCRTypeParam 'RangeCCRVariance) where
     allConstraint = Dict
 
 assignCCRTypeParam ::
-    forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
+    forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv).
     CCRTypeParam sv t ->
-    (t ~ a => r) ->
-    r
-assignCCRTypeParam (CoCCRTypeParam v) call = assignTypeVarT @a v call
-assignCCRTypeParam (ContraCCRTypeParam v) call = assignTypeVarT @a v call
-assignCCRTypeParam (RangeCCRTypeParam vp vq) call =
-    case unsafeTypeIsPair @_ @_ @a of
-        Refl -> assignTypeVarT @(Contra a) vp $ assignTypeVarT @(Co a) vq call
+    t :~: a
+assignCCRTypeParam (CoCCRTypeParam v) = assignTypeVarTRefl @a v
+assignCCRTypeParam (ContraCCRTypeParam v) = assignTypeVarTRefl @a v
+assignCCRTypeParam (RangeCCRTypeParam vp vq) =
+    case assignTypeVarTRefl @(Contra a) vp of
+        Refl -> case assignTypeVarTRefl @(Co a) vq of
+            Refl -> case unsafeTypeIsPair @Type @Type @a of
+                Refl -> Refl
 
 tParamVars :: CCRTypeParam sv t -> [SomeTypeVarT]
 tParamVars (CoCCRTypeParam t) = [MkSomeTypeVarT t]
@@ -185,7 +186,8 @@ paramsUnEndo ::
 paramsUnEndo NilCCRArguments tt = tt
 paramsUnEndo (ConsCCRArguments p pp) tt = let
     ff :: forall x. KindFunction (f x) (f x)
-    ff = assignCCRTypeParam @_ @x p $ paramsUnEndo pp tt
+    ff = case assignCCRTypeParam @_ @x p of
+        Refl -> paramsUnEndo pp tt
     in MkNestedMorphism ff
 
 paramsCCRVMap ::
@@ -195,10 +197,13 @@ paramsCCRVMap ::
     CCRArguments CCRTypeParam dv (f x) t ->
     CCRVarianceCategory (->) sv a b ->
     KindMorphism (->) (f a) (f b)
-paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv @b p $ paramsUnEndo pp $ ff ab
+paramsCCRVMap p ff pp ab = case assignCCRTypeParam @sv @a p of
+    Refl -> case assignCCRTypeParam @sv @b p of
+        Refl -> paramsUnEndo pp $ ff ab
 
 assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> CCRVariancesMap dv (gt t) -> CCRVariancesMap dv (gt a)
-assignDolanArgVars p dvm = assignCCRTypeParam @sv @a p dvm
+assignDolanArgVars p dvm = case assignCCRTypeParam @sv @a p of
+    Refl -> dvm
 
 getCCRVariancesMap :: FullName -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (CCRVariancesMap dv gt)
 getCCRVariancesMap _ NilCCRArguments _ = return NilCCRVariancesMap

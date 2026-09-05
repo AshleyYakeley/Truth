@@ -5,7 +5,7 @@ PINAFOREVERSION := 0.6
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
-SNAPSHOT := lts-24.45
+SNAPSHOT := nightly-2026-08-31
 
 ### Flags for stack
 

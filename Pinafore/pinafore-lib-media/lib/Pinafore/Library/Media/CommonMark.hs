@@ -17,51 +17,6 @@ import Text.Parsec.Pos qualified as P
 import Pinafore.Library.Media.HTML
 import Pinafore.Library.Media.Media
 
-instance
-    {-# OVERLAPPABLE #-}
-    (Functor f, C.HasAttributes a) =>
-    C.HasAttributes (f a)
-    where
-    addAttributes attr = fmap $ C.addAttributes attr
-
-instance
-    {-# OVERLAPPABLE #-}
-    (Functor f, C.Rangeable b) =>
-    C.Rangeable (f b)
-    where
-    ranged sr = fmap $ C.ranged sr
-
-instance
-    {-# OVERLAPPABLE #-}
-    (Applicative f, Show (f il), Monoid (f il), C.IsInline il) =>
-    C.IsInline (f il)
-    where
-    lineBreak = pure C.lineBreak
-    softBreak = pure C.softBreak
-    str s = pure $ C.str s
-    entity s = pure $ C.entity s
-    escapedChar s = pure $ C.escapedChar s
-    emph = fmap C.emph
-    strong = fmap C.strong
-    link d t = fmap $ C.link d t
-    image s t = fmap $ C.image s t
-    code s = pure $ C.code s
-    rawInline f t = pure $ C.rawInline f t
-
-instance
-    {-# OVERLAPPABLE #-}
-    (Applicative f, Monoid (f il), Monoid (f b), Show (f il), Show (f b), C.IsBlock il b) =>
-    C.IsBlock (f il) (f b)
-    where
-    paragraph = fmap C.paragraph
-    plain = fmap C.plain
-    thematicBreak = pure C.thematicBreak
-    blockQuote = fmap C.blockQuote
-    codeBlock info content = pure $ C.codeBlock info content
-    heading level = fmap $ C.heading level
-    rawBlock format content = pure $ C.rawBlock format content
-    referenceLinkDefinition label destination = pure $ C.referenceLinkDefinition label destination
-    list listType spacing items = C.list listType spacing <$> sequenceA items
 
 instance
     {-# OVERLAPPABLE #-}

@@ -11,6 +11,7 @@ module Language.Expression.TypeSystem.TypeVariable
     , typeVarName
     , newTypeVar
     , assignTypeVarT
+    , assignTypeVarTRefl
     , assignSameTypeVarT
     , assignTypeVarWit
     , newAssignTypeVar
@@ -85,6 +86,9 @@ newTypeVar name call = newUVar name $ \vsym -> call $ MkTypeVar vsym
 
 assignTypeVarT :: forall (ta :: Type) tv r. TypeVarT tv -> (tv ~ ta => r) -> r
 assignTypeVarT (MkTypeVar vsym) call = assignUVarT @ta vsym call
+
+assignTypeVarTRefl :: forall (ta :: Type) tv. TypeVarT tv -> tv :~: ta
+assignTypeVarTRefl var = assignTypeVarT @ta var Refl
 
 assignSameTypeVarT :: forall (ta :: Type) tv r. TypeVarT ta -> TypeVarT tv -> (tv ~ ta => r) -> r
 assignSameTypeVarT _ = assignTypeVarT

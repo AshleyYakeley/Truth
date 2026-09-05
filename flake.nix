@@ -5,7 +5,7 @@
       self.submodules = true;
       nixpkgs =
         {
-          follows = "haskellNix/nixpkgs-2511";
+          follows = "haskellNix/nixpkgs-2605";
         };
 
       flake-utils =
@@ -57,6 +57,8 @@
                       };
                     evalSystem = "x86_64-linux";
                     ignorePackageYaml = true;
+                    # Remove once input-output-hk/haskell.nix#2572 is fixed.
+                    pkg-def-extras = [{ packages.hgg.revision = null; }];
                     modules =
                       [
                         ({ lib, options, ... }:
@@ -67,15 +69,19 @@
                               {
                                 "unix" =
                                   {
-                                    configureFlags = [ "-f" "os-string" ];
+                                    flags."os-string" = true;
                                   };
                                 "directory" =
                                   {
-                                    configureFlags = [ "-f" "os-string" ];
+                                    flags."os-string" = true;
                                   };
                                 "process" =
                                   {
-                                    configureFlags = [ "-f" "os-string" ];
+                                    flags."os-string" = true;
+                                  };
+                                "file-io" =
+                                  {
+                                    flags."os-string" = true;
                                   };
                                 "gi-soup" =
                                   {
@@ -83,16 +89,16 @@
                                   };
                                 "changes-gnome" =
                                   {
-                                    # no X11 server available during testing
-                                    configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
+                                    flags."trace" = false;
+                                    flags."test-X11" = false;
                                   };
                                 "pinafore-lib-gnome" =
                                   {
-                                    configureFlags = [ "-f" "-test-X11" ];
+                                    flags."test-X11" = false;
                                   };
                                 "pinafore-app" =
                                   {
-                                    configureFlags = [ "-f" "-gitversion" ];
+                                    flags."gitversion" = false;
                                     dontStrip = false;
                                     dontPatchELF = false;
                                   };

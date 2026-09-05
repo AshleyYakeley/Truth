@@ -4,7 +4,7 @@ FROM debian:forky
 # FROM fpco/stack-build-small:${SNAPSHOT}
 ARG SNAPSHOT
 RUN : "${SNAPSHOT:?SNAPSHOT is required}"
-RUN echo 2026-07-11 > /container.date
+RUN echo 2026-08-31 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive

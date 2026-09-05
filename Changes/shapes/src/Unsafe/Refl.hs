@@ -34,7 +34,8 @@ unsafeId ::
 unsafeId = unsafeAssign @k @a @b $ id @cat @a
 
 unsafeHRefl :: forall ka (a :: ka) kb (b :: kb). a :~~: b
-unsafeHRefl = unsafeAssign @Type @ka @kb $ unsafeAssign @ka @a @b $ HRefl
+unsafeHRefl = unsafeAssign @Type @ka @kb $ case unsafeRefl @ka @a @b of
+        Refl -> HRefl @a
 
 unsafeCheatHetEquality :: forall (w :: forall k. k -> Type) ka (a :: ka) kb (b :: kb). w a -> w b -> a :~~: b
 unsafeCheatHetEquality _ _ = unsafeHRefl @ka @a @kb @b
