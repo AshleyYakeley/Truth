@@ -90,11 +90,11 @@
                                 "changes-gnome" =
                                   {
                                     flags."trace" = false;
-                                    flags."test-X11" = false;
+                                    flags."test-x11" = false;
                                   };
                                 "pinafore-lib-gnome" =
                                   {
-                                    flags."test-X11" = false;
+                                    flags."test-x11" = false;
                                   };
                                 "pinafore-app" =
                                   {
@@ -149,7 +149,7 @@
               ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
               mkdir -p vsce/images
               ${pkgs.librsvg}/bin/rsvg-convert -w 256 -h 256 ${./.}/support/branding/logo.svg -o vsce/images/logo.png
-              PATH=$PATH:${pkgs.nodejs_20}/bin
+              PATH=$PATH:${pkgs.nodejs}/bin
               cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
             '';
           vscePackage = pkgs.runCommand "pinafore-vscode-extension" { }
