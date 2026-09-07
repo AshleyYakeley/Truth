@@ -28,18 +28,20 @@ repository:
     patterns: []
   keywords:
     patterns:
+      # The backslashes pass through both YAML and yq's eval string parser.
       _eval: "load(\"out/support/syntax-data.json\").keywords | to_entries |
           map (
               {
                   \"name\": .key,
-                  \"match\": (\"\\b(\" + (.value|join(\"|\")) + \")\\b\")
+                  \"match\": (\"\\\\b(\" + (.value|join(\"|\")) + \")\\\\b\")
               }
           )"
   types:
     patterns:
     - name: storage.type.predefined.pinafore
       match:
-        _eval: "load(\"out/support/syntax-data.json\").types | \"\\b(\" + (join(\"|\")) + \")\\b\""
+        # The backslashes pass through both YAML and yq's eval string parser.
+        _eval: "load(\"out/support/syntax-data.json\").types | \"\\\\b(\" + (join(\"|\")) + \")\\\\b\""
   strings:
     name: string.quoted.double.pinafore
     begin: "\""
