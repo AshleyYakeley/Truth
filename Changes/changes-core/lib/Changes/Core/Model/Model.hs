@@ -16,8 +16,11 @@ module Changes.Core.Model.Model
     , constantModel
     , modelToReadOnly
     , makeMemoryModel
+    , debounceUpdatesModel
     )
 where
+
+import Control.Exception.Base (AsyncException)
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -207,3 +210,71 @@ makeMemoryModel :: forall a. a -> Lifecycle (Model (WholeUpdate a))
 makeMemoryModel initial = do
     obj <- liftIO $ makeMemoryReference initial $ \_ -> True
     makeReflectingModel obj
+
+data UpdateState update
+    = NoUpdateState
+    | SomeUpdateState (NonEmpty update) EditContext POSIXTime (Task IO ())
+    | ClosedUpdateState
+
+debounceUpdatesModel :: forall update. NominalDiffTime -> Model update -> Model update
+debounceUpdatesModel delay (MkResource runner (MkAModel ref sub utask :: _ t)) = let
+    catchLogException :: IO () -> IO ()
+    catchLogException iou = catchExc iou $ \exc ->
+        case exc of
+            _ | Just (_ :: AsyncException) <- fromException exc -> throwExc exc
+            _ | Just (_ :: Cancelled) <- fromException exc -> throwExc exc
+            _ -> hPutStrLn stderr $ "model update: " <> show exc
+
+    sub' ::
+        Task IO () ->
+        (ResourceContext -> NonEmpty update -> EditContext -> IO ()) ->
+        LifecycleT IO (ReaderT t IO) ()
+    sub' taskC updateC = do
+        var :: MVar (UpdateState update) <- liftIO $ newMVar NoUpdateState
+        lifecycleOnClose $ mVarRunStateT var $ put ClosedUpdateState
+        let
+            runDebounce :: NominalDiffTime -> IO ()
+            runDebounce remaining = do
+                threadSleep remaining
+                mNewRemaining <- mVarRunStateT var $ do
+                    updateState <- get
+                    case updateState of
+                        SomeUpdateState updates ec aged _ -> do
+                            newCurrent <- lift getPOSIXTime
+                            if newCurrent >= aged
+                                then do
+                                    put NoUpdateState
+                                    lift $ catchLogException $ updateC emptyResourceContext updates ec
+                                    return Nothing
+                                else return $ Just $ aged - newCurrent
+                        _ -> return Nothing
+                for_ mNewRemaining runDebounce
+
+            updateC' :: ResourceContext -> NonEmpty update -> EditContext -> IO ()
+            updateC' rc updates ec = do
+                mVarRunStateT var $ do
+                    current <- lift getPOSIXTime
+                    let
+                        aged = current + delay
+                    updateState <- get
+                    case updateState of
+                        NoUpdateState -> do
+                            (debounceTask, _) <- lift $ forkTask $ runDebounce delay
+                            put $ SomeUpdateState updates ec aged debounceTask
+                            return ()
+                        SomeUpdateState vupdates vec _ debounceTask | vec == ec -> put $ SomeUpdateState (vupdates <> updates) vec aged debounceTask
+                        SomeUpdateState vupdates vec _ debounceTask -> do
+                            lift $ catchLogException $ updateC rc vupdates vec
+                            put $ SomeUpdateState updates ec aged debounceTask
+                        ClosedUpdateState -> return ()
+
+            trackDebounceTask :: Task IO ()
+            trackDebounceTask = ioTask $ do
+                mVarRunStateT var $ do
+                    updateState <- get
+                    case updateState of
+                        SomeUpdateState _ _ _ debounceTask -> return debounceTask
+                        _ -> return $ pure ()
+
+        sub (trackDebounceTask <> taskC) updateC'
+    in MkResource runner $ MkAModel ref sub' utask

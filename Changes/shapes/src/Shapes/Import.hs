@@ -131,6 +131,7 @@ import Data.Text.Encoding.Error as I (UnicodeException (..))
 
 -- time
 import Data.Time as I
+import Data.Time.Clock.POSIX as I
 
 -- random
 import System.Random as I hiding (Finite)
