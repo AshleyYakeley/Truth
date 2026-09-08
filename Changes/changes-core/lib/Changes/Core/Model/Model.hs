@@ -132,7 +132,7 @@ makeSharedModel premodel = do
                                         for_ sourcedupdates $ \(ec, updates) -> updateC emptyResourceContext updates ec
                             let
                                 useUpdate updates ectxt = updateAsync $ singleUpdateQueue updates ectxt
-                                useTask = taskC <> runnertask
+                                useTask = runnertask <> taskC
                             addStoreStateT $ MkUpdateStoreEntry{..}
                 lifecycleOnClose $ do
                     mentry <-

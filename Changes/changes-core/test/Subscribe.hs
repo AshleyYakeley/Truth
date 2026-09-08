@@ -6,6 +6,7 @@ module Subscribe
     )
 where
 
+import GHC.Conc qualified as Conc
 import Shapes
 import Shapes.Test
 
@@ -99,6 +100,55 @@ barrier = do
         signal = putMVar mvar ()
         wait = takeMVar mvar
     return (signal, wait)
+
+testSharedModelUpdatesTask :: TestTree
+testSharedModelUpdatesTask =
+    testTree "shared model waits for downstream update work" $ runLifecycle $ do
+        model <- makeMemoryModel ()
+        callbackStarted <- liftIO newEmptyMVar
+        allowDelivery <- liftIO newEmptyMVar
+        events <- liftIO newEmptyMVar
+        pendingTask <- liftIO $ newMVar mempty
+        (finishDownstream, downstreamTask) <- liftIO $ mkTask @IO @()
+        let
+            trackedDownstreamTask =
+                downstreamTask
+                    { taskWait = do
+                        putMVar events "downstream wait"
+                        taskWait downstreamTask
+                    }
+            receive _ _ _ = do
+                putMVar callbackStarted ()
+                readMVar allowDelivery
+                void $ swapMVar pendingTask trackedDownstreamTask
+            -- With delivery held at the barrier, the model waiter can only
+            -- block on the subscription runner. This avoids a scheduling sleep.
+            waitUntilBlocked tid = do
+                status <- Conc.threadStatus tid
+                case status of
+                    Conc.ThreadBlocked Conc.BlockedOnMVar -> return ()
+                    Conc.ThreadRunning -> Conc.yield >> waitUntilBlocked tid
+                    _ -> assertFailure $ "unexpected model waiter status: " <> show status
+        tunnel $ \tun -> runResource emptyResourceContext model $ \amodel ->
+            tun $ aModelSubscribe amodel (ioTask $ readMVar pendingTask) receive
+        lifecycleOnClose $ do
+            void $ tryPutMVar allowDelivery ()
+            finishDownstream ()
+        liftIO $ do
+            runResource emptyResourceContext model $ \amodel ->
+                pushOrFail "failed" noEditSource $ aModelEdit amodel $ pure $ MkWholeReaderEdit ()
+            readMVar callbackStarted
+            (waiter, tid) <- forkTask $ do
+                taskWait $ modelUpdatesTask model
+                putMVar events "model wait returned"
+            waitUntilBlocked tid
+            -- The callback now installs work that did not exist when waiting
+            -- began. Waiting must discover it after the runner finishes.
+            putMVar allowDelivery ()
+            firstEvent <- takeMVar events
+            finishDownstream ()
+            taskWait waiter
+            assertEqual "modelUpdatesTask returned before waiting for downstream work" "downstream wait" firstEvent
 
 testUpdateReference :: TestTree
 testUpdateReference =
@@ -612,7 +662,8 @@ testSubscribe :: TestTree
 testSubscribe =
     testTree
         "subscribe"
-        [ testUpdateReference
+        [ testSharedModelUpdatesTask
+        , testUpdateReference
         , testPair
         , testString
         , testString1
