@@ -31,3 +31,7 @@ wModelPush rc (MkWModel sub) edits = runResource rc sub $ \asub -> pushEdit noEd
 
 wModelReference :: WModel update -> WReference update
 wModelReference (MkWModel model) = MkWReference $ modelReference model
+
+wModelRunEachHere :: ResourceContext -> WModel (ROWUpdate (Lifecycle a)) -> Lifecycle (WModel (ROWUpdate a))
+wModelRunEachHere rc model = replaceLifecycles $ \unlift ->
+    eaFloatMap rc runEachROWFloatingLens $ eaMapReadOnlyWhole unlift model

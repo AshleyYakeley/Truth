@@ -21,6 +21,10 @@ instance MaybeRepresentational LangListModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangListModel
 
+instance IsModel (LangListModel '(p, q)) where
+    modelLens f (OrderedLangListModel model) = fmap OrderedLangListModel $ modelLens f model
+    modelLens f (FullLangListModel model) = fmap FullLangListModel $ modelLens f model
+
 instance IsInvertibleModel (LangListModel '(t, t)) where
     invertibleModelLens f (OrderedLangListModel model) = fmap OrderedLangListModel $ wUninvertibleModelLens f model
     invertibleModelLens f (FullLangListModel model) = fmap FullLangListModel $ wInvertibleModelLens f model
@@ -32,8 +36,7 @@ newMemListModel = do
     return $ FullLangListModel $ eaMap singleBiChangeLens $ MkWModel model
 
 langListModelToModel :: forall p q. LangListModel '(p, q) -> LangModel
-langListModelToModel (OrderedLangListModel model) = MkLangModel model
-langListModelToModel (FullLangListModel model) = MkLangModel model
+langListModelToModel = toLangModel
 
 langListModelToOrdered :: forall p q. LangListModel '(p, q) -> WModel (OrderedListUpdate (ROWUpdate q))
 langListModelToOrdered (OrderedLangListModel model) = model

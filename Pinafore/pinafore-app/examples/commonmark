@@ -2,28 +2,66 @@
 import "media", "gnome"
 with GTK.
 do {
-    cmRef <- newMem.WholeModel;
+    cmRef: WholeModel CommonMarkText <-
+        newMem.WholeModel;
+    cmRef := Mk.CommonMarkText "# Clock
+@`
+do {
+    clock <- newClock $ Seconds 1;
+    pure ap{plain.HTMLText $ show %clock};
+}
+`
+";
+    cmDebouncedRef: WholeModel CommonMarkText =
+        debounceUpdates.WholeModel (Seconds 0.2) cmRef;
     htmlErr: Showable -> HTMLText =
         fn err => with HTMLText tag "em" $ plain "error: " <> plain (show err);
-    htmlRef: WholeModel +HTMLText =
-        ap{from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
-    cmWidget: Widget.GTK =
+    catchShowErr: Action a -> Action (a | WholeModel +HTMLText) =
+        fn action =>
+        catch action $
+        fn exc =>
+        pure $
+        pure.WholeModel $
+        htmlErr exc;
+    mkModel: Text -> Action (WholeModel HTMLText) =
+        fn text =>
+        with Pinafore. catchShowErr $
+        do {
+            ramodel <- run.Interpreter !{this.Context} $ do.Interpreter {
+                media <- interpret.Scope "import \"media\"";
+                apply.Scope media $ do.Interpreter {
+                    val <- interpret.Value text;
+                    unify.Value !{this.Scope} @(Action (WholeModel HTMLText)) val;
+                }
+            };
+            amodel <- ramodel;
+            model <- amodel;
+            pure model;
+        };
+    htmlRefRef <-
+        runEachHere.WholeModel $
+        ap{catchShowErr $ toHTMLModel.CommonMarkText mkModel %cmDebouncedRef};
+    htmlRef =
+        dynamic.WholeModel htmlRefRef;
+    cmWidget: Widget =
         scrolled.Widget $
         textView.Widget $
         fromWhole.TextModel $
         asText.CommonMarkText !$ cmRef;
-    htmlWidget: Widget.GTK =
+    htmlWidget: Widget =
         scrolled.Widget $
         textView.Widget $
-        fromWhole.TextModel ap{%htmlRef >- fn Mk.HTMLText t => t};
-    webWidget: Widget.GTK =
+        fromWhole.TextModel $
+        ap{%htmlRef >- fn Mk.HTMLText t => t};
+    webWidget: Widget =
         webView.WebKit htmlRef;
     run $
         fn gtk =>
-        open.Window gtk (400,600) ap{"CommonMark / WebKit"} $
-        notebook.Widget unknown.WholeModel [
-            (label.Widget ap{"CommonMark Text"}, cmWidget),
-            (label.Widget ap{"HTML Text"}, htmlWidget),
-            (label.Widget ap{"Rendered"}, webWidget)
-        ];
+        open.Window gtk (1200,600) ap{"CommonMark / WebKit"} $
+        with Widget
+        let {
+            layout = fn w => grow.Layout $ style.Widget ap{style.CSSText [("border","2px solid black"),("padding","2px")]} $ w;
+        }
+        horizontal
+        [layout cmWidget, layout htmlWidget, layout webWidget];
 }

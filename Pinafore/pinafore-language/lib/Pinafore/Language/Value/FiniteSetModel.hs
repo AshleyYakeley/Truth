@@ -17,6 +17,10 @@ instance MaybeRepresentational LangFiniteSetModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangFiniteSetModel
 
+instance IsModel (LangFiniteSetModel pq) where
+    modelLens f (MkLangFiniteSetModel eqv tr model) =
+        fmap (MkLangFiniteSetModel eqv tr) $ modelLens f model
+
 instance IsInvertibleModel (LangFiniteSetModel pq) where
     invertibleModelLens f (MkLangFiniteSetModel eqv tr model) =
         fmap (MkLangFiniteSetModel eqv tr) $ giveConstraint eqv $ wInvertibleModelLens f model

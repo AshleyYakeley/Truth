@@ -21,6 +21,9 @@ newtype BiUpdate (pupdate :: Type) (qupdate :: Type)
 
 type instance UpdateEdit (BiUpdate pupdate qupdate) = BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
 
+instance FullUpdate qupdate => FullUpdate (BiUpdate pupdate qupdate) where
+    replaceUpdate rd push = replaceUpdate rd $ push . MkBiUpdate
+
 instance FloatingOn edit edit => FloatingOn (BiEdit edit edit) (BiEdit edit edit) where
     floatingUpdate (MkBiEdit edit) (MkBiEdit t) = MkBiEdit $ floatingUpdate edit t
 

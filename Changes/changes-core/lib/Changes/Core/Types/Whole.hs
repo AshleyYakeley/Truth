@@ -266,3 +266,25 @@ instance IsChangeLens (Codec a b) where
     type LensDomain (Codec a b) = WholeUpdate a
     type LensRange (Codec a b) = WholeUpdate (Maybe b)
     toChangeLens = toChangeLens . codecInjection
+
+runEachROWLens :: ChangeLens (ROWUpdate (IO a)) (ROWUpdate a)
+runEachROWLens = ioFuncChangeLens id
+
+-- | Run once initially and once per update, retaining the result for reads.
+runEachROWFloatingLens :: forall a. FloatingChangeLens (ROWUpdate (IO a)) (ROWUpdate a)
+runEachROWFloatingLens = let
+    sclInit :: StateLensInit (WholeReader (IO a)) a
+    sclInit mr = mr ReadWhole >>= liftIO
+    sclRead :: ReadFunctionT (StateT a) (WholeReader (IO a)) (WholeReader a)
+    sclRead _ ReadWhole = get
+    sclUpdate ::
+        forall m.
+        MonadIO m =>
+        ROWUpdate (IO a) ->
+        Readable m (WholeReader (IO a)) ->
+        StateT a m [ROWUpdate a]
+    sclUpdate (MkReadOnlyUpdate (MkWholeUpdate action)) _ = do
+        a <- liftIO action
+        put a
+        return [MkReadOnlyUpdate $ MkWholeUpdate a]
+    in makeStateLens @'Linear MkStateChangeLens{sclPutEdits = clPutEditsNone, ..}

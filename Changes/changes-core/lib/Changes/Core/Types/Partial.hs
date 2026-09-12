@@ -29,6 +29,9 @@ type instance UpdateEdit (PartialUpdate update) = UpdateEdit update
 instance IsUpdate update => IsUpdate (PartialUpdate update) where
     editUpdate edit = KnownPartialUpdate $ editUpdate edit
 
+instance FullUpdate (PartialUpdate update) where
+    replaceUpdate _ push = push $ UnknownPartialUpdate $ \_ -> True
+
 partialFullChangeLens ::
     forall update.
     (IsUpdate update, FullEdit (UpdateEdit update)) =>

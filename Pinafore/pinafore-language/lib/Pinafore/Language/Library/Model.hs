@@ -94,6 +94,12 @@ listModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[ 'RangeCCRVariance] LangListModel where
     qGroundType = listModelGroundType
 
+dynamicListModel :: forall px py q. ImmutableWholeModel (LangListModel '(px, q)) -> LangListModel '(py, q)
+dynamicListModel iwmodel = let
+    emptyModel :: WModel (OrderedListUpdate (ROWUpdate q))
+    emptyModel = eaMap fromReadOnlyRejectingChangeLens $ MkWModel $ constantModel mempty
+    in OrderedLangListModel $ dynamicWModel $ immutableWholeModelValue emptyModel $ fmap langListModelToOrdered iwmodel
+
 -- TextModel
 textModelGroundType :: QGroundType '[] LangTextModel
 textModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangTextModel)|]) "TextModel"
@@ -141,6 +147,9 @@ getFiniteSetModelList order (MkLangFiniteSetModel eqv r (val :: WModel (FiniteSe
             $ OrderedLangListModel
             $ eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent)
             $ MkWModel colSub
+
+debounceUpdates :: forall a. IsModel a => NominalDiffTime -> a -> a
+debounceUpdates t = modelMap $ debounceUpdatesModel t
 
 modelLibSection :: LibraryStuff
 modelLibSection =
@@ -222,6 +231,9 @@ modelLibSection =
                         $ langWholeModelSubscribe @A
                    , valBDS "newMem" "Create a new whole model of memory, initially unknown." $ newMemWholeModel @A
                    , valBDS "dynamic" "A `WholeModel` provided by a model." $ dynamicWholeModel @P @Q
+                   , valBDS "runEach" "Run actions in model, each in its own lifecycle." $ langRunEachWholeModel @A
+                   , valBDS "runEachHere" "Run actions in model, in the current lifecycle." $ langRunEachHereWholeModel @A
+                   , valBDS "debounceUpdates" "Defer updates until a gap of this time." $ debounceUpdates @(LangWholeModel '(A, B))
                    ]
             ]
         , headingBDS
@@ -277,6 +289,7 @@ modelLibSection =
                     $ valBDS "<*>" "Cartesian product of sets. The resulting set will be read-only."
                     $ langSetModelCartesianProduct @A @B
                 , valBDS "dynamic" "A `SetModel` provided by a model." dynamicSetModel
+                , valBDS "debounceUpdates" "Defer updates until a gap of this time." $ debounceUpdates @(LangSetModel A)
                 ]
             ]
         , headingBDS
@@ -344,6 +357,7 @@ modelLibSection =
                 , valBDS "newMem" "Create a new finite set model of memory, initially empty."
                     $ newMemFiniteSetModel @A
                 , valBDS "dynamic" "A `FiniteSetModel` provided by a model." dynamicFiniteSetModel
+                , valBDS "debounceUpdates" "Defer updates until a gap of this time." $ debounceUpdates @(LangFiniteSetModel '(A, B))
                 ]
             ]
         , headingBDS
@@ -373,6 +387,8 @@ modelLibSection =
                     $ langListModelItem @P @Q
                 , valBDS "immut" "Convert a list model to immutable." $ langImmutListModel @BottomType @A @TopType
                 , valBDS "newMem" "Create a new list model of memory, initially empty." $ newMemListModel @A
+                , valBDS "dynamic" "A `ListModel` provided by a model." $ dynamicListModel @BottomType @TopType @A
+                , valBDS "debounceUpdates" "Defer updates until a gap of this time." $ debounceUpdates @(LangListModel '(A, B))
                 ]
             ]
         , headingBDS
@@ -395,6 +411,7 @@ modelLibSection =
                     langTextModelSection
                 , valBDS "newMem" "Create a new text model of memory, initially empty." newMemTextModel
                 , valBDS "dynamic" "A `TextModel` provided by a model." dynamicTextModel
+                , valBDS "debounceUpdates" "Defer updates until a gap of this time." $ debounceUpdates @LangTextModel
                 ]
             ]
         ]

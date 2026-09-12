@@ -65,6 +65,7 @@
 - ignore: {name: "Move brackets to avoid $"}
 - ignore: {name: "Use tuple-section"}
 - ignore: {name: "Use camelCase"}
+- ignore: {name: "Use join"}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~

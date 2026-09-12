@@ -18,6 +18,10 @@ instance MaybeRepresentational LangWholeModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangWholeModel
 
+instance IsModel (LangWholeModel '(p, q)) where
+    modelLens f (MutableLangWholeModel model) = fmap MutableLangWholeModel $ modelLens f model
+    modelLens f (ImmutableLangWholeModel model) = fmap ImmutableLangWholeModel $ modelLens f model
+
 instance IsInvertibleModel (LangWholeModel '(t, t)) where
     invertibleModelLens f (MutableLangWholeModel model) = fmap MutableLangWholeModel $ wInvertibleModelLens f model
     invertibleModelLens f (ImmutableLangWholeModel model) = fmap ImmutableLangWholeModel $ invertibleModelLens f model
@@ -29,8 +33,7 @@ newMemWholeModel = do
     return $ wModelToWholeModel $ MkWModel model
 
 langWholeModelToModel :: forall p q. LangWholeModel '(p, q) -> LangModel
-langWholeModelToModel (MutableLangWholeModel model) = MkLangModel model
-langWholeModelToModel (ImmutableLangWholeModel model) = MkLangModel $ immutableModelToReadOnlyModel model
+langWholeModelToModel = toLangModel
 
 langWholeModelToReadOnlyValue :: LangWholeModel '(BottomType, a) -> WROWModel (Know a)
 langWholeModelToReadOnlyValue model =
@@ -144,3 +147,22 @@ modelSelectNotify esrc model =
 langWholeModelSelectNotify :: EditSource -> LangWholeModel '(p, q) -> SelectNotify p
 langWholeModelSelectNotify esrc (MutableLangWholeModel (MkWModel model)) = modelSelectNotify esrc model
 langWholeModelSelectNotify _ (ImmutableLangWholeModel _) = mempty
+
+langRunEachWholeModel :: forall a. ImmutableWholeModel (Action a) -> ImmutableWholeModel a
+langRunEachWholeModel (MkImmutableWholeModel model) = let
+    runKAction :: Know (Action a) -> IO (Know a)
+    runKAction = \case
+        Unknown -> return Unknown
+        Known action -> runLifecycle $ runView $ unliftAction action
+    in MkImmutableWholeModel $ eaMap runEachROWLens $ eaMapReadOnlyWhole runKAction model
+
+langRunEachHereWholeModel :: forall a. ImmutableWholeModel (Action a) -> Action (ImmutableWholeModel a)
+langRunEachHereWholeModel (MkImmutableWholeModel model) = do
+    let
+        aka :: Know (Action a) -> Lifecycle (Know a)
+        aka = \case
+            Unknown -> return Unknown
+            Known action -> runView $ unliftAction action
+    rc <- actionResourceContext
+    model' <- actionLiftLifecycle $ wModelRunEachHere rc $ eaMapReadOnlyWhole aka model
+    return $ MkImmutableWholeModel model'

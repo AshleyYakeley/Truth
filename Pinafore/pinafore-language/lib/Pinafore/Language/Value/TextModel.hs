@@ -8,6 +8,9 @@ newtype LangTextModel = MkLangTextModel
     { unLangTextModel :: WModel (StringUpdate Text)
     }
 
+instance IsModel LangTextModel where
+    modelLens f (MkLangTextModel model) = fmap MkLangTextModel $ modelLens f model
+
 instance IsInvertibleModel LangTextModel where
     invertibleModelLens f (MkLangTextModel model) = fmap MkLangTextModel $ wInvertibleModelLens f model
 

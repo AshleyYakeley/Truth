@@ -9,6 +9,7 @@ where
 import GHC.Conc qualified as Conc
 import Shapes
 import Shapes.Test
+import System.Timeout qualified as Timeout
 
 import Changes.Core
 import Test.Useful
@@ -149,6 +150,125 @@ testSharedModelUpdatesTask =
             finishDownstream ()
             taskWait waiter
             assertEqual "modelUpdatesTask returned before waiting for downstream work" "downstream wait" firstEvent
+
+testDynamicModel :: TestTree
+testDynamicModel =
+    testTree "dynamic model switches subscriptions" $ runLifecycle $ do
+        firstModel <- makeMemoryModel (1 :: Int)
+        secondModel <- makeMemoryModel (10 :: Int)
+        outerModel <- makeMemoryModel firstModel
+        let model = dynamicModel $ modelToReadOnly outerModel
+        received <- liftIO $ newMVar []
+        let
+            receive _ updates _ = modifyMVar_ received $ \values ->
+                return $ values <> fmap (\(MkWholeReaderUpdate value) -> value) (toList updates)
+            push m value = runResource emptyResourceContext m $ \am ->
+                pushOrFail "edit failed" noEditSource $ aModelEdit am $ pure $ MkWholeReaderEdit value
+            checkResult expected = do
+                taskWait $ modelUpdatesTask model
+                values <- swapMVar received []
+                assertEqual "updates" expected values
+        tunnel $ \tun -> runResource emptyResourceContext model $ \am ->
+            tun $ aModelSubscribe am mempty receive
+        liftIO $ do
+            push firstModel 2
+            checkResult [2]
+            push outerModel secondModel
+            checkResult [10]
+            push firstModel 3
+            taskWait $ modelUpdatesTask firstModel
+            checkResult []
+            push secondModel 11
+            checkResult [11]
+            push model 12
+            checkResult [12]
+            push outerModel firstModel
+            checkResult [3]
+            push firstModel 4
+            checkResult [4]
+
+testDynamicModelCallbackResources :: TestTree
+testDynamicModelCallbackResources =
+    testTree "dynamic model releases resources before notifying" $ runLifecycle $ do
+        firstModel <- makeMemoryModel (1 :: Int)
+        secondModel <- makeMemoryModel (10 :: Int)
+        outerModel <- makeMemoryModel firstModel
+        let model = dynamicModel $ modelToReadOnly outerModel
+        received <- liftIO newEmptyMVar
+        let
+            readValue m = runResource emptyResourceContext m $ \am -> aModelRead am ReadWhole
+            receive _ _ _ = do
+                -- A GUI callback waits for another thread, which may already
+                -- be handling input and need these same model resources.
+                value <- Timeout.timeout 1000000 $ pusherWait forkIOPusher $ do
+                    innerModel <- readValue outerModel
+                    readValue innerModel
+                putMVar received value
+        tunnel $ \tun -> runResource emptyResourceContext model $ \am ->
+            tun $ aModelSubscribe am mempty receive
+        liftIO $ do
+            runResource emptyResourceContext outerModel $ \am ->
+                pushOrFail "edit failed" noEditSource $ aModelEdit am $ pure $ MkWholeReaderEdit secondModel
+            taskWait $ modelUpdatesTask model
+            takeMVar received >>= assertEqual "callback can access source and inner resources" (Just 10)
+
+testRunEachHere :: TestTree
+testRunEachHere = testTree "runEachHere retains its model" $ do
+    started <- newMVar (0 :: Int)
+    closed <- newMVar (0 :: Int)
+    let
+        increment var = modifyMVar_ var $ return . succ
+        checkCounts starts closes = do
+            readMVar started >>= assertEqual "actions run" starts
+            readMVar closed >>= assertEqual "lifecycles closed" closes
+    runLifecycle $ do
+        firstModel <- makeMemoryModel (1 :: Int)
+        secondModel <- makeMemoryModel (10 :: Int)
+        let
+            action model = do
+                liftIO $ increment started
+                lifecycleOnClose $ increment closed
+                return model
+        source <- makeMemoryModel $ action firstModel
+        -- Initialization must reuse the source resource already held here.
+        result <- tunnel $ \tun -> runResourceContext emptyResourceContext source $ \rc _ _ ->
+            tun $ wModelRunEachHere rc $ MkWModel $ modelToReadOnly source
+        let
+            model = dynamicModel $ unWModel result
+            readValue = runResource emptyResourceContext model $ \am -> aModelRead am ReadWhole
+            push m value = runResource emptyResourceContext m $ \am ->
+                pushOrFail "edit failed" noEditSource $ aModelEdit am $ pure $ MkWholeReaderEdit value
+        liftIO $ do
+            readValue >>= assertEqual "first read" 1
+            readValue >>= assertEqual "second read" 1
+            checkCounts 1 0
+        received <- for [1 :: Int, 2] $ \_ -> do
+            values <- liftIO $ newMVar []
+            tunnel $ \tun -> runResource emptyResourceContext model $ \am ->
+                tun $ aModelSubscribe am mempty $ \_ updates _ ->
+                    modifyMVar_ values $ \old ->
+                        return $ old <> fmap (\(MkWholeUpdate value) -> value) (toList updates)
+            return values
+        let
+            checkResult expected = do
+                taskWait $ modelUpdatesTask model
+                for_ received $ \values -> swapMVar values [] >>= assertEqual "updates" expected
+        liftIO $ do
+            push firstModel 2
+            checkResult [2]
+            readValue >>= assertEqual "updated read" 2
+            checkCounts 1 0
+            push source $ action secondModel
+            checkResult [10]
+            readValue >>= assertEqual "replacement read" 10
+            checkCounts 2 1
+            push firstModel 3
+            taskWait $ modelUpdatesTask firstModel
+            checkResult []
+            push secondModel 11
+            checkResult [11]
+            checkCounts 2 1
+    checkCounts 2 2
 
 testUpdateReference :: TestTree
 testUpdateReference =
@@ -662,7 +782,10 @@ testSubscribe :: TestTree
 testSubscribe =
     testTree
         "subscribe"
-        [ testSharedModelUpdatesTask
+        [ testDynamicModel
+        , testDynamicModelCallbackResources
+        , testRunEachHere
+        , testSharedModelUpdatesTask
         , testUpdateReference
         , testPair
         , testString

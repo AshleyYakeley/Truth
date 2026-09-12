@@ -1,5 +1,6 @@
 module Changes.Core.Model.Dynamic (dynamicModel, dynamicWModel) where
 
+import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Model.Model
 import Changes.Core.Model.Reference
@@ -23,23 +24,48 @@ dynamicAReference ctask =
         , refCommitTask = ctask
         }
 
-dynamicAModel :: Task IO () -> Task IO () -> AModel update (AModel update ())
-dynamicAModel ctask utask =
+dynamicAModel ::
+    FullUpdate update =>
+    Model (ROWUpdate (Model update)) ->
+    Task IO () ->
+    Task IO () ->
+    AModel update (AModel (ROWUpdate (Model update)) (), AModel update ())
+dynamicAModel outerModel ctask utask =
     MkAModel
-        { aModelAReference = contramap aModelAReference $ dynamicAReference ctask
+        { aModelAReference = contramap (aModelAReference . snd) $ dynamicAReference ctask
         , aModelSubscribe = \task update -> do
-            amodel <- lift ask
-            hoist liftReader (aModelSubscribe amodel task update)
+            (outerAModel, innerAModel) <- lift ask
+            (_, initialState) <- lift $ getLifeState $ hoist liftReader $ aModelSubscribe innerAModel task update
+            state <- liftIO $ newMVar $ Just initialState
+            lifecycleOnClose $ do
+                old <- swapMVar state Nothing
+                for_ old closeLifeState
+            let
+                receiveOuter rc _ ec = do
+                    updates <- modifyMVar state $ \case
+                        Nothing -> return (Nothing, [])
+                        Just old -> do
+                            closeLifeState old
+                            runResourceContext rc outerModel $ \outerRC runOuter am -> do
+                                innerModel <- runOuter $ aModelRead am ReadWhole
+                                runResourceContext outerRC innerModel $ \_ run innerAM -> do
+                                    (_, newState) <- getLifeState $ hoist run $ aModelSubscribe innerAM task update
+                                    updates <- run $ getReplaceUpdates $ aModelRead innerAM
+                                    return (Just newState, updates)
+                    -- A receiver may synchronously dispatch to a GUI thread
+                    -- that needs these resources to process an edit.
+                    for_ (nonEmpty updates) $ \us -> update rc us ec
+            hoist liftReader $ aModelSubscribe outerAModel task receiveOuter
         , aModelUpdatesTask = utask
         }
 
-dynamicModel :: forall update. Model (ROWUpdate (Model update)) -> Model update
-dynamicModel (MkResource runner1 am1) = let
-    runner :: ResourceRunner (AModel update ())
+dynamicModel :: forall update. FullUpdate update => Model (ROWUpdate (Model update)) -> Model update
+dynamicModel outerModel@(MkResource runner1 am1) = let
+    runner :: ResourceRunner (AModel (ROWUpdate (Model update)) (), AModel update ())
     runner = dependentResourceRunner runner1
         $ \t -> do
             MkResource runner2 am2 <- runReaderT (aModelRead am1 ReadWhole) t
-            return $ fmap (\t2 -> contramap (\() -> t2) am2) runner2
+            return $ fmap (\t2 -> (contramap (const t) am1, contramap (const t2) am2)) runner2
     ctask :: Task IO ()
     ctask = runResourceTask runner1 $ \t -> ioTask $ do
         m2 <- runReaderT (aModelRead am1 ReadWhole) t
@@ -51,7 +77,7 @@ dynamicModel (MkResource runner1 am1) = let
                     m2 <- runReaderT (aModelRead am1 ReadWhole) t
                     pure $ modelUpdatesTask m2
                )
-    in MkResource runner $ dynamicAModel ctask utask
+    in MkResource runner $ dynamicAModel outerModel ctask utask
 
-dynamicWModel :: forall update. WModel (ROWUpdate (WModel update)) -> WModel update
+dynamicWModel :: forall update. FullUpdate update => WModel (ROWUpdate (WModel update)) -> WModel update
 dynamicWModel wmodel = MkWModel $ dynamicModel $ unWModel $ eaMapReadOnlyWhole unWModel wmodel
