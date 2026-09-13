@@ -26,7 +26,12 @@ createWebView MkWebViewOptions{..} lmod = do
     (wv, widget) <-
         gvRunLocked $ do
             let _ = wvoURISchemes
-            webView <- gvNew GI.WebView []
+            -- The default network session is released by an exit handler on the
+            -- process main thread, but WebKit requires its GTK thread for cleanup.
+            -- Own the session here so it is released within the GTK lifecycle.
+            session <- GI.networkSessionNew Nothing Nothing
+            gvBind session
+            webView <- gvNew GI.WebView [#networkSession GI.:= session]
             widget <- GI.toWidget webView
             return (webView, widget)
     gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ GI.webViewLoadHtml wv text Nothing

@@ -101,5 +101,6 @@ import GI.Pango as I hiding
     )
 import GI.WebKit as I
     ( WebView (..)
+    , networkSessionNew
     , webViewLoadHtml
     )

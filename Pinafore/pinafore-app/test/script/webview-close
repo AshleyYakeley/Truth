@@ -1,0 +1,25 @@
+#!/usr/bin/env pinafore1
+# Run with a disposable --data directory. Both windows close automatically.
+# Regression: WebKit's default network session could abort at process exit.
+let {
+    import "gnome", "media", "UILib";
+} run.Context.UILib $ fn Mk.Context.UILib =>
+imply {
+    ?gtk = gtk;
+    ?undoHandler = undoHandler;
+} do {
+    mainWindow <- paneWindow.Pane.UILib $ Mk.Pane.UILib {
+        titleModel = ap{"Main"};
+        contents = label.Widget.GTK ap{"Notes"};
+    };
+    noteWindow <- paneWindow.Pane.UILib $ Mk.Pane.UILib {
+        titleModel = ap{"Note"};
+        contents = notebook.Widget.GTK unknown.WholeModel [
+            (label.Widget.GTK ap{"View"}, webView.WebKit ap{plain.HTMLText "Test"}),
+            (label.Widget.GTK ap{"Edit"}, label.Widget.GTK ap{"Test"})
+        ];
+    };
+    sleep $ Seconds 3;
+    close.Window.GTK noteWindow;
+    close.Window.GTK mainWindow;
+}
