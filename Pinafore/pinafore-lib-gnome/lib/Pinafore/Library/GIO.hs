@@ -57,9 +57,12 @@ fileMakeRef f = do
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
     return $ wModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
+appInfoLaunchDefaultForUri :: Text -> Action ()
+appInfoLaunchDefaultForUri uri = GI.appInfoLaunchDefaultForUri uri $ Nothing @GI.AppLaunchContext
+
 gioStuff :: LibraryStuff
 gioStuff =
-    headingBDS "GIO" "GNOME file access."
+    headingBDS "GIO" "GNOME file access etc."
         $ pure
         $ namespaceBDS
             "GIO"
@@ -76,4 +79,5 @@ gioStuff =
                         return (p, ())
                 ]
             , namespaceBDS "File" [valBDS "makeRef" "Make a reference from a file." fileMakeRef]
+            , namespaceBDS "AppInfo" [valBDS "launchDefaultForUri" "Open URI in default desktop app" appInfoLaunchDefaultForUri]
             ]
