@@ -1,6 +1,6 @@
 module Pinafore.Syntax.Parse.Type
     ( readTypeFullNameRef
-    , readTypeNewName
+    , readNewTypeFullName
     , readType
     , readType3
     , readTypeVar
@@ -81,10 +81,10 @@ readType1 = do
         _ -> empty
 
 readTypeFullNameRef :: Parser FullNameRef
-readTypeFullNameRef = readFullUName
+readTypeFullNameRef = readUFullNameRef
 
-readTypeNewName :: Parser FullName
-readTypeNewName = readNewUName
+readNewTypeFullName :: Parser FullName
+readNewTypeFullName = readNewUFullName
 
 readTypeConstant :: Parser SyntaxGroundType
 readTypeConstant = do

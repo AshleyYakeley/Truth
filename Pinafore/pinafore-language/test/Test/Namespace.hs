@@ -236,4 +236,49 @@ testNamespace =
                 , testExpectSuccess "let {x = fn a, b => a ..Function. b} pass"
                 , testExpectSuccess "let {x = (..Function.)} pass"
                 ]
+            , tGroup
+                "qualified-decl"
+                [ tGroup
+                    "binding"
+                    [ testExpectSuccess "let {x = pass} x"
+                    , testExpectSuccess "let {x.N = pass} x.N"
+                    , testExpectReject "let {x.N = pass} x"
+                    , testExpectReject "let {x = pass} x.N"
+                    ]
+                , tGroup
+                    "typed-binding"
+                    [ testExpectSuccess "let {x.N: Integer = 3} test $ x.N == 3"
+                    , testExpectSuccess "let {x.N.: Integer = 3} test $ x.N. == 3"
+                    , testExpectReject "let {x.N: Integer = 3} test $ x == 3"
+                    ]
+                , tGroup
+                    "entitytype"
+                    [ testExpectSuccess "let {entitytype T.N; f: T.N -> T.N = fn x => x} pass"
+                    , testExpectSuccess "let {entitytype T.N} with N let {f: T -> T = fn x => x} pass"
+                    , testExpectReject "let {entitytype T.N; f: T -> T = fn x => x} pass"
+                    ]
+                , tGroup
+                    "datatype"
+                    [ testExpectSuccess "let {datatype T.N {MkT}} (MkT.T.N: T.N) >- fn MkT.T.N => pass"
+                    , tModify (expectFailBecause "ISSUE 357") $ testExpectSuccess "let {datatype T.N {MkT}} with N (MkT.T: T) >- fn MkT.T => pass"
+                    , testExpectReject "let {datatype T.N {MkT}; x: T = MkT.T.N} pass"
+                    , testExpectReject "let {datatype T.N {MkT}} MkT.T >- fn _ => pass"
+                    ]
+                , tGroup
+                    "datatype-constructor"
+                    [ testExpectSuccess "let {datatype T {MkT.C}} (MkT.C.T: T) >- fn MkT.C.T => pass"
+                    , testExpectSuccess "let {datatype T.N {MkT.C Integer}} (MkT.C.T.N 3: T.N) >- fn MkT.C.T.N x => test $ x == 3"
+                    , testExpectSuccess "let {datatype T.N {MkT.C}} with C.T.N let {x: T.N = MkT} x >- fn MkT => pass"
+                    , testExpectSuccess "let {datatype T {MkT.C; MkT.D}} MkT.C.T >- fn {MkT.C.T => pass; MkT.D.T => fail \"wrong\"}"
+                    , testExpectReject "let {datatype T {MkT.C}} MkT.T >- fn _ => pass"
+                    , testExpectReject "let {datatype T {MkT.C}} MkT.C >- fn _ => pass"
+                    , testExpectReject "let {datatype T.N {MkT.C}} MkT.C.N >- fn _ => pass"
+                    ]
+                , tGroup
+                    "predicatetype"
+                    [ testExpectSuccess "let {predicatetype T.N <: Integer = fn _ => True; f: T.N -> Integer = fn x => x} pass"
+                    , testExpectSuccess "let {predicatetype T.N <: Integer = fn _ => True} with N let {f: T -> Integer = fn x => x} pass"
+                    , testExpectReject "let {predicatetype T.N <: Integer = fn _ => True; f: T -> Integer = fn x => x} pass"
+                    ]
+                ]
             ]

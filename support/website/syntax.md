@@ -233,8 +233,8 @@ All declarations, including type declarations, are local to a `let` block.
     lname
 
 <plain-datatype-constructor> ::=
-    uname <types> |
-    uname <braced(<record-member>)> |
+    quname <types> |
+    quname <braced(<record-member>)> |
     "subtype" "datatype" <type-const> <braced(<plain-datatype-constructor>)>
 
 <record-member> ::= lname ":" <type> <optional("=" <expression>)>
@@ -244,7 +244,7 @@ All declarations, including type declarations, are local to a `let` block.
 <storable-datatype-parameter> ::= "+" lname
 
 <storable-datatype-constructor> ::=
-    uname <types> anchor |
+    quname <types> anchor |
     "subtype" "datatype" "storable" <type-const> <braced(<storable-datatype-constructor>)>
 
 <types> ::=  | <type-3> <types>
@@ -270,7 +270,7 @@ All declarations, including type declarations, are local to a `let` block.
     "(" <pattern-1> "," <comma-separated-1(<pattern-1>)> ")" |
     "(" <pattern-1> ")"
 
-<pattern-var> ::= lname
+<pattern-var> ::= qlname
 
 <constructor> ::= quname
 

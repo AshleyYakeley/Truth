@@ -197,7 +197,7 @@ For example, if the current namespace is `B.A.`:
 
 #### Current Namespace
 
-All declarations are placed within the current namespace.
+All declarations are placed relative to the current namespace.
 
 A `namespace` declaration specifies the current namespace for the declarations it contains, relative to the existing current namespace.
 
@@ -222,6 +222,8 @@ let {
 
         namespace B {
             q = 4;
+            r.N = 5;
+            r.N. = q + r.N;
         };
 
     };
@@ -234,7 +236,7 @@ let {
 
     with A;
 
-    s = p + q.B + s.C;
+    s = p + q.B + s.C + r.N.;
 
 } s + 1
 ```
@@ -244,11 +246,13 @@ In this example, the scope for `body` contains declarations with these full name
 ```
 p.A. = 3
 q.B.A. = 4
+r.N.B.A. = 5
+r.N. = 9;
 s.C.A. = 6
 t.C.A. = 16
 p. = 3
 q.B. = 4
-s. = 13
+s. = 22
 ```
 
 At the point at which `q.B.A.` is declared, references such as `x` will be searched in this order:

@@ -23,17 +23,20 @@ import Pinafore.Syntax.Parse.Type
 import Pinafore.Syntax.Syntax
 import Pinafore.Syntax.Token
 
+typeCompanionNamespace :: FullName -> Namespace
+typeCompanionNamespace (MkFullName name ns) = namespaceAppend [name] ns
+
 readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readOpenEntityTypeDeclaration = do
     readThis TokEntityType
-    name <- readTypeNewName
+    name <- readNewTypeFullName
     return $ TypeSyntaxDeclaration name OpenEntitySyntaxRecursiveTypeDeclaration
 
 readEquivalentTypeDeclaration :: Parser SyntaxDeclaration'
 readEquivalentTypeDeclaration = do
     readThis TokType
     storable <- optional $ readThis TokStorable
-    name <- readTypeNewName
+    name <- readNewTypeFullName
     parameters <- many readTypeParameter
     readThis TokAssign
     st <- readType
@@ -45,7 +48,7 @@ readPredicateTypeDeclaration :: Parser SyntaxDeclaration'
 readPredicateTypeDeclaration = do
     readThis TokPredicateType
     mstorable <- optional $ readThis TokStorable
-    name <- readTypeNewName
+    name <- readNewTypeFullName
     readThis TokSubtypeOf
     st <- readType
     readThis TokAssign
@@ -89,7 +92,7 @@ readSignature =
                 return $ ValueSyntaxSignature name t mdefv
           )
         <|> ( do
-                name <- readFullUName
+                name <- readUFullNameRef
                 return $ SupertypeConstructorSyntaxSignature name
             )
 
@@ -98,12 +101,12 @@ readPlainDataTypeConstructor =
     ( do
         readThis TokSubtype
         readThis TokDataType
-        name <- readTypeNewName
-        constructors <- readWithNamespaceName (fnName name) $ readBraced $ readWithDoc readPlainDataTypeConstructor
+        name <- readNewTypeFullName
+        constructors <- readWithNamespace (typeCompanionNamespace name) $ readBraced $ readWithDoc readPlainDataTypeConstructor
         return $ SubtypeSyntaxConstructorOrSubtype name constructors
     )
         <|> ( do
-                consName <- readNewUName
+                consName <- readNewUFullName
                 fmap (ConstructorSyntaxConstructorOrSubtype consName)
                     $ ( do
                             sigs <- readBraced readSignature
@@ -121,12 +124,12 @@ readStorableDataTypeConstructor =
         readThis TokSubtype
         readThis TokDataType
         readThis TokStorable
-        name <- readTypeNewName
-        constructors <- readWithNamespaceName (fnName name) $ readBraced $ readWithDoc readStorableDataTypeConstructor
+        name <- readNewTypeFullName
+        constructors <- readWithNamespace (typeCompanionNamespace name) $ readBraced $ readWithDoc readStorableDataTypeConstructor
         return $ SubtypeSyntaxConstructorOrSubtype name constructors
     )
         <|> ( do
-                consName <- readNewUName
+                consName <- readNewUFullName
                 mtypes <- many readType3
                 anchor <- readThis TokAnchor
                 return $ ConstructorSyntaxConstructorOrSubtype consName $ PlainSyntaxConstructor mtypes anchor
@@ -166,13 +169,13 @@ readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDataTypeDeclaration = do
     readThis TokDataType
     storable <- optional $ readThis TokStorable
-    name <- readTypeNewName
+    name <- readNewTypeFullName
     parameters <- many readTypeParameter
     msupertype <-
         optional $ do
             readThis TokSubtypeOf
             readType
-    readWithNamespaceName (fnName name)
+    readWithNamespace (typeCompanionNamespace name)
         $ case storable of
             Just () -> do
                 case msupertype of
@@ -596,7 +599,7 @@ readExpression3 =
         )
         <|> readWithSourcePos
             ( do
-                name <- readFullLName
+                name <- readLFullNameRef
                 ( do
                         rv <- readRecordValue readExpression
                         curns <- readAskNamespace

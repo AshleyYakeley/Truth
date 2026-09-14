@@ -23,7 +23,7 @@ readRecordValue p =
 readConstructor :: Maybe (Parser SyntaxExpression) -> Parser SyntaxConstructor
 readConstructor mp =
     ( do
-        name <- readFullUName
+        name <- readUFullNameRef
         mvals <-
             case mp of
                 Just p -> optional $ readRecordValue p

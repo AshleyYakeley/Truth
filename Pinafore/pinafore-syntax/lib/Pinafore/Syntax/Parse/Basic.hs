@@ -2,8 +2,6 @@ module Pinafore.Syntax.Parse.Basic
     ( readAskNamespace
     , readEnd
     , readWithNamespace
-    , readWithNamespaceRef
-    , readWithNamespaceName
     , readThis
     , readExactly
     , readExactlyThis
@@ -14,13 +12,12 @@ module Pinafore.Syntax.Parse.Basic
     , readCommaM
     , readCommaList
     , readWithSourcePos
-    , readFullUName
-    , readFullLName
+    , readUFullNameRef
+    , readLFullNameRef
     , readFullNameRef
     , readUName
     , readLName
-    , readNewUName
-    , readNewLName
+    , readNewUFullName
     , readNamespaceRef
     , readNamespace
     , readNamespaceQualifier
@@ -46,12 +43,6 @@ readAskNamespace = paramAsk namespaceParam
 
 readWithNamespace :: Namespace -> Parser --> Parser
 readWithNamespace = paramWith namespaceParam
-
-readWithNamespaceRef :: NamespaceRef -> Parser --> Parser
-readWithNamespaceRef nr = paramLocal namespaceParam $ \n -> namespaceConcatRef n nr
-
-readWithNamespaceName :: Name -> Parser --> Parser
-readWithNamespaceName name = readWithNamespaceRef $ RelativeNamespaceRef [name]
 
 lineMarkdown :: [Comment] -> Maybe RawMarkdown
 lineMarkdown [] = Just ""
@@ -130,11 +121,11 @@ readWithSourcePos p = do
     t <- p
     return $ MkWithSourcePos spos t
 
-readFullUName :: Parser FullNameRef
-readFullUName = fmap tokenNamesToFullNameRef $ readThis TokNamesUpper
+readUFullNameRef :: Parser FullNameRef
+readUFullNameRef = fmap tokenNamesToFullNameRef $ readThis TokNamesUpper
 
-readFullLName :: Parser FullNameRef
-readFullLName = fmap tokenNamesToFullNameRef $ readThis TokNamesLower
+readLFullNameRef :: Parser FullNameRef
+readLFullNameRef = fmap tokenNamesToFullNameRef $ readThis TokNamesLower
 
 readFullNameRef :: Parser FullNameRef
 readFullNameRef =
@@ -150,17 +141,11 @@ readLName = do
     tns <- readThis TokNamesLower
     mpure $ tokenNamesToSingleName tns
 
-readNewUName :: Parser FullName
-readNewUName = do
-    name <- readUName
+readNewUFullName :: Parser FullName
+readNewUFullName = do
+    nameRef <- readUFullNameRef
     ns <- readAskNamespace
-    return $ MkFullName name ns
-
-readNewLName :: Parser FullName
-readNewLName = do
-    name <- readLName
-    ns <- readAskNamespace
-    return $ MkFullName name ns
+    return $ namespaceConcatFullName ns nameRef
 
 readNamespaceRef :: Parser NamespaceRef
 readNamespaceRef = fmap tokenNamesToNamespaceRef $ readThis TokNamesUpper

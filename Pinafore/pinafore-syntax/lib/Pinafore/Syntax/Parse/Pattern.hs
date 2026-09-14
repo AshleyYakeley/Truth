@@ -117,8 +117,8 @@ readPattern5 =
             )
         <|> readWithSourcePos1
             ( do
-                name <- readLName
-                return $ \ns -> VarSyntaxPattern $ MkFullName name ns
+                nameRef <- readLFullNameRef
+                return $ \ns -> VarSyntaxPattern $ namespaceConcatFullName ns nameRef
             )
         <|> readWithSourcePos1
             ( do
