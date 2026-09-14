@@ -4,15 +4,17 @@ with GTK.
 run $
 fn gtk =>
 let {
-    openEmptyWindow: Action Window =
-        open.Window gtk (200,200) ap{"Empty"} blank.Widget;
-    getSch: Text -> URI -> Action (Maybe Media) =
-        fn {
-            "GET", uri => do {
-                    openEmptyWindow;
-                    pure $ Just $ encode asMedia.Text uri;
-                };
-            _, _ => fail "unrecognised verb";
+    openLinkWindow: Text -> Action Unit =
+        fn path => do {
+            contentsRef <- newMem.WholeModel;
+            contentsRef := path;
+            open.Window gtk (200,200) ap{"Empty"} $ textView.Widget $ fromWhole.TextModel contentsRef;
+            pure ();
+        };
+    linkClicked: URI -> Maybe (Action Unit) =
+        fn Mk.URI => scheme >- fn {
+            Just "sch" => Just $ openLinkWindow path;
+            _ => Nothing;
         }
 }
 do {
@@ -21,6 +23,6 @@ do {
         open.Window gtk (400,600) ap{"WebKit"} $
         notebook.Widget unknown.WholeModel [
             (label.Widget ap{"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
-            (label.Widget ap{"Rendered"},webView.WebKit {uriSchemes = [("sch",getSch)];} ap{Mk.HTMLText %r})
+            (label.Widget ap{"Rendered"},webView.WebKit {onLinkClicked = linkClicked;} ap{Mk.HTMLText %r})
         ];
 }

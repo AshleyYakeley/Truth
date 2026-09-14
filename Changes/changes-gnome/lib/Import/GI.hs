@@ -99,8 +99,3 @@ import GI.Pango as I hiding
     , WrapModeWord
     , WrapModeWordChar
     )
-import GI.WebKit as I
-    ( WebView (..)
-    , networkSessionNew
-    , webViewLoadHtml
-    )
