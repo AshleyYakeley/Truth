@@ -2,6 +2,9 @@ module Changes.World.GNOME.GI.GView.View
     ( GTKContext (..)
     , GSemiview
     , GView
+    , GViewAny
+    , WGViewAny (..)
+    , gvwaLiftIOTrustMeNoUI
     , GViewState
     , gsvGetState
     , gvAddState
@@ -59,7 +62,9 @@ import Import
 type GView :: LockState -> Type -> Type
 type GView ls = LifecycleT (GSemiview 'Unlocked) (GSemiview ls)
 
-gvGetContext :: GView ls GTKContext
+type GViewAny a = forall (ls :: LockState). GView ls a
+
+gvGetContext :: GViewAny GTKContext
 gvGetContext = lift gsvGetContext
 
 type GViewState :: Type
@@ -101,6 +106,11 @@ gvLiftIO = liftIO
 
 gvLiftIOTrustMeNoUI :: forall ls. IO --> GView ls
 gvLiftIOTrustMeNoUI = trustMeNoUI @ls liftIO
+
+newtype WGViewAny a = MkWGViewAny {unWGViewAny :: GViewAny a}
+
+gvwaLiftIOTrustMeNoUI :: IO --> WGViewAny
+gvwaLiftIOTrustMeNoUI ioa = MkWGViewAny $ gvLiftIOTrustMeNoUI ioa
 
 gvLiftViewAny :: View --> GView ls
 gvLiftViewAny = hoist gsvLiftSemiviewAny . hoistLifecycleClose gsvLiftSemiviewAny
@@ -289,7 +299,7 @@ gvInnerWholeView ::
 gvInnerWholeView model baseView seln =
     gvLiftViewWithUnlift $ \unlift -> viewInnerWholeView model (\fm -> unlift $ baseView fm) seln
 
-gvMkTask :: forall a. IO (a -> IO (), Task (GView 'Unlocked) a)
-gvMkTask = do
+gvMkTask :: forall a. GViewAny (a -> WGViewAny (), Task (GView 'Unlocked) a)
+gvMkTask = gvLiftIOTrustMeNoUI $ do
     (report, task) <- mkTask
-    return (report, hoistTask gvLiftIOTrustMeNoUI task)
+    return (gvwaLiftIOTrustMeNoUI . report, hoistTask gvLiftIOTrustMeNoUI task)

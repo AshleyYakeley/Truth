@@ -41,7 +41,7 @@ instance TestEquality ModelBaseType where
     testEquality _ _ = Nothing
 
 -- The purpose of this mechanism is optimisation, to reduce mapping of properties etc. in the common case when they're both on the same model.
--- The simpler correct but unoptimised eqivalent of this type would be
+-- The simpler correct but unoptimised equivalent of this type would be
 --     data ModelBased f = forall update. MkModelBased (Model update) (f update)
 type ModelBased :: (Type -> Type) -> Type
 data ModelBased f

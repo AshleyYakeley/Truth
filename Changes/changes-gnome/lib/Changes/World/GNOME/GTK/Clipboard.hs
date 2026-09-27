@@ -18,19 +18,19 @@ memoryOutputStreamGetByteString stream = do
     sz <- GI.memoryOutputStreamGetDataSize stream
     liftIO $ packCStringLen (castPtr ptr, fromIntegral sz)
 
-mkCancellableTask :: GView 'Locked (a -> GView 'Locked (), GI.Cancellable, StoppableTask (GView 'Locked) a)
+mkCancellableTask :: GView 'Locked (a -> GView 'Locked (), GI.Cancellable, StoppableTask (GView 'Unlocked) a)
 mkCancellableTask = do
     cancellable <- GI.cancellableNew
-    (putval, stoppableTaskTask) <- mkTask
+    (putval, stoppableTaskTask) <- gvMkTask
     let
-        stoppableTaskStop :: GView 'Locked ()
+        stoppableTaskStop :: GView 'Unlocked ()
         stoppableTaskStop = do
-            GI.cancellableCancel $ Just cancellable
-            putval Nothing
-    return (putval . Just, cancellable, MkStoppableTask{..})
+            gvRunLocked $ GI.cancellableCancel $ Just cancellable
+            unWGViewAny $ putval Nothing
+    return (\a -> unWGViewAny $ putval $ Just a, cancellable, MkStoppableTask{..})
 
 getProviderContentsTask ::
-    GI.ContentProvider -> Text -> GView 'Locked (StoppableTask (GView 'Locked) StrictByteString)
+    GI.ContentProvider -> Text -> GView 'Locked (StoppableTask (GView 'Unlocked) StrictByteString)
 getProviderContentsTask provider mimeType = do
     (putVal, cancellable, stask) <- mkCancellableTask
     stream <- GI.memoryOutputStreamNewResizable
@@ -43,13 +43,6 @@ getProviderContentsTask provider mimeType = do
     gvWithCallbackUnlift () $ \unlift -> GI.contentProviderWriteMimeTypeAsync provider mimeType stream 0 (Just cancellable) (Just $ callback unlift)
     return stask
 
-getProviderContents ::
-    GI.ContentProvider -> Text -> GView 'Locked StrictByteString
-getProviderContents provider mimeType = do
-    task <- getProviderContentsTask provider mimeType
-    mbs <- taskWait $ stoppableTaskTask task
-    return $ fromMaybe mempty mbs
-
 singleProvider :: Text -> StrictByteString -> GView 'Locked GI.ContentProvider
 singleProvider mimeType bs = do
     bytes <- GI.bytesNew $ Just bs
@@ -60,24 +53,24 @@ unionProviders = \case
     provider :| [] -> return provider
     providers -> GI.contentProviderNewUnion $ Just $ toList providers
 
-providerToMedia :: GI.ContentProvider -> GView 'Locked [Media]
-providerToMedia provider = do
-    formats <- GI.contentProviderRefFormats provider
-    mimeTypes <- getFormatsMimeTypes formats
-    forf mimeTypes $ \mimeType -> do
-        for (decode textMediaTypeCodec mimeType) $ \mediaType -> do
-            bs <- getProviderContents provider mimeType
-            return $ MkMedia mediaType bs
-
 mediaToProvider :: Media -> GView 'Locked GI.ContentProvider
 mediaToProvider (MkMedia mediaType bs) = singleProvider (encode textMediaTypeCodec mediaType) bs
 
-readClipboard :: GI.Clipboard -> GView 'Locked [Media]
+readClipboard :: GI.Clipboard -> GView 'Unlocked [Media]
 readClipboard clipboard = do
-    mprovider <- GI.clipboardGetContent clipboard
-    case mprovider of
-        Nothing -> return []
-        Just provider -> providerToMedia provider
+    mediaTasks <- gvRunLocked $ do
+        mprovider <- GI.clipboardGetContent clipboard
+        case mprovider of
+            Nothing -> return []
+            Just provider -> do
+                formats <- GI.contentProviderRefFormats provider
+                mimeTypes <- getFormatsMimeTypes formats
+                forf mimeTypes $ \mimeType -> do
+                    for (decode textMediaTypeCodec mimeType) $ \mediaType -> do
+                        bsTask <- getProviderContentsTask provider mimeType
+                        return $ fmap (MkMedia mediaType) bsTask
+    -- The completion callbacks need the GTK lock, so wait without holding it.
+    forf mediaTasks $ \stask -> taskWait $ stoppableTaskTask stask
 
 writeClipboard :: GI.Clipboard -> [Media] -> GView 'Locked Bool
 writeClipboard clipboard medias = do
@@ -91,7 +84,7 @@ getClipboardModel clipboard = do
     MkWRaised unlift <- gvAskUnliftLifecycle
     let
         refReadIO :: Readable IO (WholeReader [Media])
-        refReadIO ReadWhole = runLifecycle $ unlift $ gvRunLocked $ readClipboard clipboard
+        refReadIO ReadWhole = runLifecycle $ unlift $ readClipboard clipboard
         refEditIO :: NonEmpty (WholeEdit [Media]) -> IO (Maybe (EditSource -> IO ()))
         refEditIO edits =
             case last edits of

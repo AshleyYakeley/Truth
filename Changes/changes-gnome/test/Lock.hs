@@ -202,6 +202,17 @@ lockTests =
                 gvLiftView $ viewWaitUpdates model
                 readWholeModel model >>= gvLiftIOTrustMeNoUI . assertEqual "unchecked" (Just False)
             in lockTest "maybe-check-button-activate" setup noAction
+        , let
+            setup :: GView 'Unlocked ()
+            setup = do
+                model <- getTheClipboardModel
+                for_ ["first", "second", "third"] $ \text -> do
+                    let medias = [MkMedia (MkMediaType "text" "plain" []) $ encode utf8Codec text]
+                    accepted <- gvSetWholeModel model noEditSource medias
+                    gvLiftIOTrustMeNoUI $ assertEqual "clipboard write" True accepted
+                    readWholeModel model >>= gvLiftIOTrustMeNoUI . assertBool "clipboard contents" . (== medias)
+                    readWholeModel model >>= gvLiftIOTrustMeNoUI . assertBool "clipboard contents again" . (== medias)
+            in lockTest "clipboard-repeated-copy-paste" setup noAction
         , lockTest "text-entry-reject-reset" testTextEntry noAction
         , let
             setup :: GView 'Unlocked ()

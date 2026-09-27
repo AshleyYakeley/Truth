@@ -39,7 +39,7 @@ chooseFile :: GI.FileChooserAction -> GI.Window -> Maybe [(Text, Maybe Text)] ->
 chooseFile action window mMimeTypes = do
     dialog <- GI.fileDialogNew
     setFileFilters dialog mMimeTypes
-    (reportTask, stoppableTaskTask) <- gvLiftIOTrustMeNoUI $ gvMkTask @(Maybe GI.File)
+    (reportTask, stoppableTaskTask) <- gvMkTask @(Maybe GI.File)
     cancellable <- GI.cancellableNew
     let
         callback :: (GI.AsyncResult -> IO GI.File) -> GTKCallbackUnlift () -> GI.AsyncReadyCallback
@@ -47,7 +47,7 @@ chooseFile action window mMimeTypes = do
             unlift $ do
                 mf <- gvLiftIO $ finishFileDialog $ finishAction result
                 for_ mf gvBind
-                gvLiftIOTrustMeNoUI $ reportTask mf
+                unWGViewAny $ reportTask mf
         start :: Maybe GI.AsyncReadyCallback -> GView 'Locked ()
         start =
             case action of
@@ -67,5 +67,5 @@ chooseFile action window mMimeTypes = do
         stoppableTaskStop :: GView 'Unlocked ()
         stoppableTaskStop = do
             gvRunLocked $ GI.cancellableCancel $ Just cancellable
-            gvLiftIOTrustMeNoUI $ reportTask Nothing
+            unWGViewAny $ reportTask Nothing
     return MkStoppableTask{..}
