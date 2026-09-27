@@ -1,0 +1,19 @@
+#!/usr/bin/env pinafore1
+do {
+    entitytype Person;
+    store <- openTemp.Store;
+    firstNameOf = !{property @Person @Text !"identify.name.first"} store;
+    lastNameOf = !{property @Person @Text !"identify.name.last"} store;
+    motherOf = !{property @Person @Person !"relation.family.mother"} store;
+    alice = !{point.OpenEntity @Person !"alice"};
+    bob = !{point.OpenEntity @Person !"bob"};
+
+    firstNameOf !$ motherOf !$ ap{alice} := "Kate";
+    lastNameOf !$ motherOf !$ ap{bob} := "Smith";
+    aliceMother <- get $ motherOf !$ ap{alice};
+    motherOf !$ ap{bob} := aliceMother;
+    bobMotherFirstName <- onStop (get $ firstNameOf !$ motherOf !$ ap{bob}) (pure "unknown");
+    outputLn.Env bobMotherFirstName;
+    aliceMotherLastName <- onStop (get $ lastNameOf !$ motherOf !$ ap{alice}) (pure "unknown");
+    outputLn.Env aliceMotherLastName;
+}
