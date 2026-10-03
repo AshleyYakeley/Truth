@@ -151,11 +151,75 @@ enumAdapter = let
     to True = Right ()
     in invmap from to $ falseAdapter <+++> trueAdapter
 
+testTableEntityLens :: TestTree
+testTableEntityLens = testTree "table-entity-lens" $ do
+    s1 <- newEntity
+    s2 <- newEntity
+    p <- fmap MkPredicate randomIO
+    storageRef <- makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
+    let
+        tableRef = convertReference storageRef
+        -- Shared constructor facts and non-inline literals exercise reference counting.
+        value1 = [mconcat $ replicate 100 "a", "shared"]
+        value2 = [mconcat $ replicate 100 "b", "shared"]
+        edit s kv = MkQStorageEdit plainStoreAdapter listTextAdapter p s kv
+        edits = [edit s1 (Known value1), edit s2 (Known value1), edit s1 Unknown, edit s2 (Known value2)]
+        assertEmpty msg = do
+            MkQTableSubject ps rs fs ls <- runResource emptyResourceContext storageRef $ \ref -> refRead ref ReadWhole
+            assertEqual msg (0, 0, 0, 0) (length ps, length rs, length fs, length ls)
+    runResource emptyResourceContext (qTableEntityReference tableRef) $ \ref -> do
+        maction <- refEdit ref $ pure $ edit s1 (Known value1)
+        case maction of
+            Nothing -> liftIO $ assertFailure "reference rejected storage edit"
+            Just _ -> return ()
+    assertEmpty "preparing an edit must not change storage"
+    tableEdits <- runResource emptyResourceContext tableRef $ \ref -> do
+        medits <- clPutEdits qTableEntityLens edits $ refRead ref
+        case medits of
+            Nothing -> fail "lens rejected storage edits"
+            Just es -> return es
+    assertEmpty "translation must not change storage"
+    runResource emptyResourceContext tableRef $ \ref ->
+        case nonEmpty tableEdits of
+            Nothing -> liftIO $ assertFailure "no table edits"
+            Just es -> pushOrFail "can't push translated edits" noEditSource $ refEdit ref es
+    runResource emptyResourceContext (qTableEntityReference tableRef) $ \ref -> do
+        missing <- refRead ref $ QStorageReadGet plainStoreAdapter p s1
+        liftIO $ assertEqual "deleted subject" Unknown missing
+        found <- refRead ref $ QStorageReadGet plainStoreAdapter p s2
+        liftIO $ assertEqual "replacement entity" (Known $ storeAdapterConvert listTextAdapter value2) found
+        decoded <- refRead ref $ QStorageReadEntity listTextAdapter $ storeAdapterConvert listTextAdapter value2
+        liftIO $ assertEqual "replacement value" (Known value2) decoded
+        pushOrFail "can't remove replacement" noEditSource $ refEdit ref $ pure $ edit s2 Unknown
+    assertEmpty "all references, facts, and literals released"
+    -- Updates expose property assignments, not the representation bookkeeping.
+    let
+        rd :: Readable IO QTableRead
+        rd = subjectToReadable $ MkQTableSubject [] [] [] []
+    for_ [Nothing, Just s2] $ \mv -> do
+        updates <- clUpdate qTableEntityLens (MkEditUpdate $ QTableEditPropertySet p s1 mv) rd
+        case updates of
+            [MkQStorageUpdate p' s' kv] -> do
+                assertEqual "update predicate" p p'
+                assertEqual "update subject" s1 s'
+                assertEqual "update value" (maybeToKnow mv) kv
+            _ -> assertFailure "expected one property update"
+    for_ [QTableEditEntityRefCount s1 (Just 1), QTableEditFactSet p s1 (Just s2), QTableEditLiteralSet s1 Nothing] $ \e -> do
+        updates <- clUpdate qTableEntityLens (MkEditUpdate e) rd
+        assertEqual "no bookkeeping updates" 0 $ length updates
+    rejectingRef <- makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> False
+    runResource emptyResourceContext (qTableEntityReference $ convertReference rejectingRef) $ \ref -> do
+        maction <- refEdit ref $ pure $ edit s1 (Known value1)
+        case maction of
+            Nothing -> return ()
+            Just _ -> liftIO $ assertFailure "underlying rejection was not propagated"
+
 testStorage :: TestTree
 testStorage =
     testTree
         "storage"
-        [ testStorageCase "empty" $ \MkTestContext{..} -> checkEmpty "0"
+        [ testTableEntityLens
+        , testStorageCase "empty" $ \MkTestContext{..} -> checkEmpty "0"
         , testStorageCase "property-plain-plain" $ \tc -> do
             e1 <- newEntity
             e2 <- newEntity
