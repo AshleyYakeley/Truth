@@ -426,13 +426,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tr) (MkAReference tabl
     refRead :: Readable (ReaderT tr IO) QStorageRead
     refRead (QStorageReadGet stype prd subj) = do
         mval <- tableRead $ QTableReadPropertyGet prd $ storeAdapterConvert stype subj
-        case mval of
-            Just val -> return val
-            Nothing -> do
-                val <- newEntity
-                doEntityEdit noEditSource
-                    $ MkQStorageEdit stype plainStoreAdapter prd subj (Known val)
-                return val
+        return $ maybeToKnow mval
     refRead (QStorageReadLookup prd val) = tableRead $ QTableReadPropertyLookup prd val
     refRead (QStorageReadEntity ea entity) =
         unComposeInner $ readEntity (storeAdapterDefinitions ea) entity

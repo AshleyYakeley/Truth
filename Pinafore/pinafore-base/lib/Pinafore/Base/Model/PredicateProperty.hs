@@ -21,8 +21,10 @@ predicateProperty eaa eab prd = let
     bp = storeAdapterConvert eab
     sfaRead :: a -> ReadM QStorageRead (Know b)
     sfaRead a = do
-        valp <- readM $ QStorageReadGet eaa prd a
-        readM $ QStorageReadEntity eab valp
+        kvalp <- readM $ QStorageReadGet eaa prd a
+        case kvalp of
+            Known valp -> readM $ QStorageReadEntity eab valp
+            Unknown -> return Unknown
     sfaUpdate :: QStorageUpdate -> ReadM QStorageRead (Maybe (a -> ReadM QStorageRead (Maybe (Know b))))
     sfaUpdate (MkQStorageUpdate p s kv)
         | p == prd =

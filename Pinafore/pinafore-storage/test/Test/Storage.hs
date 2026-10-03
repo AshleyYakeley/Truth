@@ -56,14 +56,16 @@ testStorageCase name action =
                 Know v ->
                 IO ()
             readProperty st vt p s kv = do
-                e <- runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadGet st p s
-                case kv of
-                    Known v -> do
+                ke <- runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadGet st p s
+                case (kv, ke) of
+                    (Known v, Known e) -> do
                         assertEqual "entity" (storeAdapterConvert vt v) e
                         kv' <-
                             runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadEntity vt e
                         assertEqual "typed" (Known v) kv'
-                    Unknown -> return ()
+                    (Known _, Unknown) -> assertFailure "missing entity"
+                    (Unknown, Known _) -> assertFailure "unexpected entity"
+                    (Unknown, Unknown) -> return ()
             readCount ::
                 forall s v.
                 Eq s =>
@@ -92,7 +94,7 @@ testAddRemoveProperty st vt s v MkTestContext{..} = do
     readCount st vt pA v 0
     --
     readProperty st vt pA s Unknown
-    checkNonEmpty "1"
+    checkEmpty "1"
     --
     putProperty st vt pA s (Known v)
     checkNonEmpty "2"

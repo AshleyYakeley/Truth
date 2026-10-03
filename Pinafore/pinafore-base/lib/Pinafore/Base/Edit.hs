@@ -16,7 +16,7 @@ import Pinafore.Base.Storable.StoreAdapter
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 type QStorageRead :: Type -> Type
 data QStorageRead t where
-    QStorageReadGet :: StoreAdapter t -> Predicate -> t -> QStorageRead Entity
+    QStorageReadGet :: StoreAdapter t -> Predicate -> t -> QStorageRead (Know Entity)
     QStorageReadLookup :: Predicate -> Entity -> QStorageRead (ListSet Entity)
     QStorageReadEntity :: StoreAdapter t -> Entity -> QStorageRead (Know t)
 
@@ -37,11 +37,11 @@ instance ApplicableEdit QStorageEdit where
     applyEdit (MkQStorageEdit est evt ep es (Known ev)) _ (QStorageReadGet rst rp rs)
         | ep == rp
         , storeAdapterConvert est es == storeAdapterConvert rst rs =
-            return $ storeAdapterConvert evt ev
+            return $ Known $ storeAdapterConvert evt ev
     applyEdit (MkQStorageEdit est _ ep es Unknown) _ (QStorageReadGet rst rp rs)
         | ep == rp
         , storeAdapterConvert est es == storeAdapterConvert rst rs =
-            newEntity
+            return Unknown
     applyEdit (MkQStorageEdit est evt ep es (Known ev)) mr (QStorageReadLookup rp rv)
         | ep == rp
         , storeAdapterConvert evt ev == rv = do
@@ -55,11 +55,13 @@ instance ApplicableEdit QStorageEdit where
 
 instance InvertibleEdit QStorageEdit where
     invertEdit (MkQStorageEdit st vt p s kv) mr = do
-        oldentity <- mr $ QStorageReadGet st p s
-        if fmap (storeAdapterConvert vt) kv == Known oldentity
+        koldentity <- mr $ QStorageReadGet st p s
+        if fmap (storeAdapterConvert vt) kv == koldentity
             then return []
             else do
-                kv' <- mr $ QStorageReadEntity vt oldentity
+                kv' <- case koldentity of
+                    Known oldentity -> mr $ QStorageReadEntity vt oldentity
+                    Unknown -> return Unknown
                 return [MkQStorageEdit st vt p s kv']
 
 type instance EditReader QStorageEdit = QStorageRead

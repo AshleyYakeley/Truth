@@ -367,6 +367,7 @@ testEntity =
                             "runreforfail ap{if %(known $ eta !$ ap{e1}) then fail \"failed\" else pass} >> pass"
                         , testExpectSuccess "testrefisunknown unknown"
                         , testExpectSuccess "testrefisunknown (eta !$ ap{e1})"
+                        , testExpectSuccess "testrefisunknown (eea !$ ap{e1})"
                         , testExpectSuccess "testrefisunknown $ unknown ?? unknown"
                         , testExpectSuccess "testrefeq ap{0} $ unknown ?? ap{0}"
                         , testExpectSuccess "testrefeq ap{1} $ ap{1} ?? ap{0}"
@@ -381,11 +382,11 @@ testEntity =
                         , testExpectSuccess "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{e1} (tea !$ ap{\"hello\"})"
                         , testExpectSuccess
                             "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{1} (count.FiniteSetModel (tea !@ ap{e1}))"
-                        , testExpectSuccess "(eea ..Property eea) !$ ap{e1} := e2"
+                        , testExpectSuccess "expectStop $ (eea ..Property eea) !$ ap{e1} := e2"
                         , testExpectSuccess
-                            "do {(eea ..Property eea) !$ ap{e1} := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
+                            "do {eea !$ ap{e1} := e3; (eea ..Property eea) !$ ap{e1} := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
                         , testExpectSuccess
-                            "do {eea !$ (eea !$ ap{e1}) := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
+                            "do {eea !$ ap{e1} := e3; eea !$ (eea !$ ap{e1}) := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
                         , testExpectSuccess "expectStop $ do {r <- newMem.WholeModel; eia !$ r := 4;}"
                         ]
                     , tGroup
@@ -516,7 +517,7 @@ testEntity =
                         "identity inverse property"
                         [ testExpectSuccess
                             "(id.Property !@@ eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
-                        , testExpectSuccess "(eea !@@ id.Property !@ ap{e2}) += e1 >> testrefneq ap{e2} (eea !$ ap{e1})"
+                        , testExpectSuccess "expectStop $ (eea !@@ id.Property !@ ap{e2}) += e1"
                         , testExpectSuccess "(eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                         , testExpectSuccess
                             "((id.Property ..Property eta) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
@@ -528,7 +529,7 @@ testEntity =
                             "eta !@ ap{\"hello\"} += e1 >> (id.Property !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                         , testExpectSuccess "eea !@ ap{e2} += e1 >> testrefeq ap{e2} (eea !$ ap{e1})"
                         , testExpectSuccess
-                            "eea !@ ap{e2} += e1 >> (eea !@@ id.Property !@ ap{e2}) -= e1 >> testrefneq ap{e2} (eea !$ ap{e1})"
+                            "eea !@ ap{e2} += e1 >> (eea !@@ id.Property !@ ap{e2}) -= e1 >> testrefisunknown (eea !$ ap{e1})"
                         , testExpectSuccess
                             "eta !@ ap{\"hello\"} += e1 >> ((id.Property ..Property eta) !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eta !$ ap{e1})"
                         , testExpectSuccess
@@ -536,28 +537,29 @@ testEntity =
                         ]
                     , tGroup
                         "composed properties"
-                        [ testExpectSuccess "(eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
+                        [ testExpectSuccess
+                            "eeb !$ ap{e1} := e3 >> (eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eea ..Property eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eea ..Property eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eta ..Property eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eta ..Property eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea ..Property eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea ..Property eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta ..Property eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta ..Property eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "(eeb ..Property eea) !$ ap{e2} := e1 >> testrefeq ap{e1} (eeb !$ eea !$ ap{e2})"
+                            "eea !$ ap{e2} := e3 >> (eeb ..Property eea) !$ ap{e2} := e1 >> testrefeq ap{e1} (eeb !$ eea !$ ap{e2})"
                         ]
                     , tGroup
                         "composed inverse properties"
                         [ testExpectSuccess
-                            "(eeb !@@ eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> (eeb !@@ eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> ((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                         , testExpectSuccess
-                            "((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefisunknown (eta !$ ap{e1})"
+                            "eeb !$ ap{e1} := e3 >> ((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefisunknown (eta !$ ap{e1})"
                         , testExpectSuccess
                             "eeb !$ ap{e1} := e2 >> ((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{e2} (eeb !$ ap{e1})"
                         , testExpectSuccess
@@ -571,7 +573,7 @@ testEntity =
                         , testExpectSuccess
                             "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> ((eta ..Property eeb) !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eta !$ ap{e2})"
                         , testExpectSuccess
-                            "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> (eeb !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefneq ap{e2} (eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> (eeb !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eeb !$ ap{e1})"
                         , testExpectSuccess
                             "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> (eeb !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                         , testExpectSuccess
@@ -579,7 +581,7 @@ testEntity =
                         , testExpectSuccess
                             "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ ap{\"hello\"}) >> testrefisunknown (eta !$ ap{e2})"
                         , testExpectSuccess
-                            "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ ap{\"hello\"}) >> testrefneq ap{e2} (eeb !$ ap{e1})"
+                            "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ ap{\"hello\"}) >> testrefisunknown (eeb !$ ap{e1})"
                         , testExpectSuccess
                             "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ ap{\"hello\"}) >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                         ]
