@@ -205,8 +205,8 @@ typeOperatorFixity "->" = MkFixity AssocRight 5
 typeOperatorFixity "+:" = MkFixity AssocRight 3
 typeOperatorFixity "*:" = MkFixity AssocRight 2
 typeOperatorFixity "*?" = MkFixity AssocRight 2
-typeOperatorFixity "|" = MkFixity AssocNone 6
-typeOperatorFixity "&" = MkFixity AssocNone 6
+typeOperatorFixity "|" = MkFixity AssocRight 1
+typeOperatorFixity "&" = MkFixity AssocRight 1
 typeOperatorFixity _ = MkFixity AssocLeft 2
 
 applyTypeOperatorPrecNamedText :: PrecNamedText -> Name -> PrecNamedText -> PrecNamedText
@@ -223,7 +223,7 @@ instance ExprShow SyntaxType' where
         | nameIsInfix n = applyTypeOperatorPrecNamedText (exprShowPrec ta) n (exprShowPrec tb)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = namedTextPrec 0 $ exprShow n
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
-        namedTextPrec 2 $ exprShow n <> concatmap (\arg -> " " <> exprPrecShow 0 arg) args
+        namedTextPrec 1 $ exprShow n <> concatmap (\arg -> " " <> exprPrecShow 0 arg) args
 
 type SyntaxType = WithSourcePos SyntaxType'
 

@@ -732,16 +732,16 @@ testQueries =
                     , testSameType True "List Integer" "List (rec a, Integer)" ["0 :: ()"]
                     , testSameType True "rec a, List a" "rec a, List a" atree
                     , testSameType True "rec a, List a" "rec a, List (List a)" atree
-                    , testSubtype True "rec a, (Unit +: a)" "rec a, (Unit +: a | List a)" ["Left ()", "Right (Left ())"]
-                    , testSubtype False "Unit +: None" "rec a, (Unit +: a | List a)" ["Left ()"]
-                    , testSubtype False "List None" "rec a, (Unit +: a | List a)" ["()"]
-                    , testSubtype False "Unit +: None | List None" "rec a, (Unit +: a | List a)" ["()", "Left ()"]
+                    , testSubtype True "rec a, (Unit +: a)" "rec a, (Unit +: a) | List a" ["Left ()", "Right (Left ())"]
+                    , testSubtype False "Unit +: None" "rec a, (Unit +: a) | List a" ["Left ()"]
+                    , testSubtype False "List None" "rec a, (Unit +: a) | List a" ["()"]
+                    , testSubtype False "(Unit +: None) | List None" "rec a, (Unit +: a) | List a" ["()", "Left ()"]
                     , testSubtype False "Unit +: None" "(rec a, Unit +: a) | (rec b, List b)" ["Left ()"]
                     , testSubtype False "List None" "(rec a, Unit +: a) | (rec b, List b)" ["()"]
                     , testSubtype
                         False
                         "(rec a, Unit +: a) | (rec b, List b)"
-                        "rec a, (Unit +: a | List a)"
+                        "rec a, (Unit +: a) | List a"
                         ["()", "() :: ()"]
                     , testSubtype True "rec a, List a" "ToSource.Pinafore" []
                     , testSubtype True "List (rec a, List a)" "ToSource.Pinafore" []

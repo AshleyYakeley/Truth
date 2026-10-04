@@ -174,7 +174,7 @@ testSolver =
                         liftIO $ assertEqual "" expectedtype simplifiedType
             in [ simplifyTest "x -> x" "a -> a"
                , simplifyTest "rec y, Maybe y" "rec a, Maybe a"
-               , simplifyTest "xa -> xa | xa -> xa" "a -> a"
+               , simplifyTest "(xa -> xa) | (xa -> xa)" "a -> a"
                , simplifyTest "rec xa, Unit" "Unit"
                , simplifyTest "rec xa, Integer | rec xa, Maybe xa" "Integer | rec a, Maybe a"
                , simplifyTest "Maybe Number | (rec ra, Maybe ra)" "Maybe. (Number. | (rec a, Maybe. a))"
@@ -325,10 +325,10 @@ testSolver =
                , recursiveTest "(Text | Integer) -> Any" "a -> a" "a -> (a | (Text. | Integer.))"
                , testTree
                     "issue-229"
-                    [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"
+                    [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | (a -> b))"
                     , recursiveTest "c" "Integer -> c" "rec a, Integer -> a"
                     , recursiveTest "c" "c -> Integer" "Any -> Integer"
-                    , recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
+                    , recursiveTest "c" "c -> c" "a -> (rec b, a | (a -> b))"
                     ]
                ]
         , testTree "subsumer" $ let

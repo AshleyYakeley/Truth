@@ -17,33 +17,25 @@ import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Syntax
 import Pinafore.Syntax.Token
 
+readRecursiveType :: Parser SyntaxType
+readRecursiveType = readWithSourcePos $ do
+    readThis TokRec
+    n <- readTypeVar
+    readThis TokComma
+    t <- readType
+    return $ RecursiveSyntaxType n t
+
+readTypeFromArgument :: SyntaxTypeArgument -> Parser SyntaxType
+readTypeFromArgument (SimpleSyntaxTypeArgument t) = return t
+readTypeFromArgument _ = empty
+
 readType :: Parser SyntaxType
-readType = do
-    spos <- getPosition
-    ( do
-            readThis TokRec
-            n <- readTypeVar
-            readThis TokComma
-            t <- readType
-            return $ MkWithSourcePos spos $ RecursiveSyntaxType n t
-        )
-        <|> readType0
+readType = readType0
 
 readType0 :: Parser SyntaxType
 readType0 = do
-    spos <- getPosition
-    t1 <- readType1
-    ( do
-            readThis TokOr
-            t2 <- readType
-            return $ MkWithSourcePos spos $ OrSyntaxType t1 t2
-        )
-        <|> ( do
-                readThis TokAnd
-                t2 <- readType
-                return $ MkWithSourcePos spos $ AndSyntaxType t1 t2
-            )
-        <|> (return t1)
+    arg <- readInfixed typeFixityReader readTypeArgument1
+    readTypeFromArgument arg
 
 allowedTypeOperatorName :: Name -> Bool
 allowedTypeOperatorName "+" = False
@@ -74,11 +66,25 @@ typeFixityReader :: FixityReader SyntaxTypeArgument
 typeFixityReader = MkFixityReader{efrReadInfix = readInfix, efrMaxPrecedence = 6}
 
 readType1 :: Parser SyntaxType
-readType1 = do
-    arg <- readInfixed typeFixityReader $ readTypeArgument readType2
-    case arg of
-        SimpleSyntaxTypeArgument t -> return t
-        _ -> empty
+readType1 = readTypeArgument1 >>= readTypeFromArgument
+
+readTypeArgument1 :: Parser SyntaxTypeArgument
+readTypeArgument1 = do
+    spos <- getPosition
+    ta1 <- readTypeArgument readType2
+    ( do
+            readThis TokOr
+            t1 <- readTypeFromArgument ta1
+            t2 <- readType1
+            return $ SimpleSyntaxTypeArgument $ MkWithSourcePos spos $ OrSyntaxType t1 t2
+        )
+        <|> ( do
+                readThis TokAnd
+                t1 <- readTypeFromArgument ta1
+                t2 <- readType1
+                return $ SimpleSyntaxTypeArgument $ MkWithSourcePos spos $ AndSyntaxType t1 t2
+            )
+        <|> (return ta1)
 
 readTypeFullNameRef :: Parser FullNameRef
 readTypeFullNameRef = readUFullNameRef
@@ -105,13 +111,14 @@ readTypeArgument r =
 
 readType2 :: Parser SyntaxType
 readType2 =
-    ( try
-        $ readWithSourcePos
-        $ do
-            tc <- readTypeConstant
-            tt <- some $ readTypeArgument readType3
-            return $ SingleSyntaxType tc tt
-    )
+    readRecursiveType
+        <|> ( try
+                $ readWithSourcePos
+                $ do
+                    tc <- readTypeConstant
+                    tt <- some $ readTypeArgument readType3
+                    return $ SingleSyntaxType tc tt
+            )
         <|> readType3
 
 readType3 :: Parser SyntaxType

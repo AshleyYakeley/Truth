@@ -14,7 +14,10 @@ testReadType text =
     testTree @Assertion (unpack text)
         $ runTester defaultTester
         $ do
-            _ <- testerLiftInterpreter $ parseType @'Positive text
+            MkSome t <- testerLiftInterpreter $ parseType @'Positive text
+            MkSome t' <- testerLiftInterpreter $ parseType @'Positive $ showText t
+            _ <- testerLiftInterpreter $ qSubsume (mkShimWit t) t'
+            _ <- testerLiftInterpreter $ qSubsume (mkShimWit t') t
             return ()
 
 testShowType :: Text -> Text -> TestTree
@@ -24,7 +27,6 @@ testShowType expected text =
         $ do
             t <- testerLiftInterpreter $ parseType @'Positive text
             liftIO $ assertEqual "" expected $ showText t
-            return ()
 
 testReadTypes :: TestTree
 testReadTypes =
@@ -96,6 +98,28 @@ testReadTypes =
         , testReadType "FiniteSetModel (+a,b,-Entity)"
         , testReadType "WholeModel. + Text. -> a -> Action. a"
         , testTree
+            "joins"
+            [ testShowType "a & b -> c | d" "(a & b) -> (c | d)"
+            , testShowType "a | (b -> c)" "a | (b -> c)"
+            , testShowType "(a -> b) & c -> d" "((a -> b) & c) -> d"
+            , testShowType "Maybe. a | Maybe. b" "Maybe a | Maybe b"
+            , testShowType "a | b | c" "a | b | c"
+            , testReadType "Integer | Text"
+            , testReadType "a | b"
+            , testReadType "(a & b) -> (c | d)"
+            , testReadType "a & b -> c | d"
+            , testReadType "Integer | (xa -> xa)"
+            , testReadType "xa | (xa -> xa)"
+            , testReadType "(xa -> xa) | (xa -> xa)"
+            ]
+        , testTree
             "recursive"
-            [testReadType "rec a, Maybe a", testReadType "(rec a, Maybe a) -> b", testReadType "rec a, rec b, a *: b"]
+            [ testReadType "rec a, Maybe a"
+            , testReadType "(rec a, Maybe a) -> b"
+            , testReadType "rec a, rec b, a *: b"
+            , testReadType "WholeModel (rec a, Maybe a)"
+            , testReadType "WholeModel (+rec a, Maybe a)"
+            , testReadType "a -> rec b, Maybe b"
+            , testReadType "a | rec b, Maybe b"
+            ]
         ]

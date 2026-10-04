@@ -1,7 +1,7 @@
 pinafore> f: ((a -> a) & b) -> Maybe b = Just
 pinafore> i: a -> a = fn x => x
 pinafore> :type f
-: (a -> a & b) -> Maybe b
+: (a -> a) & b -> Maybe b
 pinafore> :type i
 : a -> a
 pinafore> :type f i
@@ -9,7 +9,7 @@ pinafore> :type f i
 pinafore> 
 pinafore> g: ((a -> a) & b) -> b = fn x => x
 pinafore> :type g
-: (a -> a & b) -> b
+: (a -> a) & b -> b
 pinafore> :type g i
 : a -> a
 pinafore> 
@@ -22,7 +22,7 @@ pinafore> :type newMem.WholeModel >>= fn model => pure (model, ())
 pinafore> :type newMem.WholeModel >>= fn model => pure (model, ((fn _ => ()) : WholeModel a -> Unit) model)
 : Action (WholeModel a *: Unit)
 pinafore> :type fn model => pure (model, ur model)
-: (a & WholeModel b) -> Action (a *: Unit)
+: a & WholeModel b -> Action (a *: Unit)
 pinafore> :type newMem.WholeModel >>= fn model => pure (model, ur model)
 : Action (WholeModel a *: Unit)
 pinafore> <END>

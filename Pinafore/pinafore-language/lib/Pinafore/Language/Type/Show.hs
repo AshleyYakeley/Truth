@@ -107,11 +107,11 @@ instance
             NegativeType -> "Any"
     exprShowPrec (ConsDolanType ta NilDolanType) = exprShowPrec ta
     exprShowPrec (ConsDolanType ta tb) = let
-        jmConnector =
+        jmOperator =
             case polarityType @polarity of
-                PositiveType -> " | "
-                NegativeType -> " & "
-        in namedTextPrec 7 $ exprPrecShow 6 ta <> jmConnector <> exprPrecShow 6 tb
+                PositiveType -> "|"
+                NegativeType -> "&"
+        in applyTypeOperatorPrecNamedText (exprShowPrec ta) jmOperator (exprShowPrec tb)
 
 instance
     forall (ground :: GroundTypeKind) (polarity :: Polarity).

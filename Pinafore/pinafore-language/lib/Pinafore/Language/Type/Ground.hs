@@ -125,7 +125,7 @@ standardListTypeExprShow ::
 standardListTypeExprShow = let
     sh :: forall (dv' :: [CCRVariance]). Word -> CCRVariancesType dv' -> NamedText -> ListTypeExprShow dv'
     sh i NilListType t = namedTextPrec i t
-    sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precNamedText 0 ta)
+    sh _ (ConsListType _ lt) t = \ta -> sh 1 lt (t <> " " <> precNamedText 0 ta)
     in sh 0 $ representative @_ @_ @dv
 
 stdSingleGroundType ::
