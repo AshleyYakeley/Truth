@@ -207,10 +207,10 @@ A `with` declarator aliases names into different namespaces.
 For example:
 
 * `with P` maps the contents of namespace `P` into the current namespace.
-* `with P (a,b)` maps `a.P` and `b.P` into the current namespace
+* `with P {a,b}` maps `a.P` and `b.P` into the current namespace
 * `with Q.P` maps the contents of namespace `Q.P` into the current namespace.
 * `with P (namespace Q)` maps namespace `Q.P` into the current namespace as `Q`.
-* `with P (a,b) as N` maps `a.P` and `b.P` into namespace `N`, so they can be referred to as `a.N` and `b.N`.
+* `with P {a,b} as N` maps `a.P` and `b.P` into namespace `N`, so they can be referred to as `a.N` and `b.N`.
 
 #### Example
 

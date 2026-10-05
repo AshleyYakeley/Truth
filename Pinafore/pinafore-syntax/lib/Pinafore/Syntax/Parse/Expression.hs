@@ -221,7 +221,7 @@ readNamespaceWith = do
     mnritems <-
         optional $ do
             neg <- optional $ readThis TokExcept
-            ritems <- readParen $ readCommaList readNameRefItem
+            ritems <- readBrace $ readCommaList readNameRefItem
             return (not $ isJust neg, ritems)
     masns <-
         optional $ do
@@ -617,7 +617,7 @@ readExpression3 =
                 readThis TokAp
                 mns <- optional readNamespaceQualifier
                 let ns = fromMaybe "WholeModel." mns
-                readBracketed TokOpenBrace TokCloseBrace
+                readBrace
                     $ withWithExpr ns ["map", "pure", "apply", "liftA2", "**", ">>"]
                     $ readWithSourcePos
                     $ do
@@ -629,8 +629,8 @@ readExpression3 =
             ( do
                 sname <- readThis TokSpecialName
                 case sname of
-                    "expression" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteExpression readExpression
-                    "scope" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteScope $ readLines readDeclaration
+                    "expression" -> readBrace $ fmap SEQuoteExpression readExpression
+                    "scope" -> readBrace $ fmap SEQuoteScope $ readLines readDeclaration
                     _ -> mzero
             )
         <|> readWithSourcePos

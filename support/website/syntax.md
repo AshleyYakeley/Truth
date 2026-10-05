@@ -225,7 +225,7 @@ The unqualified type names `Any` and `None` denote the top and bottom types.
 
 <name-list> ::= <comma-separated(<name-item>)>
 
-<with-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
+<with-names> ::=  | "{" <name-list> "}" | "except" "{" <name-list> "}"
 
 <namespace> ::= quname
 

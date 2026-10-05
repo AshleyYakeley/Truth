@@ -8,6 +8,7 @@ module Pinafore.Syntax.Parse.Basic
     , readBracketed
     , readParen
     , readBracket
+    , readBrace
     , readSeparated1
     , readCommaM
     , readCommaList
@@ -95,6 +96,9 @@ readParen = readBracketed TokOpenParen TokCloseParen
 readBracket :: Parser t -> Parser t
 readBracket = readBracketed TokOpenBracket TokCloseBracket
 
+readBrace :: Parser t -> Parser t
+readBrace = readBracketed TokOpenBrace TokCloseBrace
+
 readSeparated1 :: Semigroup t => Parser () -> Parser t -> Parser t
 readSeparated1 sep p = do
     v1 <- p
@@ -180,9 +184,7 @@ readLines p = (fmap toList $ readLines1 p) <|> (return [])
 
 readBraced :: Parser a -> Parser [a]
 readBraced p = do
-    readThis TokOpenBrace
-    aa <- readLines p
-    readThis TokCloseBrace
+    aa <- readBrace $ readLines p
     return aa
 
 readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)

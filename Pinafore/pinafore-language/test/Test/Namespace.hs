@@ -171,40 +171,40 @@ testNamespace =
                         $ tGroup
                             "scope"
                             [ testExpectSuccess "with M testeq 2 a"
-                            , testExpectSuccess "with M() testeq 1 a"
-                            , testExpectSuccess "with M(a) testeq 2 a"
-                            , testExpectSuccess "with M(b) testeq 1 a"
-                            , testExpectSuccess "with M(a,b) testeq 2 a"
-                            , testExpectSuccess "with M except () testeq 2 a"
-                            , testExpectSuccess "with M except (a) testeq 1 a"
-                            , testExpectSuccess "with M except (b) testeq 2 a"
-                            , testExpectSuccess "with M except (a,b) testeq 1 a"
+                            , testExpectSuccess "with M{} testeq 1 a"
+                            , testExpectSuccess "with M{a} testeq 2 a"
+                            , testExpectSuccess "with M{b} testeq 1 a"
+                            , testExpectSuccess "with M{a,b} testeq 2 a"
+                            , testExpectSuccess "with M except {} testeq 2 a"
+                            , testExpectSuccess "with M except {a} testeq 1 a"
+                            , testExpectSuccess "with M except {b} testeq 2 a"
+                            , testExpectSuccess "with M except {a,b} testeq 1 a"
                             ]
                     , tDecls ["namespace D {a=1}", "namespace M {a=2; b=3}"]
                         $ tGroup
                             "as"
                             [ testExpectSuccess "with M as D testeq 2 a.D"
-                            , testExpectSuccess "with M() as D testeq 1 a.D"
-                            , testExpectSuccess "with M(a) as D testeq 2 a.D"
-                            , testExpectSuccess "with M(b) as D testeq 1 a.D"
-                            , testExpectSuccess "with M(a,b) as D testeq 2 a.D"
-                            , testExpectSuccess "with M except () as D testeq 2 a.D"
-                            , testExpectSuccess "with M except (a) as D testeq 1 a.D"
-                            , testExpectSuccess "with M except (b) as D testeq 2 a.D"
-                            , testExpectSuccess "with M except (a,b) as D testeq 1 a.D"
+                            , testExpectSuccess "with M{} as D testeq 1 a.D"
+                            , testExpectSuccess "with M{a} as D testeq 2 a.D"
+                            , testExpectSuccess "with M{b} as D testeq 1 a.D"
+                            , testExpectSuccess "with M{a,b} as D testeq 2 a.D"
+                            , testExpectSuccess "with M except {} as D testeq 2 a.D"
+                            , testExpectSuccess "with M except {a} as D testeq 1 a.D"
+                            , testExpectSuccess "with M except {b} as D testeq 2 a.D"
+                            , testExpectSuccess "with M except {a,b} as D testeq 1 a.D"
                             ]
                     , tDecls ["namespace D {a=4}", "namespace N {a=1}", "namespace M {a=3; namespace N {a=2}}"]
                         $ tGroup
                             "namespace"
                             [ testExpectSuccess "testeq 1 a.N"
-                            , testExpectSuccess "with M() testeq 1 a.N"
-                            , testExpectSuccess "with M(a.N) testeq 2 a.N"
+                            , testExpectSuccess "with M{} testeq 1 a.N"
+                            , testExpectSuccess "with M{a.N} testeq 2 a.N"
                             , testExpectSuccess "with M testeq 2 a.N"
-                            , testExpectSuccess "with M (namespace N) testeq 2 a.N"
-                            , testExpectSuccess "with M except (namespace N) testeq 1 a.N"
+                            , testExpectSuccess "with M {namespace N} testeq 2 a.N"
+                            , testExpectSuccess "with M except {namespace N} testeq 1 a.N"
                             , testExpectSuccess "testeq 4 a.D"
                             , testExpectSuccess "with M as D testeq 3 a.D"
-                            , testExpectSuccess "with M(namespace N) as D testeq 2 a.N.D"
+                            , testExpectSuccess "with M{namespace N} as D testeq 2 a.N.D"
                             ]
                     ]
             , tGroup
@@ -260,7 +260,7 @@ testNamespace =
                 , tGroup
                     "datatype"
                     [ testExpectSuccess "let {datatype T.N {MkT}} (MkT.T.N: T.N) >- fn MkT.T.N => pass"
-                    , tModify (expectFailBecause "ISSUE 357") $ testExpectSuccess "let {datatype T.N {MkT}} with N (MkT.T: T) >- fn MkT.T => pass"
+                    , testExpectSuccess "let {datatype T.N {MkT}} with N (MkT.T: T) >- fn MkT.T => pass"
                     , testExpectReject "let {datatype T.N {MkT}; x: T = MkT.T.N} pass"
                     , testExpectReject "let {datatype T.N {MkT}} MkT.T >- fn _ => pass"
                     ]
