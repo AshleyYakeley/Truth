@@ -65,6 +65,12 @@ storeFetch adapter store e =
         $ viewRunResource (qStoreModel store)
         $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
 
+immutStore :: QStore -> IO QStore
+immutStore store = mkQStore $ mapModel rejectingChangeLens $ qStoreModel store
+
+overlayStore :: QStore -> QStore -> IO QStore
+overlayStore a b = mkQStore $ mapModel overlayStorageLens $ pairModels (qStoreModel a) (qStoreModel b)
+
 storageLibSection :: LibraryStuff
 storageLibSection =
     headingBDS "Storage" ""
@@ -211,5 +217,7 @@ storageLibSection =
                     )
                     openLocalStore
                 , valBDS "openTemp" "Open a `Store` from memory. Nothing will be persisted." openTempStore
+                , valBDS "immut" "Convert a `Store` to immutable." immutStore
+                , valBDS "overlay" "`overlay.Store a b` will read from `a` before `b` and write only to `a`." overlayStore
                 ]
           ]

@@ -27,3 +27,6 @@ fromReadOnlyRejectingChangeLens = let
     clPutEdits [] _ = return $ Just [] -- must allow empty update-lists so that composition works correctly
     clPutEdits (_ : _) _ = return Nothing
     in MkChangeLens{..}
+
+rejectingChangeLens :: forall update. ChangeLens update update
+rejectingChangeLens = fromReadOnlyRejectingChangeLens . toReadOnlyChangeLens

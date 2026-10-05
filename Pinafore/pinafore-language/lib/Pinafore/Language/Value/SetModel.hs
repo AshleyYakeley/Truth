@@ -45,7 +45,7 @@ langSetModelToModel = toLangModel
 
 langSetModelImmutable :: forall a. LangSetModel a -> LangSetModel a
 langSetModelImmutable (MkLangSetModel eq sv) =
-    MkLangSetModel eq $ eaMap (fromReadOnlyRejectingChangeLens . toReadOnlyChangeLens) sv
+    MkLangSetModel eq $ eaMap rejectingChangeLens sv
 
 langSetModelEmpty :: forall a. LangSetModel a
 langSetModelEmpty = MkLangSetModel mempty $ eaPureRejecting $ \_ -> False

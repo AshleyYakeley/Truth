@@ -2,6 +2,7 @@ module Pinafore.Base.Edit
     ( QStorageRead (..)
     , QStorageEdit (..)
     , QStorageUpdate (..)
+    , overlayStorageLens
     )
 where
 
@@ -13,7 +14,6 @@ import Pinafore.Base.Know
 import Pinafore.Base.Storable.EntityStorer
 import Pinafore.Base.Storable.StoreAdapter
 
--- | Some of these reads may add to the database, but will always give consistent results between changes.
 type QStorageRead :: Type -> Type
 data QStorageRead t where
     QStorageReadGet :: StoreAdapter t -> Predicate -> t -> QStorageRead (Know Entity)
@@ -86,3 +86,46 @@ type instance UpdateEdit QStorageUpdate = QStorageEdit
 instance IsUpdate QStorageUpdate where
     editUpdate (MkQStorageEdit st vt p s kv) =
         MkQStorageUpdate p (storeAdapterConvert st s) (fmap (storeAdapterConvert vt) kv)
+
+overlayStorageLens :: ChangeLens (PairUpdate QStorageUpdate QStorageUpdate) QStorageUpdate
+overlayStorageLens = let
+    clRead :: forall m. MonadIO m => Readable m (UpdateReader (PairUpdate QStorageUpdate QStorageUpdate)) -> Readable m QStorageRead
+    clRead mr rt = let
+        firstR :: Readable m QStorageRead
+        firstR = mr . MkTupleUpdateReader SelectFirst
+        secondR :: Readable m QStorageRead
+        secondR = mr . MkTupleUpdateReader SelectSecond
+        fallback :: forall t. QStorageRead (Know t) -> m (Know t)
+        fallback query = do
+            ka <- firstR query
+            case ka of
+                Known _ -> return ka
+                Unknown -> secondR query
+        in case rt of
+            QStorageReadGet{} -> fallback rt
+            QStorageReadEntity{} -> fallback rt
+            QStorageReadLookup p _ -> do
+                as <- firstR rt
+                bs <- secondR rt
+                -- A subject in the firstR store shadows every lower-store value.
+                visible <- ofilterM (\s -> fmap (== Unknown) $ firstR $ QStorageReadGet plainStoreAdapter p s) bs
+                return $ as <> visible
+    clUpdate ::
+        forall m.
+        MonadIO m =>
+        PairUpdate QStorageUpdate QStorageUpdate ->
+        Readable m (UpdateReader (PairUpdate QStorageUpdate QStorageUpdate)) ->
+        m [QStorageUpdate]
+    clUpdate (MkTupleUpdate SelectFirst (MkQStorageUpdate p s kv)) mr = do
+        value <- case kv of
+            Known _ -> return kv
+            Unknown -> mr $ MkTupleUpdateReader SelectSecond $ QStorageReadGet plainStoreAdapter p s
+        return [MkQStorageUpdate p s value]
+    clUpdate (MkTupleUpdate SelectSecond update@(MkQStorageUpdate p s _)) mr = do
+        value <- mr $ MkTupleUpdateReader SelectFirst $ QStorageReadGet plainStoreAdapter p s
+        return $ case value of
+            Known _ -> []
+            Unknown -> [update]
+    clPutEdits :: forall m. MonadIO m => [QStorageEdit] -> Readable m (UpdateReader (PairUpdate QStorageUpdate QStorageUpdate)) -> m (Maybe [UpdateEdit (PairUpdate QStorageUpdate QStorageUpdate)])
+    clPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit SelectFirst) edits
+    in MkChangeLens{..}
