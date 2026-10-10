@@ -235,7 +235,7 @@ deb: out/$(PACKAGEFULLNAME).deb
 # Use this on a Nix system
 # **/*.nix
 nix-fmt:
-	shopt -s globstar && nix $(NIXFLAGS) fmt *.nix
+	shopt -s globstar && nix $(NIXFLAGS) fmt *.nix support/**/*.nix
 
 # Use this on a Nix system
 nix-build-%: out

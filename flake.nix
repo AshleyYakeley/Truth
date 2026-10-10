@@ -131,39 +131,16 @@
                   stdLibPackage
                 ];
             };
-          syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" { }
+          syntaxDataFile = pkgs.runCommand "pinafore-syntax-data" { }
             ''
               ${pinadataPackage}/bin/pinadata --syntax-data > $out
             '';
-          VSCXVERSION = "${PINAFOREVERSIONABC}";
-          vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" { }
-            ''
-              export VSCXVERSION="${VSCXVERSION}"
-              mkdir -p out/support
-              cp ${syntaxDataPackage} out/support/syntax-data.json
-              cp ${./.}/support/vsc-extension/transform.yq ./
-              cp -r ${./.}/support/vsc-extension/vsce ./
-              chmod -R u+w vsce
-              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/package.yaml > vsce/package.json
-              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/language-configuration.yaml > vsce/language-configuration.json
-              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
-              mkdir -p vsce/images
-              ${pkgs.librsvg}/bin/rsvg-convert -w 256 -h 256 ${./.}/support/branding/logo.svg -o vsce/images/logo.png
-              PATH=$PATH:${pkgs.nodejs}/bin
-              cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
-            '';
-          vscePackage = pkgs.runCommand "pinafore-vscode-extension" { }
-            ''
-              mkdir -p $out/share/vscode/extensions/Pinafore.pinafore
-              ${pkgs.unzip}/bin/unzip ${vsceFilePackage}
-              cp -r extension/* $out/share/vscode/extensions/Pinafore.pinafore/
-            '' //
-          {
-            vscodeExtPublisher = "Pinafore";
-            vscodeExtName = "Pinafore";
-            vscodeExtUniqueId = "Pinafore.pinafore";
-            version = "${VSCXVERSION}";
-          };
+
+          # Support
+          support = { inherit pkgs PINAFOREVERSIONABC syntaxDataFile; branding = support/branding; };
+          vsce = import support/vsc-extension support;
+
+          # App and stuff
           app = flake.apps."pinafore-app:exe:pinafore1".program;
           minscript = pkgs.writeText "minscript" "pure ()";
           importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
@@ -177,7 +154,7 @@
           {
             default = pinaforePackage;
             pinafore = pinaforePackage;
-            vscode-extension = vscePackage;
+            vscode-extension = vsce.package;
           };
           apps =
             {
@@ -195,8 +172,8 @@
           };
           files =
             {
-              syntax-data = syntaxDataPackage;
-              vscode-extension = vsceFilePackage;
+              syntax-data = syntaxDataFile;
+              vscode-extension = vsce.file;
             };
           formatter = pkgs.nixpkgs-fmt;
           devShells =
