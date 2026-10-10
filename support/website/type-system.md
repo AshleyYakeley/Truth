@@ -33,14 +33,14 @@ If `T` has a contravariant parameter,
 `A <: B` implies `T B <: T A`
 
 Intuitively, the word "of" suggests covariance, while the words "for" and "on" suggest contravariance.
-For example, a number is a literal (`Number <: Literal`), and a list *of* numbers is a list of literals (`[Number] <: [Literal]`).
+For example, a number is a literal (`Number <: Literal`), and a list *of* numbers is a list of literals (`List Number <: List Literal`).
 Thus "list of" is covariant.
 And an order *on* literals is an order on numbers (`ModelOrder Literal <: ModelOrder Number`).
 Thus "order on" is contravariant.
 
 ## Any & None
 
-`Any` and `None` are the top and bottom of the type hierachy. That is, for any `P`, we have `None <: P` and `P <: Any`.
+`Any` and `None` are the top and bottom of the type hierarchy. That is, for any `P`, we have `None <: P` and `P <: Any`.
 
 `Any` is only a negative type, and `None` is only a positive type.
 
@@ -61,7 +61,7 @@ Type variables on only one side can be eliminated.
 
 ## Recursive types
 
-Equirecursive types are not much used in Pinafore, however, they are necesssary as principal types for certain expressions.
+Equirecursive types are not much used in Pinafore, however, they are necessary as principal types for certain expressions.
 
 If `a` is a type variable, and `F a` is a type with only covariant use of `a`, then `rec a, F a` is a type with the same polarity as `F a`.
 
@@ -69,17 +69,17 @@ The essential fact of recursive types is that `rec a, F a` and `F (rec a, F a)` 
 
 ## Type Simplification
 
-1. Recursive types are simplifed using automata.  
+1. Recursive types are simplified using automata.
 `rec a, Maybe. (rec b, a | Maybe. b)` &rarr; `rec a, Maybe a`
 
 1. Any type variables that are "fully constrained" are eliminated (i.e., replaced with `None` or `Any`).  
 `(a & Text) -> a | Literal` &rarr; `Text -> Literal` (because `Text <: Literal`)  
 This implies eliminating variables that appear only in the positive position, or only in the negative position.  
 `fn x, y => x: a -> b -> a` &rarr; `fn x, y => x: a -> Any -> a`  
-`[]: [a]` &rarr; `[]: [None]`
+`[]: List a` &rarr; `[]: List None`
 
 1. `None` and `Any` act as identities for `|` and `&`, respectively.  
-`Int | None` &rarr; `Int`
+`Integer | None` &rarr; `Integer`
 
 1. Redundant types in joins (`|` or `&`) are eliminated.  
 `Text & Text` &rarr; `Text`.  
@@ -89,7 +89,7 @@ More generally, if `P <: Q` then
 
 1. Matching parameterised types are collapsed along their parameters. For example:  
 `(A -> X) | (B -> Y)` &rarr; `(A & B) -> (X | Y)`  
-`[A] & [B]` &rarr; `[A & B]`
+`List A & List B` &rarr; `List (A & B)`
 
 1. Type variables are merged if they appear in all the same positive positions, or in all the same negative positions.  
 `a -> b -> (a | b)` &rarr; `a -> a -> a` (`a` and `b` appear in the same set of positive positions)
@@ -106,13 +106,13 @@ However, the syntax permits any number of comma-separated items. For example, in
 
 `T ()` = `T (-Any,+None)`  
 `T (+a)` = `T (-Any,+a)`  
-`T (+Int,-a,-Entity)` = `T (-(a & Entity),+Int)`
+`T (+Integer,-a,-Entity)` = `T (-(a & Entity),+Integer)`
 
 In negative position,
 
 `T ()` = `T (-None,+Any)`  
 `T (+a)` = `T (-None,+a)`  
-`T (+Int,-a,-Entity)` = `T (-(a | Entity),+Int)`
+`T (+Integer,-a,-Entity)` = `T (-(a | Entity),+Integer)`
 
 And also,
 

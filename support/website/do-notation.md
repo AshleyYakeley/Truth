@@ -4,10 +4,10 @@ Do notation makes working with actions and other "monad" types more convenient.
 Do-notation contains semicolon-separated do-lines inside `do.N {` ... `}`, where `N` is a namespace.
 `.N` may be omitted, in which case `Action.` is the namespace.
 
-`N` must be a namespace with these names defined: `map`, `pure`, `ap`, `liftA2`, `**`, `>>`, `>>=`.
+`N` must be a namespace with these names defined: `map`, `pure`, `apply`, `liftA2`, `**`, `>>`, `>>=`.
 All of these names will be aliased from `N` into the current namespace.
 
-Do-lines are expressions or of the form `<pattern> <- <expression>`.
+Do-lines can be declarations, expressions, or of the form `<pattern> <- <expression>`.
 The last line must be an expression.
 
 * `do.N {expr; exprs...}` is the same as `expr >>.N do.N {exprs...}`

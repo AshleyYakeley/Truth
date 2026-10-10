@@ -92,7 +92,7 @@ tg: T -> Text -> Action Unit =
 A datatype `T` can inherit from one or more supertypes `S1`, `S2`, etc. provided that:
 
 * Supertypes `S1`, `S2`, etc. are datatypes without type parameters.
-* All contructors of `T` are record constructors.
+* All constructors of `T` are record constructors.
 * Every record constructor of `T` mentions a record constructor from each supertype `S1`, `S2`, etc.
 
 This will give `T <: S1`, `T <: S2`, etc.
@@ -416,9 +416,9 @@ subtype P <: Q;
 ```
 
 where `Q` is an open entity type, and `P` is a "simple" entity type, that is, a subtype of `Entity` that does not use type parameters.
-So `entitytype Integer <: Q` is allowed, but `entitytype Maybe Integer <: Q` is not (even though `Maybe Integer` is a subtype of `Entity`).
+So `subtype Integer <: Q` is allowed, but `subtype Maybe Integer <: Q` is not (even though `Maybe Integer` is a subtype of `Entity`).
 
-Subtypes relations are transitive.
+Subtype relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
 
 ## Type Equivalents
@@ -501,7 +501,7 @@ Models (of the various model types) keep track of updates, and will update user 
 
 `WholeModel (-p,+q)`
 
-A whole model a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
+A whole model is a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
 Whole models may be "unknown", indicating a missing value. Fetching the value with `get` will cause a stop.
 

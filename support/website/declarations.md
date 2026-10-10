@@ -109,11 +109,11 @@ let {
 ```
 
 The parsing "infixity" of the operator is determined by its name (regardless of namespace) according to [the table](syntax.md#infix-operators),
-and is "(A x B) x C" level 10 for other names.
+and is "(A x B) x C" level 1 for other names.
 
 ### Type & Subtype Declarations
 
-See [Types](../types/).
+See [Types](types.md).
 
 ### Standalone Declarator Declarations
 
@@ -209,7 +209,7 @@ For example:
 * `with P` maps the contents of namespace `P` into the current namespace.
 * `with P {a,b}` maps `a.P` and `b.P` into the current namespace
 * `with Q.P` maps the contents of namespace `Q.P` into the current namespace.
-* `with P (namespace Q)` maps namespace `Q.P` into the current namespace as `Q`.
+* `with P {namespace Q}` maps namespace `Q.P` into the current namespace as `Q`.
 * `with P {a,b} as N` maps `a.P` and `b.P` into namespace `N`, so they can be referred to as `a.N` and `b.N`.
 
 #### Example
@@ -241,17 +241,20 @@ let {
 } s + 1
 ```
 
-In this example, the scope for `body` contains declarations with these full names, with these values:
+In this example, the scope for `s + 1` contains declarations with these full names, with these values:
 
 ```
 p.A. = 3
 q.B.A. = 4
 r.N.B.A. = 5
-r.N. = 9;
-s.C.A. = 6
-t.C.A. = 16
+r.N. = 9
+s.C. = 6
+q.C. = 4
+r.N.C. = 5
+t.C. = 16
 p. = 3
 q.B. = 4
+r.N.B. = 5
 s. = 22
 ```
 

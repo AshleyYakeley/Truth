@@ -22,12 +22,11 @@ Splices are how you can use macros.
 
 * Given `expr: Interpreter Expression`, `!{expr}` in expression context is an expression.
 * Given `expr: Interpreter Scope`, `!{expr}` in declaration context is bindings.
-* Given `expr: Interpreter Type`, `!{expr}` in type context is a type.
 
 For example:
 
 * `check` has type `Type -> Interpreter Expression`. `!{check @Integer}` of type `Literal -> Maybe Integer` determines whether a given `Literal` is an `Integer`.
-* `point.OpenEntity` has type `Type -> Anchor -> Interpreter Expression`. `point.OpenEntity @MyEntity !"somepoint"` is a point entity for the anchor `!"somepoint"` of type `MyEntity`.
+* `point.OpenEntity` has type `Type -> Anchor -> Interpreter Expression`. `!{point.OpenEntity @MyEntity !"somepoint"}` is a point entity for the anchor `!"somepoint"` of type `MyEntity`.
 
 ## Run-Time Evaluation
 

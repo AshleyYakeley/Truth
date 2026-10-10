@@ -8,3 +8,11 @@ For example:
 ```text
 pinadoc UILib
 ```
+
+For a module at `my/stuff.pinafore` under a local directory, pass the directory with `-I` (or `--include`) and use the module name without the extension:
+
+```text
+pinadoc -I path/to/modules my/stuff > stuff.md
+```
+
+`pinadoc` uses the same [module search paths](modules.md) as the interpreter.

@@ -2,16 +2,16 @@
 
 Usage:
 ```text
-pinafore [--data PATH] [-I|--include PATH] [-n|--no-run] [--imply name=value] SCRIPTPATH [ARGUMENT...]
+pinafore1 [--data PATH] [-I|--include PATH] [-n|--no-run] [--imply name=value] SCRIPTPATH [ARGUMENT...]
 ```
 
-Call `pinafore` with a script containing actions to run those actions.
+Call `pinafore1` with a script containing actions to run those actions.
 The script must consist of an expression of a subtype of `Action Any`.
 
 To just parse and type-check a file without running it, use `-n` or `--no-run`.
 
 You can pass in implicit variables (of type `Text`) with `--imply`,
-e.g. `--imply myvar=xyz` is equivalent to `imply ?myvar: Text = "xyz" in ...`.
+e.g. `--imply myvar=xyz` is equivalent to `imply {?myvar: Text = "xyz"} ...`.
 
 Use `--data` to set the data directory (this also sets `$PINAFOREDIR` within the script).
 If not specified, the data directory will be `$PINAFOREDIR`, or else `$XDG_DATA_HOME/pinafore`, or else `$HOME/.local/share/pinafore`.
@@ -26,19 +26,15 @@ If you want to make a script executable from the command line, you can put this 
 #!/usr/bin/env pinafore1
 ```
 
-or (expecially on NixOS)
-
-```text
-#!/usr/bin/env pinafore1
-```
+Make the file executable with `chmod +x SCRIPT`.
 
 ## Interactive Mode
 
 ```text
-pinafore [--data PATH] [-I|--include PATH] (-i|--interactive)
+pinafore1 [--data PATH] [-I|--include PATH] (-i|--interactive)
 ```
 
-If `pinafore` is invoked with `-i` or `--interactive`, it will run in interactive mode.
+If `pinafore1` is invoked with `-i` or `--interactive`, it will run in interactive mode.
 This may be particularly helpful for understanding the type system.
 
 At the prompt, you can enter:
@@ -47,6 +43,7 @@ At the prompt, you can enter:
 * A let-expression (or other declarator), which will add bindings to the context.
 * A special command:
     * ":doc name" will show the documentation for a name.
+    * ":info expression" will show information about an expression.
     * ":type expression" will show the inferred type of an expression.
     * ":simplify+ type" will show a simplified positive type.
     * ":simplify- type" will show a simplified negative type.

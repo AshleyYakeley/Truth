@@ -57,7 +57,8 @@ The language is loosely based on Haskell, featuring:
 
 Pinafore is an interpreted language; programs are first checked (parsed and type-checked), and then executed.
 
-Pinafore is available as a 64-bit Debian package for Ubuntu 22.04, Debian 12, and later, and as a Nix flake.
+Pinafore is available as a 64-bit Linux Debian package and as a Nix flake.
+See [Getting Started](getting-started.md) for installation details.
 There is also a syntax-highlighting language extension for Visual Studio Code.
 
 ## Type System

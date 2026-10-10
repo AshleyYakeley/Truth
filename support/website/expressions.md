@@ -3,15 +3,15 @@
 ## Expressions
 
 In Pinafore, the main program is a single expression.
-These are the different kind of expressions:
+These are the different kinds of expressions:
 
 * *string literals*: `"abc\ndef"`. Use backslash for certain escapes.
 * *numeric literals*: `34.5`, `~34.5`. The first is a rational, the second is an inexact number (internally represented as a double).
 * *names*: `x`. These are bound by declarators (e.g `let`) and patterns in function bindings (`fn`).
-* *functions*: `fn x => x + 2 * x`, `fn {Just x => x; None => 0;}`. These are constructed by `fn`, and may have one "case", matching a pattern to an expression, or multiple cases in `{}` braces.
+* *functions*: `fn x => x + 2 * x`, `fn {Just x => x; Nothing => 0;}`. These are constructed by `fn`, and may have one "case", matching a pattern to an expression, or multiple cases in `{}` braces.
 * *if expressions*: `if t then "yes" else "no"`.
-* [*declarated expressions*](declarations.md): `let {x = 3} x + x`, `with N in x`. The declarator modifies the expressions to pass declarations.
-* [*do-notation*](do-notation.md): `do {x <- f; return x + x;}`. This notation makes it easier to work with monad-like types.
+* [*declarated expressions*](declarations.md): `let {x = 3} x + x`, `with N x`. The declarator modifies the expressions to pass declarations.
+* [*do-notation*](do-notation.md): `do {x <- f; pure (x + x);}`. This notation makes it easier to work with monad-like types.
 * [*applicative notation*](applicative-notation.md): `ap.List {%x + %y}`. This notation makes it easier to work with applicative-like types.
 * *function applications*: `sort mylist`. This is applying an expression (the function) to an expression (the argument).
 * *list constructors*: `[1,2,3]`.

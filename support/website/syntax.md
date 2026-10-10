@@ -32,7 +32,7 @@ Module files contain top-level declarations.
 
 ## Grammar
 
-* A script file passed to `pinafore` has syntax `<script>`.
+* A script file passed to `pinafore1` has syntax `<script>`.
 * Modules loaded with `import` have syntax `<module>`.
 * In interactive mode, each line has syntax `<interactive>`.
 

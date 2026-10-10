@@ -9,9 +9,9 @@ For example:
 
 * `ap.N {"example"}` is the same as `pure.N "example"`  
 * `ap.N {"answer: " ++ %r}` is the same as `map.N (fn v1 => "answer: " ++ v1) r`  
-* `ap.N {%x + %(y ?? z)}` is the same as `ap.N (map.N (fn v1, v2 => v1 + v2) x) (y ?? z)`
+* `ap.N {%x + %(y ?? z)}` is the same as `apply.N (map.N (fn v1, v2 => v1 + v2) x) (y ?? z)`
 
-`N` must be a namespace with these names defined: `map`, `pure`, `ap`, `liftA2`, `**`, `>>`.
+`N` must be a namespace with these names defined: `map`, `pure`, `apply`, `liftA2`, `**`, `>>`.
 All of these names will be aliased from `N` into the current namespace.
 
 If the names in `N` have the appropriate types, then these will be true:

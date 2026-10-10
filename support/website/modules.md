@@ -5,7 +5,7 @@ Scripts (and modules) can import modules with the `import` expression.
 Like this:
 
 ```pinafore nocheck
-import "my/stuff" in
+import "my/stuff"
 outputLn.Env sometext
 ```
 
@@ -13,8 +13,8 @@ To import the module `my/stuff`, Pinafore will look for a file in these paths in
 
 1. `$dir/my/stuff.pinafore` for each `-I $dir` on the command line
 2. `$pinafore/lib/my/stuff.pinafore`, where `$pinafore` is the local pinafore directory (typically `$HOME/.local/share/pinafore`)
-3. `/usr/local/share/pinafore/lib/my/stuff.pinafore`
-4. `/usr/share/pinafore/lib/my/stuff.pinafore`
+3. `my/stuff.pinafore` in the installed script library directory
+4. `pinafore/lib/my/stuff.pinafore` under each directory in `$XDG_DATA_DIRS` (by default, `/usr/local/share` and `/usr/share`)
 
 A module file is a list of declarations, though very often it is a single `expose` declaration,
 something like this (see [syntax](syntax.md)):

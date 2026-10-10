@@ -1,6 +1,6 @@
 # Dynamic Supertypes
 
-For every subtype realtion. `P <: Q`, there is an implied conversion function of type `P -> Q`.
+For every subtype relation `P <: Q`, there is an implied conversion function of type `P -> Q`.
 This conversion does not need to be injective, nor does there need to be "retraction" function of type `Q -> Maybe P`.
 
 But sometimes, this retraction does exist.
@@ -36,7 +36,7 @@ fn {
 
 This is equivalent to
 
-`fn {t:? T => Just t; _ -> Nothing}`
+`fn {t:? T => Just t; _ => Nothing}`
 
 ## Coerce
 
