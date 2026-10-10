@@ -23,9 +23,13 @@ data-dir:       data
 
 library
   exposed-modules:
+      Pinafore.Library.Script
+  other-modules:
       Paths_pinafore_lib_script
   autogen-modules:
       Paths_pinafore_lib_script
+  hs-source-dirs:
+      lib
   default-extensions:
       AllowAmbiguousTypes
       Arrows
@@ -51,6 +55,8 @@ library
   ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-missing-role-annotations -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages
   build-depends:
       base >=4.16
+    , pinafore-language
+    , shapes
   default-language: GHC2024
 
 test-suite test

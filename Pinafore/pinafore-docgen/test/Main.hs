@@ -11,11 +11,11 @@ import System.FilePath
 
 import Pinafore.DocGen
 
-testFile :: ModuleOptions -> FilePath -> TestTree
-testFile mo inpath = let
+testFile :: LibraryContext -> FilePath -> TestTree
+testFile libraryContext inpath = let
     dir = takeDirectory inpath
     modName = takeBaseName inpath
-    in testHandleVsFileInDir dir modName $ \outh -> generateCommonMarkDoc outh mo $ MkModuleName $ pack modName
+    in testHandleVsFileInDir dir modName $ \outh -> generateCommonMarkDoc outh libraryContext $ MkModuleName $ pack modName
 
 getTestPaths :: IO [FilePath]
 getTestPaths = do
@@ -31,10 +31,10 @@ main = do
     let
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
-    mo <- getModuleOptions MkRunOptions{..}
+    libraryContext <- getLibraryContext MkRunOptions{..}
     let
         testGolden :: TestTree
-        testGolden = testTree "golden" $ fmap (testFile mo) inpaths
+        testGolden = testTree "golden" $ fmap (testFile libraryContext) inpaths
         tests :: TestTree
         tests = testTree "pinafore-docgen" [testGolden]
     testMainNoSignalHandler tests

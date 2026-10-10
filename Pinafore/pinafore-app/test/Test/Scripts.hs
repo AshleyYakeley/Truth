@@ -3,22 +3,19 @@ module Test.Scripts
     )
 where
 
-import Paths_pinafore_lib_script qualified
 import Pinafore.Test
 import Shapes
 import Shapes.Test
 import System.Directory
 
-import Pinafore.Libs
+import Pinafore.Packages
 
 -- Just check, don't run
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $ do
-        scriptLibDir <- Paths_pinafore_lib_script.getDataDir
-        runTester defaultTester
-            $ testerLoadLibrary appLibrary
-            $ testerLoad (directoryLoadModule scriptLibDir)
+        runTester defaultTester{tstPackages = appPackages}
+            $ testerLoadPackages appPackages
             $ do
                 _ <- testerInterpretScriptFile fpath []
                 return ()

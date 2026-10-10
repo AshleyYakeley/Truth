@@ -5,12 +5,11 @@ where
 
 import Changes.Core
 import Criterion.Main
-import Paths_pinafore_lib_script qualified
 import Pinafore.Main
 import Pinafore.Test.Internal
 import Shapes
 
-import Pinafore.Libs
+import Pinafore.Packages
 
 nullViewIO :: View --> IO
 nullViewIO va = runLifecycle $ runView va
@@ -31,7 +30,7 @@ benchHashes =
 
 getBenchEnv :: IO (() -> LibraryContext)
 getBenchEnv = let
-    library = mkLibraryContext $ libraryLoadModule appLibrary
+    library = createLibraryContext appPackages
     in return $ \() -> library
 
 benchScript :: Text -> Benchmark
@@ -136,9 +135,7 @@ benchInterpretFile fpath =
     bench fpath
         $ nfIO
         $ do
-            scriptLibDir <- Paths_pinafore_lib_script.getDataDir
-            runTester defaultTester{tstLibrary = appLibrary}
-                $ testerLoad (directoryLoadModule scriptLibDir)
+            runTester defaultTester{tstPackages = appPackages}
                 $ do
                     _ <- testerInterpretScriptFile fpath []
                     return ()

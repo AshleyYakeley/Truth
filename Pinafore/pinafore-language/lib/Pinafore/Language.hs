@@ -1,6 +1,7 @@
 module Pinafore.Language
     ( LibraryStuff
     , LibraryModule (..)
+    , module Pinafore.Language.Packages
     , LoadModule
     , directoryLoadModule
     , textLoadModule
@@ -41,6 +42,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library
+import Pinafore.Language.Packages
 
 interact :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do

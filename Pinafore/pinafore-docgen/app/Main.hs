@@ -16,5 +16,5 @@ main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
         ModuleDocOption ropts modname -> do
-            modopts <- getModuleOptions ropts
-            generateCommonMarkDoc stdout modopts $ MkModuleName modname
+            libraryContext <- getLibraryContext ropts
+            generateCommonMarkDoc stdout libraryContext $ MkModuleName modname

@@ -1,16 +1,15 @@
 module Pinafore.Options
     ( RunOptions (..)
-    , getModuleOptions
+    , getLibraryContext
     )
 where
 
-import Paths_pinafore_lib_script qualified
 import Pinafore.Main
 import Shapes
 import System.Environment.XDG.BaseDir
 import System.FilePath
 
-import Pinafore.Libs
+import Pinafore.Packages
 
 data RunOptions = MkRunOptions
     { roIncludeDirs :: [FilePath]
@@ -18,13 +17,11 @@ data RunOptions = MkRunOptions
     }
     deriving stock (Eq, Show)
 
-getModuleOptions :: RunOptions -> IO ModuleOptions
-getModuleOptions MkRunOptions{..} = do
+getLibraryContext :: RunOptions -> IO LibraryContext
+getLibraryContext MkRunOptions{..} = do
     setPinaforeDir roDataDir
     dataDir <- getPinaforeDir
     sysIncludeDirs <- getSystemDataDirs "pinafore/lib"
-    scriptLibDir <- Paths_pinafore_lib_script.getDataDir
     let
-        moLibraryModules = appLibrary
-        moModuleDirs = roIncludeDirs <> [dataDir </> "lib", scriptLibDir] <> sysIncludeDirs
-    return MkModuleOptions{..}
+        dirsPackages = includeDirsPackages $ roIncludeDirs <> [dataDir </> "lib"] <> sysIncludeDirs
+    return $ createLibraryContext $ dirsPackages <> appPackages

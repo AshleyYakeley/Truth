@@ -4,9 +4,10 @@ module Pinafore.Main
     , ExecutionOptions (..)
     , defaultExecutionOptions
     , RunWithOptions (..)
-    , ModuleOptions (..)
+    , LibraryContext
     , module Pinafore.Context
-    , standardLibraryContext
+    , createLoadModule
+    , createLibraryContext
     , pinaforeLibrary
     , sqliteQDumpTable
     , qInterpretTextAtType
@@ -14,6 +15,7 @@ module Pinafore.Main
     , qInterpretScriptFile
     , qInteractHandles
     , qInteract
+    , module Pinafore.Language.Packages
     )
 where
 
@@ -25,6 +27,7 @@ import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Expression
+import Pinafore.Language.Packages
 import Pinafore.Language.Type
 
 class RunWithOptions a where
@@ -65,21 +68,16 @@ defaultProcessorCountINTERNAL = Nothing
 defaultExecutionOptions :: ExecutionOptions
 defaultExecutionOptions = MkExecutionOptions{eoProcessorCount = defaultProcessorCountINTERNAL}
 
-data ModuleOptions = MkModuleOptions
-    { moLibraryModules :: [LibraryModule]
-    , moModuleDirs :: [FilePath]
-    }
-
-standardLoadModule :: ModuleOptions -> LoadModule
-standardLoadModule MkModuleOptions{..} = let
+createLoadModule :: Packages -> LoadModule
+createLoadModule MkPackages{..} = let
     libLoadModule :: LoadModule
-    libLoadModule = libraryLoadModule moLibraryModules
+    libLoadModule = libraryLoadModule packageLibraryModules
     dirLoadModule :: LoadModule
-    dirLoadModule = mconcat $ fmap directoryLoadModule moModuleDirs
+    dirLoadModule = mconcat $ fmap directoryLoadModule packageIncludeDirs
     in libLoadModule <> dirLoadModule
 
-standardLibraryContext :: ModuleOptions -> LibraryContext
-standardLibraryContext modopts = mkLibraryContext $ standardLoadModule modopts
+createLibraryContext :: Packages -> LibraryContext
+createLibraryContext packages = mkLibraryContext $ createLoadModule packages
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do

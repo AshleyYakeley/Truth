@@ -6,7 +6,7 @@ module Pinafore.Library.Media
     , CSSText (..)
     , LangDrawing (..)
     , LangImage (..)
-    , mediaLibrary
+    , mediaPackages
     )
 where
 
@@ -22,8 +22,8 @@ import Pinafore.Library.Media.Image
 import Pinafore.Library.Media.Media
 import Pinafore.Library.Media.URI
 
-mediaLibrary :: [LibraryModule]
-mediaLibrary =
-    pure
+mediaPackages :: Packages
+mediaPackages =
+    libraryModulePackages
         $ MkLibraryModule "media"
         $ mconcat [mediaEntityLibSection, uriStuff, htmlStuff, cssStuff, commonMarkStuff, colourStuff, imageStuff, cairoStuff]

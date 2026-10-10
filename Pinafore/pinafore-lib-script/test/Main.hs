@@ -10,15 +10,13 @@ import Shapes
 import Shapes.Test
 import System.Directory
 
-import Paths_pinafore_lib_script qualified
+import Pinafore.Library.Script
 
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $ do
-        scriptLibDir <- Paths_pinafore_lib_script.getDataDir
         runTester defaultTester
-            $ testerLoadLibrary (mediaLibrary <> gnomeLibrary)
-            $ testerLoad (directoryLoadModule scriptLibDir)
+            $ testerLoadPackages (mediaPackages <> gnomePackages <> scriptPackages)
             $ do
                 mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
                 case mm of
@@ -51,9 +49,8 @@ getRelFilePaths dir = do
 
 getTestLibraries :: IO TestTree
 getTestLibraries = do
-    scriptLibDir <- Paths_pinafore_lib_script.getDataDir
-    paths <- getRelFilePaths scriptLibDir
-    return $ testTree "library" $ mapMaybe testRelPath paths
+    pathss <- for (packageIncludeDirs scriptPackages) getRelFilePaths
+    return $ testTree "library" $ mapMaybe testRelPath $ mconcat pathss
 
 main :: IO ()
 main = do

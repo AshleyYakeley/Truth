@@ -1,5 +1,5 @@
 module Pinafore.Library.GNOME
-    ( gnomeLibrary
+    ( gnomePackages
     , LangFile
     , LangContext (..)
     , runLangContext
@@ -13,5 +13,5 @@ import Pinafore.Library.GIO
 import Pinafore.Library.GTK
 import Pinafore.Library.WebKit
 
-gnomeLibrary :: [LibraryModule]
-gnomeLibrary = pure $ MkLibraryModule "gnome" $ mconcat $ [gioStuff] <> allGTKStuff <> [webKitStuff]
+gnomePackages :: Packages
+gnomePackages = libraryModulePackages $ MkLibraryModule "gnome" $ mconcat $ [gioStuff] <> allGTKStuff <> [webKitStuff]

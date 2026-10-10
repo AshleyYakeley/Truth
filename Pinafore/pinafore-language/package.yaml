@@ -148,6 +148,7 @@ library:
       - Pinafore.Language.Library.Pinafore
       - Pinafore.Language.Library.Debug
       - Pinafore.Language.Library
+      - Pinafore.Language.Packages
       - Pinafore.Language
 
 tests:

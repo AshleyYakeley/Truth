@@ -8,7 +8,7 @@ import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 
-import Pinafore.Libs
+import Pinafore.Packages
 
 keywords :: [Text]
 keywords = fmap fst allKeywords
@@ -16,12 +16,10 @@ keywords = fmap fst allKeywords
 testLibrary :: TestTree
 testLibrary =
     testTree "library" $ let
-        moLibraryModules = appLibrary
-        moModuleDirs = []
         moduleNames :: [ModuleName]
-        moduleNames = fmap lmName appLibrary
+        moduleNames = fmap lmName $ packageLibraryModules appPackages
         in let
-            ?library = standardLibraryContext MkModuleOptions{..}
+            ?library = createLibraryContext appPackages
             in for_ moduleNames $ \modname -> do
                 mmod <-
                     fromInterpretResult

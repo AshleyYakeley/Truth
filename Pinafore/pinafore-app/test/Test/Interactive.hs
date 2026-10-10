@@ -9,7 +9,7 @@ import Shapes hiding ((.))
 import Shapes.Test
 import System.FilePath
 
-import Pinafore.Libs
+import Pinafore.Packages
 
 testFile :: FilePath -> TestTree
 testFile inpath = let
@@ -17,7 +17,7 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFileInDir dir testName $ \outh ->
         withBinaryFile inpath ReadMode $ \inh ->
-            runTester defaultTester{tstOutput = outh, tstLibrary = appLibrary} $ do
+            runTester defaultTester{tstOutput = outh, tstPackages = appPackages} $ do
                 testerLiftView $ qInteractHandles inh outh True
                 liftIO $ hPutStrLn outh "<END>"
 

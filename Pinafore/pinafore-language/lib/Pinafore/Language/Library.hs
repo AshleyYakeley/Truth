@@ -71,8 +71,3 @@ pinaforeLibrary =
           , pinaforeLibSection
           , debugLibSection
           ]
-
-mkLibraryContext :: LoadModule -> LibraryContext
-mkLibraryContext lm = let
-    lcLoadModule = lm
-    in MkLibraryContext{..}

@@ -43,6 +43,9 @@ module Pinafore.API
     , TrustOrVerify (..)
     , Interpret (..)
     , DecodeLiteral (..)
+    , Packages
+    , libraryModulePackages
+    , includeDirsPackages
     )
 where
 

@@ -9,10 +9,13 @@ data-dir: data
 data-files: "**/*.pinafore"
 
 library:
+    source-dirs: lib
     dependencies:
       - base >= 4.16
+      - shapes
+      - pinafore-language
     exposed-modules:
-      - Paths_pinafore_lib_script
+      - Pinafore.Library.Script
 
 tests:
     test:

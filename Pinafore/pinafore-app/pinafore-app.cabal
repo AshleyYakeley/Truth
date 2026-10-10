@@ -31,7 +31,7 @@ library
   exposed-modules:
       Pinafore.Version
       Pinafore.Options
-      Pinafore.Libs
+      Pinafore.Packages
   other-modules:
       Paths_pinafore_app
   autogen-modules:

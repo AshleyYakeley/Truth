@@ -32,9 +32,9 @@ fors_ olds aa f =
             news <- f olds a
             fors_ news ar f
 
-generateCommonMarkDoc :: Handle -> ModuleOptions -> ModuleName -> IO ()
-generateCommonMarkDoc outh modopts modname = do
-    let ?library = standardLibraryContext modopts
+generateCommonMarkDoc :: Handle -> LibraryContext -> ModuleName -> IO ()
+generateCommonMarkDoc outh libraryContext modname = do
+    let ?library = libraryContext
     docs <- getModuleDocs modname
     let
         runDocTree :: Int -> Int -> Bool -> Tree DefDoc -> IO Bool

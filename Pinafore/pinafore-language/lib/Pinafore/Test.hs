@@ -8,6 +8,7 @@ module Pinafore.Test
     , LoadModule (..)
     , testerLoad
     , testerLoadLibrary
+    , testerLoadPackages
     , Tester
     , runTester
     , testerLiftView
@@ -22,6 +23,7 @@ module Pinafore.Test
     , directoryLoadModule
     , lcLoadModule
     , qInterpretTextAtType
+    , packageIncludeDirs
     )
 where
 
@@ -80,14 +82,14 @@ makeTestStorage = do
 data TesterOptions = MkTesterOptions
     { tstExecutionOptions :: ExecutionOptions
     , tstOutput :: Handle
-    , tstLibrary :: [LibraryModule]
+    , tstPackages :: Packages
     }
 
 defaultTester :: TesterOptions
 defaultTester = let
     tstExecutionOptions = defaultExecutionOptions
     tstOutput = stdout
-    tstLibrary = pinaforeLibrary
+    tstPackages = pinaforePackages
     in MkTesterOptions{..}
 
 data TesterContext = MkTesterContext
@@ -121,6 +123,9 @@ overrideLibraryModule mname f =
             | n == mname -> MkLibraryModule n $ f c
         lm -> lm
 
+overridePackages :: ModuleName -> (LibraryStuff -> LibraryStuff) -> Packages -> Packages
+overridePackages mname f packages = packages{packageLibraryModules = overrideLibraryModule mname f $ packageLibraryModules packages}
+
 idA :: A -> A
 idA = id
 
@@ -153,9 +158,8 @@ runTester MkTesterOptions{..} (MkTester ta) =
                             ]
                         ]
                 tcLibrary =
-                    mkLibraryContext
-                        $ libraryLoadModule
-                        $ overrideLibraryModule builtInModuleName (\lib -> lib <> myLibStuff) tstLibrary
+                    createLibraryContext
+                        $ overridePackages builtInModuleName (\lib -> lib <> myLibStuff) tstPackages
             runView $ runReaderT ta $ MkTesterContext{..}
 
 contextParam :: Param Tester TesterContext
@@ -165,14 +169,14 @@ testerLoad :: LoadModule -> Tester --> Tester
 testerLoad lm =
     paramLocal contextParam $ \tc ->
         tc
-            { tcLibrary =
-                let
-                    tcl = tcLibrary tc
-                    in tcl{lcLoadModule = lcLoadModule tcl <> lm}
+            { tcLibrary = addLibraryContext lm (tcLibrary tc)
             }
 
 testerLoadLibrary :: [LibraryModule] -> Tester --> Tester
 testerLoadLibrary lms = testerLoad $ libraryLoadModule lms
+
+testerLoadPackages :: Packages -> Tester --> Tester
+testerLoadPackages packages = testerLoad $ createLoadModule packages
 
 testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
 testerLiftView va =

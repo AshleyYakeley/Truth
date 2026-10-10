@@ -12,6 +12,8 @@ module Pinafore.Language.Interpreter.Interpreter
     , appNotationVarRef
     , appNotationBindsProd
     , LibraryContext (..)
+    , mkLibraryContext
+    , addLibraryContext
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
@@ -196,9 +198,19 @@ appNotationVarRef :: Ref QInterpreter VarIDState
 appNotationVarRef =
     lensMapRef (\bfb a -> fmap (\b -> a{isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
-data LibraryContext = MkLibraryContext
+-- might have more members later
+-- should not be a Monoid
+newtype LibraryContext = MkLibraryContext
     { lcLoadModule :: LoadModule
     }
+
+mkLibraryContext :: LoadModule -> LibraryContext
+mkLibraryContext lm = let
+    lcLoadModule = lm
+    in MkLibraryContext{..}
+
+addLibraryContext :: LoadModule -> LibraryContext -> LibraryContext
+addLibraryContext lm lc = lc{lcLoadModule = lm <> lcLoadModule lc}
 
 runInterpreter :: SourcePos -> LibraryContext -> QInterpreter a -> InterpretResult a
 runInterpreter icSourcePos MkLibraryContext{..} qa = let

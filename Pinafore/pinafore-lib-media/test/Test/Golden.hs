@@ -16,7 +16,7 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFileInDir dir testName $ \hout ->
         runTester defaultTester{tstOutput = hout}
-            $ testerLoadLibrary mediaLibrary
+            $ testerLoadPackages mediaPackages
             $ do
                 action <- testerInterpretScriptFile inpath []
                 testerLiftView action

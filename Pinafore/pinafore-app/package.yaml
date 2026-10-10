@@ -35,7 +35,7 @@ library:
     exposed-modules:
       - Pinafore.Version
       - Pinafore.Options
-      - Pinafore.Libs
+      - Pinafore.Packages
 
 executables:
     pinafore1:

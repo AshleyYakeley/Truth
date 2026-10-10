@@ -32,8 +32,8 @@ main =
                 pinaforedir <- ensurePinaforeDir mdirpath
                 sqliteQDumpTable pinaforedir
             RunFileOption ropts fNoRun fscript -> do
-                copts <- getModuleOptions ropts
-                runFiles copts fNoRun [fscript]
+                libraryContext <- getLibraryContext ropts
+                runFiles libraryContext fNoRun [fscript]
             RunInteractiveOption ropts -> do
-                copts <- getModuleOptions ropts
-                runInteractive copts
+                libraryContext <- getLibraryContext ropts
+                runInteractive libraryContext
