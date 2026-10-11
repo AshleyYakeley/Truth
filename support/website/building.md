@@ -43,6 +43,35 @@ nix flake check .
 The first command builds just the interpreter component; `.#pinafore` also includes the script libraries and `pinadoc`.
 Docker is not needed for these Nix commands.
 
+### Selecting native libraries
+
+The `pinafore` package exposes `withPackages`. For example, in a consuming flake:
+
+```nix
+pinafore.packages.${system}.pinafore.withPackages (ps: [
+  ps.pinafore
+  ps.script
+  {
+    src = ./my-library;
+    package = "pinafore-lib-example";
+    module = "Pinafore.Library.Example";
+    name = "examplePackages";
+  }
+])
+```
+
+`src` is a directory containing the library's `.cabal` file and Haskell sources.
+The exposed module must export the named value with type `Packages`.
+Bundled library descriptors also use `src`, for example
+`src = ./Pinafore/pinafore-lib-media`. Sources inside this repository retain their
+relative locations, preserving Hpack includes and existing Stack entries.
+
+The build copies external sources into the generated project, adds their directories
+to `stack.yaml`, and generates both the application's dependencies and package
+registration. Existing Stack packages and resolver settings are retained.
+External libraries' dependencies must already be available in that project or its
+snapshot. Source metadata is not included in the registration JSON.
+
 ## Stack and Docker
 
 Install Docker and Stack, and ensure your user can run Docker.

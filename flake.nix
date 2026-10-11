@@ -99,12 +99,6 @@
                                 "pinafore-app" =
                                   {
                                     flags."gitversion" = false;
-                                    postPatch = ''
-                                      mkdir -p lib/Pinafore
-                                      ${pkgs.buildPackages.j2cli}/bin/j2 --format=yaml \
-                                        ${Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja} \
-                                        ${./default.config.yaml} > lib/Pinafore/Packages.hs
-                                    '';
                                     dontStrip = false;
                                     dontPatchELF = false;
                                   };
@@ -118,24 +112,118 @@
               })
           ];
           pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-          flake = pkgs.pinaforeProject.flake { };
-          exePackage = flake.packages."pinafore-app:exe:pinafore1";
-          stdLibPackage = pkgs.runCommand "pinafore-lib-script" { libdir = ./Pinafore/pinafore-lib-script/data; }
-            ''
-              mkdir -p $out/share/pinafore/lib
-              cp -r $libdir/* $out/share/pinafore/lib/
-            '';
-          pinadataPackage = flake.packages."pinafore-language:exe:pinadata";
-          pinadocPackage = flake.packages."pinafore-docgen:exe:pinadoc";
-          pinaforePackage = pkgs.symlinkJoin
+          knownPinaforePackageSet =
             {
-              name = "pinafore";
-              paths =
-                [
-                  exePackage
-                  pinadocPackage
-                  stdLibPackage
-                ];
+              pinafore =
+                {
+                  src = Pinafore/pinafore-language;
+                  package = "pinafore-language";
+                  module = "Pinafore.Main";
+                  name = "pinaforePackages";
+                };
+              media =
+                {
+                  src = Pinafore/pinafore-lib-media;
+                  package = "pinafore-lib-media";
+                  module = "Pinafore.Library.Media";
+                  name = "mediaPackages";
+                };
+              gnome =
+                {
+                  src = Pinafore/pinafore-lib-gnome;
+                  package = "pinafore-lib-gnome";
+                  module = "Pinafore.Library.GNOME";
+                  name = "gnomePackages";
+                };
+              script =
+                {
+                  src = Pinafore/pinafore-lib-script;
+                  package = "pinafore-lib-script";
+                  module = "Pinafore.Library.Script";
+                  name = "scriptPackages";
+                };
+            };
+          defaultPinaforePackageList = builtins.attrValues knownPinaforePackageSet;
+          mkProject = pinaforePackageList: let
+              # Preserve in-tree paths for relative Hpack includes and existing
+              # Stack entries. Copy external sources into separate directories.
+              projectPrefix = toString ./. + "/";
+              sourcePackages = pkgs.lib.imap0
+                (i: p:
+                  let
+                    sourcePath = toString p.src;
+                    inProject = pkgs.lib.hasPrefix projectPrefix sourcePath;
+                  in {
+                    descriptor = p;
+                    inherit inProject;
+                    directory = if inProject
+                      then pkgs.lib.removePrefix projectPrefix sourcePath
+                      else "nix-packages/package-${toString i}";
+                  })
+                pinaforePackageList;
+              packageDirsFile = pkgs.writeText "package-dirs.json"
+                (builtins.toJSON (map (p: p.directory) sourcePackages));
+              configJSON = builtins.toJSON
+                {
+                  packages = map (p: { inherit (p) package module name; }) pinaforePackageList;
+                };
+              configJSONFile = pkgs.writeText "config.json" configJSON;
+              configuredSource = pkgs.runCommand "Pinafore-configured-source"
+                {
+                  nativeBuildInputs = [ pkgs.buildPackages.yq-go pkgs.buildPackages.haskellPackages.hpack ];
+                }
+                ''
+                  cp -r ${./.} $out
+                  chmod -R u+w $out
+                  cd $out
+                  ${pkgs.lib.concatMapStringsSep "\n" (p: pkgs.lib.optionalString (!p.inProject) ''
+                    mkdir -p ${pkgs.lib.escapeShellArg p.directory}
+                    cp -r ${pkgs.lib.escapeShellArg "${p.descriptor.src}/."} ${pkgs.lib.escapeShellArg p.directory}/
+                  '') sourcePackages}
+                  yq --inplace '.packages = ((.packages + load("${packageDirsFile}")) | unique)' stack.yaml
+                  yq --input-format=json --output-format=yaml '[.packages[].package]' \
+                    ${configJSONFile} > Pinafore/pinafore-app/generated-dependencies.yaml
+                  hpack --force Pinafore/pinafore-app
+                '';
+              project = pkgs.pinaforeProject.appendModule {
+                src = pkgs.lib.mkForce configuredSource;
+                modules = [{
+                  packages.pinafore-app.postPatch = ''
+                    mkdir -p lib/Pinafore
+                    ${pkgs.buildPackages.j2cli}/bin/j2 --format=json \
+                      ${./Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja} \
+                      ${configJSONFile} > lib/Pinafore/Packages.hs
+                  '';
+                }];
+              };
+            in project;
+          mkFlake = pinaforePackageList: (mkProject pinaforePackageList).flake { };
+          defaultProject = mkProject defaultPinaforePackageList;
+          defaultFlake = defaultProject.flake { };
+          mkPackage = pinaforePackageList:
+            let
+              flake = mkFlake pinaforePackageList;
+              exePackage = flake.packages."pinafore-app:exe:pinafore1";
+              stdLibPackage = pkgs.runCommand "pinafore-lib-script" { libdir = ./Pinafore/pinafore-lib-script/data; }
+                ''
+                  mkdir -p $out/share/pinafore/lib
+                  cp -r $libdir/* $out/share/pinafore/lib/
+                '';
+              pinadocPackage = flake.packages."pinafore-docgen:exe:pinadoc";
+            in pkgs.symlinkJoin
+              {
+                name = "pinafore";
+                paths =
+                  [
+                    exePackage
+                    pinadocPackage
+                    stdLibPackage
+                  ];
+              };
+          pinadataPackage = defaultFlake.packages."pinafore-language:exe:pinadata";
+          pinaforePackage = mkPackage defaultPinaforePackageList //
+            {
+              withPackages = call: mkPackage (call knownPinaforePackageSet);
             };
           syntaxDataFile = pkgs.runCommand "pinafore-syntax-data" { }
             ''
@@ -147,16 +235,15 @@
           vsce = import support/vsc-extension support;
 
           # App and stuff
-          app = flake.apps."pinafore-app:exe:pinafore1".program;
+          app = defaultFlake.apps."pinafore-app:exe:pinafore1".program;
           minscript = pkgs.writeText "minscript" "pure ()";
           importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
           interpretFileCheck = pkgs.runCommand "interpretFileCheck" { } "${app} -n ${minscript} > $out";
           runFileCheck = pkgs.runCommand "runFileCheck" { } "${app} ${minscript} > $out";
           importFileCheck = pkgs.runCommand "importFileCheck" { } "${app} ${importscript} > $out";
         in
-        flake //
         {
-          packages = flake.packages //
+          packages =
           {
             default = pinaforePackage;
             pinafore = pinaforePackage;
@@ -164,13 +251,13 @@
           };
           apps =
             {
-              default = flake.apps."pinafore-app:exe:pinafore1";
-              pinafore = flake.apps."pinafore-app:exe:pinafore1";
-              pinafore1 = flake.apps."pinafore-app:exe:pinafore1";
-              pinadoc = flake.apps."pinafore-docgen:exe:pinadoc";
-              pinadata = flake.apps."pinafore-language:exe:pinadata";
+              default = defaultFlake.apps."pinafore-app:exe:pinafore1";
+              pinafore = defaultFlake.apps."pinafore-app:exe:pinafore1";
+              pinafore1 = defaultFlake.apps."pinafore-app:exe:pinafore1";
+              pinadoc = defaultFlake.apps."pinafore-docgen:exe:pinadoc";
+              pinadata = defaultFlake.apps."pinafore-language:exe:pinadata";
             };
-          checks = flake.checks //
+          checks = defaultFlake.checks //
           {
             interpretFile = interpretFileCheck;
             runFile = runFileCheck;
@@ -208,8 +295,8 @@
                 };
             in
             {
-              default = pkgs.pinaforeProject.shellFor shellInputs;
-              hoogle = pkgs.pinaforeProject.shellFor (shellInputs //
+              default = defaultProject.shellFor shellInputs;
+              hoogle = defaultProject.shellFor (shellInputs //
               {
                 withHoogle = true;
                 additional = ps: with ps;

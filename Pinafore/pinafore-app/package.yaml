@@ -21,12 +21,11 @@ library:
       - filepath
       - xdg-basedir
       - pinafore-language
-      - pinafore-lib-media
-      - pinafore-lib-gnome
-      - pinafore-lib-script
     cpp-options:
       - -DPINAFOREVERSION="0.6"
     when:
+      - condition: true
+        dependencies: !include generated-dependencies.yaml
       - condition: flag(gitversion)
         dependencies:
           - githash

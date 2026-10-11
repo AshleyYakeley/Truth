@@ -66,13 +66,16 @@ library
       base >=4.16
     , filepath
     , pinafore-language
-    , pinafore-lib-gnome
-    , pinafore-lib-media
-    , pinafore-lib-script
     , shapes
     , time
     , xdg-basedir
   default-language: GHC2024
+  if true
+    build-depends:
+        pinafore-language
+      , pinafore-lib-gnome
+      , pinafore-lib-media
+      , pinafore-lib-script
   if flag(gitversion)
     cpp-options: -DFLAG_GITVERSION
     build-depends:
