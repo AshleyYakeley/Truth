@@ -9,8 +9,7 @@ import Options.Applicative as OA
 import Shapes
 
 data Options
-    = ShowVersionOption
-    | SyntaxDataDocOption
+    = SyntaxDataDocOption
     | InfixDocOption
     | TypeInfixDocOption
     deriving stock (Eq, Show)
@@ -18,8 +17,7 @@ data Options
 optParser :: Parser Options
 optParser =
     choice
-        [ flag' ShowVersionOption $ long "version" <> short 'v'
-        , flag' SyntaxDataDocOption $ long "syntax-data"
+        [ flag' SyntaxDataDocOption $ long "syntax-data"
         , flag' InfixDocOption $ long "infix"
         , flag' TypeInfixDocOption $ long "infix-type"
         ]

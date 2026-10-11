@@ -62,12 +62,6 @@ cradle:
       - path: "Pinafore/pinafore-app/lib"
         component: "pinafore-app:lib"
 
-      - path: "Pinafore/pinafore-app/app/data/Main.hs"
-        component: "pinafore-app:exe:pinadata"
-
-      - path: "Pinafore/pinafore-app/app/data/Options.hs"
-        component: "pinafore-app:exe:pinadata"
-
       - path: "Pinafore/pinafore-app/app/main/Main.hs"
         component: "pinafore-app:exe:pinafore1"
 
@@ -107,6 +101,12 @@ cradle:
       - path: "Pinafore/pinafore-language/lib"
         component: "pinafore-language:lib"
 
+      - path: "Pinafore/pinafore-language/app/data/Main.hs"
+        component: "pinafore-language:exe:pinadata"
+
+      - path: "Pinafore/pinafore-language/app/data/Options.hs"
+        component: "pinafore-language:exe:pinadata"
+
       - path: "Pinafore/pinafore-language/test"
         component: "pinafore-language:test:test"
 
@@ -122,7 +122,7 @@ cradle:
       - path: "Pinafore/pinafore-lib-media/test"
         component: "pinafore-lib-media:test:test"
 
-      - path: "Pinafore/pinafore-lib-script/./"
+      - path: "Pinafore/pinafore-lib-script/lib"
         component: "pinafore-lib-script:lib"
 
       - path: "Pinafore/pinafore-lib-script/test"

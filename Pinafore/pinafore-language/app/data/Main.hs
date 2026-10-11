@@ -12,7 +12,6 @@ import Pinafore.Documentation
 import Shapes
 
 import Options
-import Pinafore.Version
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do
@@ -64,7 +63,6 @@ syntaxData = let
 main :: IO ()
 main =
     getOptions >>= \case
-        ShowVersionOption -> printVersion
         SyntaxDataDocOption -> putStrLn $ unpack $ JSON.encodeToLazyText $ syntaxData
         InfixDocOption ->
             printInfixOperatorTable

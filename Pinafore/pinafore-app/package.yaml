@@ -53,19 +53,6 @@ executables:
           - Options
           - Run
         ghc-options: -threaded
-    pinadata:
-        source-dirs: app/data
-        dependencies:
-          - shapes
-          - optparse-applicative
-          - aeson
-          - pinafore-base
-          - pinafore-language
-          - pinafore-app
-        main: Main.hs
-        other-modules:
-          - Options
-        ghc-options: -threaded
 
 tests:
     test:

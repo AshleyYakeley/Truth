@@ -151,6 +151,20 @@ library:
       - Pinafore.Language.Packages
       - Pinafore.Language
 
+executables:
+    pinadata:
+        source-dirs: app/data
+        dependencies:
+          - shapes
+          - optparse-applicative
+          - aeson
+          - pinafore-base
+          - pinafore-language
+        main: Main.hs
+        other-modules:
+          - Options
+        ghc-options: -threaded
+
 tests:
     test:
         source-dirs: test

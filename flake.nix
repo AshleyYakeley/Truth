@@ -125,7 +125,7 @@
               mkdir -p $out/share/pinafore/lib
               cp -r $libdir/* $out/share/pinafore/lib/
             '';
-          pinadataPackage = flake.packages."pinafore-app:exe:pinadata";
+          pinadataPackage = flake.packages."pinafore-language:exe:pinadata";
           pinadocPackage = flake.packages."pinafore-docgen:exe:pinadoc";
           pinaforePackage = pkgs.symlinkJoin
             {
@@ -168,7 +168,7 @@
               pinafore = flake.apps."pinafore-app:exe:pinafore1";
               pinafore1 = flake.apps."pinafore-app:exe:pinafore1";
               pinadoc = flake.apps."pinafore-docgen:exe:pinadoc";
-              pinadata = flake.apps."pinafore-app:exe:pinadata";
+              pinadata = flake.apps."pinafore-language:exe:pinadata";
             };
           checks = flake.checks //
           {
