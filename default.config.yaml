@@ -1,0 +1,13 @@
+packages:
+- package: pinafore-language
+  module: Pinafore.Main
+  name: pinaforePackages
+- package: pinafore-lib-media
+  module: Pinafore.Library.Media
+  name: mediaPackages
+- package: pinafore-lib-gnome
+  module: Pinafore.Library.GNOME
+  name: gnomePackages
+- package: pinafore-lib-script
+  module: Pinafore.Library.Script
+  name: scriptPackages

@@ -126,7 +126,10 @@ watch-build: out docker-image
 
 ### Executables
 
-${BINPATH}/pinafore1 ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
+Pinafore/pinafore-app/lib/Pinafore/Packages.hs: Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja default.config.yaml
+	$(STACK) exec -- j2 --format=yaml $^ > $@
+
+${BINPATH}/pinafore1 ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image Pinafore/pinafore-app/lib/Pinafore/Packages.hs
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
@@ -420,6 +423,7 @@ clean:
 	rm -rf Changes/*/*.cabal
 	rm -rf Pinafore/*/*.cabal
 	rm -rf Changes/changes-gnome/examples/showImages/images
+	rm -rf Pinafore/pinafore-app/lib/Pinafore/Packages.hs
 	rm -rf nix/docker/flake.nix
 	rm -rf nix/docker/flake.lock
 	rm -rf nix/docker/stack.yaml

@@ -1,0 +1,17 @@
+{-# LANGUAGE PackageImports #-}
+module Pinafore.Packages (appPackages) where
+
+import Pinafore.API
+{% for p in packages %}
+import "{{p.package}}" {{p.module}} qualified as Package{{loop.index}} ({{p.name}})
+{% endfor %}
+import Shapes
+
+appPackages :: Packages
+appPackages =
+    mconcat
+        [ mempty
+{% for p in packages %}
+        , Package{{loop.index}}.{{p.name}}
+{% endfor %}
+        ]

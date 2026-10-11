@@ -99,6 +99,12 @@
                                 "pinafore-app" =
                                   {
                                     flags."gitversion" = false;
+                                    postPatch = ''
+                                      mkdir -p lib/Pinafore
+                                      ${pkgs.buildPackages.j2cli}/bin/j2 --format=yaml \
+                                        ${Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja} \
+                                        ${./default.config.yaml} > lib/Pinafore/Packages.hs
+                                    '';
                                     dontStrip = false;
                                     dontPatchELF = false;
                                   };
@@ -191,6 +197,7 @@
                       docker
                       xorg.xhost
                       stack
+                      j2cli
                       yq-go
                       haskellPackages.hlint
                       haskellPackages.implicit-hie

@@ -69,3 +69,6 @@ RUN npm --global install @vscode/vsce
 RUN apt-get install -y jq
 RUN curl -fsSLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.47.1/yq_linux_amd64
 RUN chmod +x /usr/local/bin/yq
+
+# jinja2
+RUN apt-get install -y j2cli
