@@ -195,7 +195,7 @@
                       bashInteractive
                       gnumake
                       docker
-                      xorg.xhost
+                      xhost
                       stack
                       j2cli
                       yq-go
