@@ -183,6 +183,12 @@
                   yq --inplace '.packages = ((.packages + load("${packageDirsFile}")) | unique)' stack.yaml
                   yq --input-format=json --output-format=yaml '[.packages[].package]' \
                     ${configJSONFile} > Pinafore/pinafore-app/generated-dependencies.yaml
+                  ${pkgs.lib.concatMapStringsSep "\n" (p: ''
+                    if test -f ${pkgs.lib.escapeShellArg "${p.directory}/package.yaml"}; then
+                      chmod -R u+w ${pkgs.lib.escapeShellArg p.directory}
+                      hpack --force ${pkgs.lib.escapeShellArg p.directory}
+                    fi
+                  '') sourcePackages}
                   hpack --force Pinafore/pinafore-app
                 '';
               project = pkgs.pinaforeProject.appendModule {

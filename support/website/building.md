@@ -60,7 +60,9 @@ pinafore.packages.${system}.pinafore.withPackages (ps: [
 ])
 ```
 
-`src` is a directory containing the library's `.cabal` file and Haskell sources.
+`src` is a directory containing the library's `package.yaml` or `.cabal` file and
+Haskell sources. When `package.yaml` is present, the build runs Hpack before
+dependency planning; any files it includes must also be available in the source tree.
 The exposed module must export the named value with type `Packages`.
 Bundled library descriptors also use `src`, for example
 `src = ./Pinafore/pinafore-lib-media`. Sources inside this repository retain their
