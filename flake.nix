@@ -144,6 +144,13 @@
                 };
             };
           defaultPinaforePackageList = builtins.attrValues knownPinaforePackageSet;
+          # Planning uses the assembled project, but unchanged packages compile
+          # from the original sources, independent of the selected registrations.
+          sharedPackageSources = pkgs.lib.mapAttrs (_: p: {
+            src = pkgs.lib.mkForce p.src;
+          }) (pkgs.lib.filterAttrs (name: p:
+            name != "pinafore-app" && (p.isProject or false)
+          ) pkgs.pinaforeProject.hsPkgs);
           mkProject = pinaforePackageList: let
               # Preserve in-tree paths for relative Hpack includes and existing
               # Stack entries. Copy external sources into separate directories.
@@ -170,7 +177,7 @@
               configJSONFile = pkgs.writeText "config.json" configJSON;
               configuredSource = pkgs.runCommand "Pinafore-configured-source"
                 {
-                  nativeBuildInputs = [ pkgs.buildPackages.yq-go pkgs.buildPackages.haskellPackages.hpack ];
+                  nativeBuildInputs = [ pkgs.buildPackages.yq-go pkgs.buildPackages.j2cli pkgs.buildPackages.haskellPackages.hpack ];
                 }
                 ''
                   cp -r ${./.} $out
@@ -183,6 +190,9 @@
                   yq --inplace '.packages = ((.packages + load("${packageDirsFile}")) | unique)' stack.yaml
                   yq --input-format=json --output-format=yaml '[.packages[].package]' \
                     ${configJSONFile} > Pinafore/pinafore-app/generated-dependencies.yaml
+                  mkdir -p Pinafore/pinafore-app/lib/Pinafore
+                  j2 --format=json Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja \
+                    ${configJSONFile} > Pinafore/pinafore-app/lib/Pinafore/Packages.hs
                   ${pkgs.lib.concatMapStringsSep "\n" (p: ''
                     if test -f ${pkgs.lib.escapeShellArg "${p.directory}/package.yaml"}; then
                       chmod -R u+w ${pkgs.lib.escapeShellArg p.directory}
@@ -193,22 +203,15 @@
                 '';
               project = pkgs.pinaforeProject.appendModule {
                 src = pkgs.lib.mkForce configuredSource;
-                modules = [{
-                  packages.pinafore-app.postPatch = ''
-                    mkdir -p lib/Pinafore
-                    ${pkgs.buildPackages.j2cli}/bin/j2 --format=json \
-                      ${./Pinafore/pinafore-app/lib/Pinafore/Packages.hs.jinja} \
-                      ${configJSONFile} > lib/Pinafore/Packages.hs
-                  '';
-                }];
+                modules = [{ packages = sharedPackageSources; }];
               };
             in project;
-          mkFlake = pinaforePackageList: (mkProject pinaforePackageList).flake { };
           defaultProject = mkProject defaultPinaforePackageList;
           defaultFlake = defaultProject.flake { };
           mkPackage = pinaforePackageList:
             let
-              flake = mkFlake pinaforePackageList;
+              project = mkProject pinaforePackageList;
+              flake = project.flake { };
               exePackage = flake.packages."pinafore-app:exe:pinafore1";
               stdLibPackage = pkgs.runCommand "pinafore-lib-script" { libdir = ./Pinafore/pinafore-lib-script/data; }
                 ''
@@ -219,6 +222,7 @@
             in pkgs.symlinkJoin
               {
                 name = "pinafore";
+                passthru.configuredSource = project.args.src;
                 paths =
                   [
                     exePackage
@@ -226,7 +230,9 @@
                     stdLibPackage
                   ];
               };
-          pinadataPackage = defaultFlake.packages."pinafore-language:exe:pinadata";
+          # Syntax data does not depend on the selected Pinafore packages.
+          baseFlake = pkgs.pinaforeProject.flake { };
+          pinadataPackage = baseFlake.packages."pinafore-language:exe:pinadata";
           pinaforePackage = mkPackage defaultPinaforePackageList //
             {
               withPackages = call: mkPackage (call knownPinaforePackageSet);
@@ -255,13 +261,14 @@
             pinafore = pinaforePackage;
             vscode-extension = vsce.package;
           };
+          pinaforePackages = knownPinaforePackageSet;
           apps =
             {
               default = defaultFlake.apps."pinafore-app:exe:pinafore1";
               pinafore = defaultFlake.apps."pinafore-app:exe:pinafore1";
               pinafore1 = defaultFlake.apps."pinafore-app:exe:pinafore1";
               pinadoc = defaultFlake.apps."pinafore-docgen:exe:pinadoc";
-              pinadata = defaultFlake.apps."pinafore-language:exe:pinadata";
+              pinadata = baseFlake.apps."pinafore-language:exe:pinadata";
             };
           checks = defaultFlake.checks //
           {

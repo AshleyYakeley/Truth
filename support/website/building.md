@@ -45,6 +45,19 @@ Docker is not needed for these Nix commands.
 
 ### Selecting native libraries
 
+To inspect the default build's prepared sources and dependency metadata:
+
+```sh
+nix build .#pinafore.configuredSource
+cat result/stack.yaml
+cat result/Pinafore/pinafore-app/generated-dependencies.yaml
+```
+
+Each package returned by `withPackages` also exposes `configuredSource`, so a
+consuming flake can export a custom selection's source as a package output.
+This source includes the generated `Pinafore.Packages` module and Cabal metadata,
+ready for dependency planning and compilation.
+
 The `pinafore` package exposes `withPackages`. For example, in a consuming flake:
 
 ```nix
@@ -73,6 +86,11 @@ to `stack.yaml`, and generates both the application's dependencies and package
 registration. Existing Stack packages and resolver settings are retained.
 External libraries' dependencies must already be available in that project or its
 snapshot. Source metadata is not included in the registration JSON.
+
+Package selections use separate dependency plans, but base-project packages other
+than `pinafore-app` compile from their original sources. Nix can therefore reuse
+their builds across selections when the compiler, dependencies, and flags match.
+The generated registration and dependencies remain specific to `pinafore-app`.
 
 ## Stack and Docker
 
