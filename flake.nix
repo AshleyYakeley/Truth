@@ -146,12 +146,17 @@
           defaultPinaforePackageList = builtins.attrValues knownPinaforePackageSet;
           # Planning uses the assembled project, but unchanged packages compile
           # from the original sources, independent of the selected registrations.
-          sharedPackageSources = pkgs.lib.mapAttrs (_: p: {
-            src = pkgs.lib.mkForce p.src;
-          }) (pkgs.lib.filterAttrs (name: p:
-            name != "pinafore-app" && (p.isProject or false)
-          ) pkgs.pinaforeProject.hsPkgs);
-          mkProject = pinaforePackageList: let
+          sharedPackageSources = pkgs.lib.mapAttrs
+            (_: p: {
+              src = pkgs.lib.mkForce p.src;
+            })
+            (pkgs.lib.filterAttrs
+              (name: p:
+                name != "pinafore-app" && (p.isProject or false)
+              )
+              pkgs.pinaforeProject.hsPkgs);
+          mkProject = pinaforePackageList:
+            let
               # Preserve in-tree paths for relative Hpack includes and existing
               # Stack entries. Copy external sources into separate directories.
               projectPrefix = toString ./. + "/";
@@ -160,10 +165,12 @@
                   let
                     sourcePath = toString p.src;
                     inProject = pkgs.lib.hasPrefix projectPrefix sourcePath;
-                  in {
+                  in
+                  {
                     descriptor = p;
                     inherit inProject;
-                    directory = if inProject
+                    directory =
+                      if inProject
                       then pkgs.lib.removePrefix projectPrefix sourcePath
                       else "nix-packages/package-${toString i}";
                   })
@@ -205,7 +212,8 @@
                 src = pkgs.lib.mkForce configuredSource;
                 modules = [{ packages = sharedPackageSources; }];
               };
-            in project;
+            in
+            project;
           defaultProject = mkProject defaultPinaforePackageList;
           defaultFlake = defaultProject.flake { };
           mkPackage = pinaforePackageList:
@@ -219,7 +227,8 @@
                   cp -r $libdir/* $out/share/pinafore/lib/
                 '';
               pinadocPackage = flake.packages."pinafore-docgen:exe:pinadoc";
-            in pkgs.symlinkJoin
+            in
+            pkgs.symlinkJoin
               {
                 name = "pinafore";
                 passthru.configuredSource = project.args.src;
@@ -256,11 +265,11 @@
         in
         {
           packages =
-          {
-            default = pinaforePackage;
-            pinafore = pinaforePackage;
-            vscode-extension = vsce.package;
-          };
+            {
+              default = pinaforePackage;
+              pinafore = pinaforePackage;
+              vscode-extension = vsce.package;
+            };
           pinaforePackages = knownPinaforePackageSet;
           apps =
             {
@@ -271,11 +280,12 @@
               pinadata = baseFlake.apps."pinafore-language:exe:pinadata";
             };
           checks = defaultFlake.checks //
-          {
-            interpretFile = interpretFileCheck;
-            runFile = runFileCheck;
-            importFile = importFileCheck;
-          };
+            {
+              interpretFile = interpretFileCheck;
+              runFile = runFileCheck;
+              importFile = importFileCheck;
+              arguments = argumentsCheck;
+            };
           files =
             {
               syntax-data = syntaxDataFile;
@@ -310,27 +320,27 @@
             {
               default = defaultProject.shellFor shellInputs;
               hoogle = defaultProject.shellFor (shellInputs //
-              {
-                withHoogle = true;
-                additional = ps: with ps;
-                  [
-                    thread-trace
-                    shapes
-                    cairo-functional
-                    changes-core
-                    changes-media
-                    changes-world
-                    changes-gnome
+                {
+                  withHoogle = true;
+                  additional = ps: with ps;
+                    [
+                      thread-trace
+                      shapes
+                      cairo-functional
+                      changes-core
+                      changes-media
+                      changes-world
+                      changes-gnome
 
-                    polar-shim
-                    typed-expression
-                    pinafore-base
-                    pinafore-storage
-                    pinafore-syntax
-                    pinafore-language
-                    pinafore-lib-media
-                  ];
-              });
+                      polar-shim
+                      typed-expression
+                      pinafore-base
+                      pinafore-storage
+                      pinafore-syntax
+                      pinafore-language
+                      pinafore-lib-media
+                    ];
+                });
             };
         }
       );
