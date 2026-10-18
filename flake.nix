@@ -262,6 +262,27 @@
           interpretFileCheck = pkgs.runCommand "interpretFileCheck" { } "${app} -n ${minscript} > $out";
           runFileCheck = pkgs.runCommand "runFileCheck" { } "${app} ${minscript} > $out";
           importFileCheck = pkgs.runCommand "importFileCheck" { } "${app} ${importscript} > $out";
+          argumentsCheck =
+            let
+              script = pkgs.writeScript "argumentsCheck-script"
+                ''
+                  #!${app}
+                  with Env.
+                  do {
+                      outputLn $ "scriptName: " <>.Text scriptName;
+                      for_ arguments $ fn arg => outputLn $ "argument: " <>.Text arg;
+                  }
+                '';
+              output = pkgs.runCommand "argumentsCheck-output" { } "${script} a b c > $out";
+              expected = pkgs.writeText "argumentsCheck-expected"
+                ''
+                  scriptName: ${script}
+                  argument: a
+                  argument: b
+                  argument: c
+                '';
+            in
+            pkgs.runCommand "argumentsCheck" { } "${pkgs.diffutils}/bin/diff ${expected} ${output} > $out";
         in
         {
           packages =

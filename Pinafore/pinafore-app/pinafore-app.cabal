@@ -13,6 +13,7 @@ license:        GPL-2.0-only
 license-file:   LICENSE
 build-type:     Simple
 extra-doc-files:
+    examples/arguments
     examples/calendar
     examples/clock
     examples/commonmark

@@ -1,0 +1,6 @@
+#!/usr/bin/env pinafore1
+with Env.
+do {
+    outputLn $ "scriptName: " <>.Text scriptName;
+    for_ arguments $ fn arg => outputLn $ "argument: " <>.Text arg;
+}
