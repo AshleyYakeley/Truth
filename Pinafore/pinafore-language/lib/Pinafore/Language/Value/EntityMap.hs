@@ -39,3 +39,35 @@ entityMapKeys m = fmap fst $ entityMapToList m
 
 entityMapValues :: EntityMap v -> [v]
 entityMapValues m = fmap snd $ entityMapToList m
+
+entityMapMember :: Entity -> EntityMap v -> Bool
+entityMapMember k (MkEntityMap m) = member k m
+
+entityMapContains :: EntityMap v -> Entity -> Bool
+entityMapContains em k = entityMapMember k em
+
+newtype EntitySet = MkEntitySet {unEntitySet :: EntityMap ()} deriving newtype (Semigroup, Monoid)
+
+entitySetToList :: EntitySet -> [Entity]
+entitySetToList = entityMapKeys . unEntitySet
+
+entitySetFromList :: [Entity] -> EntitySet
+entitySetFromList = MkEntitySet . entityMapFromList . fmap (\e -> (e, ()))
+
+entitySetListIso :: Bijection [Entity] EntitySet
+entitySetListIso = MkIsomorphism entitySetFromList entitySetToList
+
+entitySetInsert :: Entity -> EntitySet -> EntitySet
+entitySetInsert k (MkEntitySet em) = MkEntitySet $ entityMapInsert k () em
+
+entitySetDelete :: Entity -> EntitySet -> EntitySet
+entitySetDelete k (MkEntitySet em) = MkEntitySet $ entityMapDelete k em
+
+entitySetSingle :: Entity -> EntitySet
+entitySetSingle k = MkEntitySet $ entityMapSingle k ()
+
+entitySetMember :: Entity -> EntitySet -> Bool
+entitySetMember k (MkEntitySet em) = entityMapMember k em
+
+entitySetContains :: EntitySet -> Entity -> Bool
+entitySetContains es k = entitySetMember k es

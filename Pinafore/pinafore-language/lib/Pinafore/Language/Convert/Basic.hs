@@ -112,3 +112,23 @@ instance HasQGroundType '[CoCCRVariance] EntityMap where
 
 mapEntityConvert :: EntityMap Entity -> Entity
 mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter
+
+entitySetGroundType :: QGroundType '[] EntitySet
+entitySetGroundType = let
+    storability :: Storability '[] EntitySet
+    storability = let
+        stbKind = NilListType
+        stbCovaryMap = covarymap
+        stbAdapterExprKnot =
+            pureStorabilityAdapter @EntitySet $ \NilArguments ->
+                invmap MkEntitySet unEntitySet $ mapStoreAdapter unitStoreAdapter
+        in MkStorability{..}
+    props :: GroundProperties '[] EntitySet
+    props = singleGroundProperty storabilityProperty storability
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily EntitySet)|]) "EntitySet")
+        { qgtProperties = props
+        }
+
+-- EntitySet
+instance HasQGroundType '[] EntitySet where
+    qGroundType = entitySetGroundType
