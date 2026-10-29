@@ -23,6 +23,11 @@ linkShowable = \case
     ConsLink (MkShowable ta) (MkShowable "") -> ta
     ConsLink (MkShowable ta) (MkShowable tb) -> ta <> ", " <> tb
 
+inhabited :: Link TopType TopType -> Bool
+inhabited = \case
+    NilLink -> False
+    ConsLink _ _ -> True
+
 sequenceLibSection :: LibraryStuff
 sequenceLibSection =
     headingBDS
@@ -36,6 +41,8 @@ sequenceLibSection =
         , showableSubtypeRelationEntry @(Link Showable Showable) "show by comma-space-separation, if both halves are non-empty" linkShowable
         , hasSubtypeRelationBDS @() @(Link BottomType BottomType) Verify "" $ functionToShim "" $ \() -> NilLink
         , hasSubtypeRelationBDS @(A, B) @(Link A B) Verify "" $ functionToShim "" $ \(a, b) -> ConsLink a b
+        , valBDS "inhabited" "is a pair" inhabited
+        , valBDS "uninhabited" "is nil" $ not . inhabited
         , typeBDS_ @_ @LangList
             "List"
             "A list."
