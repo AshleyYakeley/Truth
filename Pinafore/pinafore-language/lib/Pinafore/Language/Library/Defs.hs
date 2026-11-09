@@ -457,6 +457,7 @@ applicativeEntries ::
     , HasQType QPolyShim 'Negative (f A)
     , HasQType QPolyShim 'Positive (f B)
     , HasQType QPolyShim 'Negative (f B)
+    , HasQType QPolyShim 'Negative (f (Maybe B))
     , HasQType QPolyShim 'Positive (f C)
     , HasQType QPolyShim 'Positive (f (A, B))
     , HasQType QPolyShim 'Positive (f [B])
@@ -475,6 +476,7 @@ applicativeEntries =
                 , valBDS ">>" "" ((*>) :: f TopType -> f A -> f A)
                 , valBDS "for_" "Perform on each value of a list." (for_ :: [A] -> (A -> f ()) -> f ())
                 , valBDS "for" "Perform on each value of a list, returning a list." (for :: [A] -> (A -> f B) -> f [B])
+                , valBDS "maybeFor" "Perform on each value of a list, returning a list of those succeeding." (forf :: [A] -> (A -> f (Maybe B)) -> f [B])
                 ]
            ]
 
@@ -488,6 +490,7 @@ monadEntries ::
     , HasQType QPolyShim 'Negative (f A)
     , HasQType QPolyShim 'Positive (f B)
     , HasQType QPolyShim 'Negative (f B)
+    , HasQType QPolyShim 'Negative (f (Maybe B))
     , HasQType QPolyShim 'Positive (f C)
     , HasQType QPolyShim 'Positive (f (A, B))
     , HasQType QPolyShim 'Positive (f [B])
@@ -506,6 +509,7 @@ monadExceptionEntries ::
     , HasQType QPolyShim 'Negative (f A)
     , HasQType QPolyShim 'Positive (f B)
     , HasQType QPolyShim 'Negative (f B)
+    , HasQType QPolyShim 'Negative (f (Maybe B))
     , HasQType QPolyShim 'Positive (f C)
     , HasQType QPolyShim 'Positive (f (A, B))
     , HasQType QPolyShim 'Positive (f [B])
