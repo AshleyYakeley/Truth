@@ -54,7 +54,7 @@ do {
         fromWhole.TextModel $
         ap{%htmlRef >- fn Mk.HTMLText t => t};
     webWidget: Widget =
-        webView.WebKit htmlRef;
+        webView.WebKit{} htmlRef;
     run $
         fn gtk =>
         open.Window gtk (1200,600) ap{"CommonMark / WebKit"} $

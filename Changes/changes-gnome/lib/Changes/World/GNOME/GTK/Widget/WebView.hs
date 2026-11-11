@@ -38,14 +38,16 @@ interceptLinks unlift webView handleLink =
                 WK.PolicyDecisionTypeNewWindowAction -> intercept
                 _ -> pure False
 
-newtype WebViewOptions = MkWebViewOptions
+data WebViewOptions = MkWebViewOptions
     { wvoOnLinkClicked :: Text -> Maybe (GView 'Unlocked ())
+    , wvoStyleSheet :: Maybe Text
     }
 
 defaultWebViewOptions :: WebViewOptions
 defaultWebViewOptions =
     MkWebViewOptions
         { wvoOnLinkClicked = \_ -> Nothing
+        , wvoStyleSheet = Nothing
         }
 
 createWebView :: WebViewOptions -> Model (ROWUpdate Text) -> GView 'Unlocked GI.Widget
@@ -58,6 +60,11 @@ createWebView MkWebViewOptions{..} lmod = do
             session <- WK.networkSessionNew Nothing Nothing
             gvBind session
             webView <- gvNew WK.WebView [#networkSession GI.:= session]
+            for_ wvoStyleSheet $ \css -> do
+                styleSheet <- WK.userStyleSheetNew css WK.UserContentInjectedFramesAllFrames WK.UserStyleLevelAuthor Nothing Nothing
+                manager <- WK.webViewGetUserContentManager webView
+                gvBind manager
+                WK.userContentManagerAddStyleSheet manager styleSheet
             liftIO $ interceptLinks unlift webView wvoOnLinkClicked
             widget <- GI.toWidget webView
             return (webView, widget)

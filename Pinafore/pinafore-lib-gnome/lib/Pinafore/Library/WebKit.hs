@@ -14,21 +14,22 @@ import Shapes
 import Pinafore.Library.GTK.Widget
 
 type WebViewOptionsSig :: [Type]
-type WebViewOptionsSig = '[URI -> Maybe (Action ())]
+type WebViewOptionsSig = '[URI -> Maybe (Action ()), Maybe CSSText]
 
 webViewType :: ListType QDocSignature WebViewOptionsSig
 webViewType =
-    ConsListType
-        (mkValueDocSignature "onLinkClicked" "" $ Just $ \_ -> Nothing)
-        NilListType
+    ConsListType (mkValueDocSignature "onLinkClicked" "" $ Just $ \_ -> Nothing)
+        $ ConsListType (mkValueDocSignature "styleSheet" "" $ Just Nothing)
+        $ NilListType
 
 wvOptions :: ListProduct WebViewOptionsSig -> WebViewOptions
-wvOptions (uriSchemes, ()) =
+wvOptions (uriSchemes, (mStyleSheet, ())) =
     defaultWebViewOptions
         { wvoOnLinkClicked = \linkText -> do
             linkURI <- parseURIReference $ unpack linkText
             action <- uriSchemes linkURI
             return $ gvLiftView $ runAction action
+        , wvoStyleSheet = fmap unCSSText mStyleSheet
         }
 
 webViewVal :: ListProduct WebViewOptionsSig -> ImmutableWholeModel HTMLText -> LangWidget
