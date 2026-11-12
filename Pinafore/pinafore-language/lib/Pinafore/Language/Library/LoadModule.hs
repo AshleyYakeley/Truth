@@ -27,24 +27,37 @@ loadModuleFromByteString bs =
 
 textLoadModule :: (ModuleName -> IO (Maybe Text)) -> LoadModule
 textLoadModule getText =
-    MkLoadModule $ \modname -> do
-        mtext <- liftIO $ getText modname
-        for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText text
+    mempty
+        { runLoadModule = \modname -> do
+            mtext <- liftIO $ getText modname
+            for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText text
+        }
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
 
+directoryFindFile :: FilePath -> FilePath -> IO (Maybe (FilePath, LazyByteString))
+directoryFindFile dirpath name = do
+    let fpath = dirpath </> name
+    found <- doesFileExist fpath
+    case found of
+        False -> return Nothing
+        True -> do
+            bs <- readFile fpath
+            return $ Just (fpath, bs)
+
 directoryLoadModule :: FilePath -> LoadModule
-directoryLoadModule dirpath =
-    MkLoadModule $ \modname -> do
-        let fpath = dirpath </> moduleRelativePath modname
-        found <- liftIO $ doesFileExist fpath
-        case found of
-            False -> return Nothing
-            True -> do
-                bs <- liftIO $ readFile fpath
-                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
-                return $ Just mm
+directoryLoadModule dirpath = let
+    runLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    runLoadModule modname = do
+        mbs <- liftIO $ directoryFindFile dirpath (moduleRelativePath modname)
+        for mbs $ \(fpath, bs) ->
+            paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
+    getResourceLoadModule :: Text -> QInterpreter (Maybe LazyByteString)
+    getResourceLoadModule path = do
+        mbs <- liftIO $ directoryFindFile dirpath (unpack path)
+        return $ fmap snd mbs
+    in MkLoadModule{..}
 
 getLibraryContentsModule :: LibraryStuff -> QInterpreter QModule
 getLibraryContentsModule libmod = do
@@ -73,4 +86,6 @@ libraryLoadModule :: [LibraryModule] -> LoadModule
 libraryLoadModule lmods = let
     m :: Map ModuleName LibraryStuff
     m = mapFromList $ fmap (\MkLibraryModule{..} -> (lmName, lmContents)) lmods
-    in MkLoadModule $ \mname -> for (lookup mname m) getLibraryContentsModule
+    in mempty
+        { runLoadModule = \mname -> for (lookup mname m) getLibraryContentsModule
+        }

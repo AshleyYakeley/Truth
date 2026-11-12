@@ -40,20 +40,28 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
-newtype LoadModule = MkLoadModule
+data LoadModule = MkLoadModule
     { runLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    , getResourceLoadModule :: Text -> QInterpreter (Maybe LazyByteString)
     }
 
 instance Semigroup LoadModule where
-    MkLoadModule fma <> MkLoadModule fmb =
-        MkLoadModule $ \mname -> do
-            mrr <- fma mname
-            case mrr of
-                Just rr -> return $ Just rr
-                Nothing -> fmb mname
+    MkLoadModule lma gra <> MkLoadModule lmb grb =
+        let
+            lmab mname = do
+                mrr <- lma mname
+                case mrr of
+                    Just rr -> return $ Just rr
+                    Nothing -> lmb mname
+            grab fpath = do
+                mrr <- gra fpath
+                case mrr of
+                    Just rr -> return $ Just rr
+                    Nothing -> grb fpath
+            in MkLoadModule lmab grab
 
 instance Monoid LoadModule where
-    mempty = MkLoadModule $ \_ -> return Nothing
+    mempty = MkLoadModule (\_ -> return Nothing) (\_ -> return Nothing)
 
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos

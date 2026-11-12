@@ -14,6 +14,7 @@ import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Entity.Blob ()
 import Pinafore.Language.Library.Exception ()
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.ToSource
@@ -146,6 +147,14 @@ langImply n (MkLangExpression b) (MkLangExpression expr) = do
 applyOp :: FixAssoc -> PrecText -> (Text, Word) -> PrecText -> PrecText
 applyOp fa ta (op, prec) tb = applyOpPrecText ta (op, MkFixity fa prec) tb
 
+langGetResource :: Text -> QInterpreter LangExpression
+langGetResource rname = do
+    lm <- paramAsk loadModuleParam
+    mblob <- getResourceLoadModule lm rname
+    case mblob of
+        Nothing -> throw $ ResourceNotFoundError rname
+        Just blob -> return $ MkLangExpression $ qConst $ toStrict blob
+
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
     headingBDS
@@ -220,9 +229,11 @@ pinaforeLibSection =
                             return $ fmap moduleScope mqm
                         toLoadModule :: (Text -> QInterpreter (Maybe QScope)) -> LoadModule
                         toLoadModule lm =
-                            MkLoadModule $ \(MkModuleName name) -> do
-                                mscope <- lm name
-                                return $ fmap (\scope -> MkQModule mempty scope) mscope
+                            mempty
+                                { runLoadModule = \(MkModuleName name) -> do
+                                    mscope <- lm name
+                                    return $ fmap (\scope -> MkQModule mempty scope) mscope
+                                }
                         fromQContext :: QContext -> Maybe (ListVProduct '[Text -> QInterpreter (Maybe QScope)])
                         fromQContext qc =
                             Just $ listProductToVProduct (listTypeToVType rtype) (qContextLoadModule qc, ())
@@ -355,5 +366,6 @@ pinaforeLibSection =
                 ]
             , valBDS "bind" "Let-bind a name to a expression." bindInterpreter
             , valBDS "implyIn" "Set the value of an implicit variable for this expression.  \nName should not include the initial '?'." langImply
+            , valBDS "getResource" "`!{getResource.Pinafore \"myresource.jpeg\"}: Blob` gets a resource, typically from a file next to the Pinafore source files" langGetResource
             ]
         ]
