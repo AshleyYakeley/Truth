@@ -35,6 +35,27 @@ rootOrder = collatorOrder Text.Collate.rootCollator
 langQuote :: Text -> Text
 langQuote = showT . unpack
 
+-- | If the first text appears in the second, remove the first occurrence and return the before and after pieces.
+-- For example, `stripFirstInfix "xy" "abxypxyq" = Just ("ab", "pxyq")`
+-- An empty delimiter matches at the start.
+stripFirstInfix :: Text -> Text -> Maybe (Text, Text)
+stripFirstInfix n h
+    | onull n = Just ("", h)
+    | otherwise = do
+        let (before, rest) = Data.Text.breakOn n h
+        after <- Data.Text.stripPrefix n rest
+        return (before, after)
+
+-- | Remove all non-overlapping occurrences of the first text in the second, returning the list of pieces.
+-- For example, `stripInfixes "xy" "abxypxyq" = "ab" :| ["p", "q"]`
+-- An empty delimiter leaves the input as a single piece.
+stripInfixes :: Text -> Text -> NonEmpty Text
+stripInfixes n h
+    | onull n = h :| []
+    | otherwise = case stripFirstInfix n h of
+        Nothing -> h :| []
+        Just (before, after) -> before :| toList (stripInfixes n after)
+
 textEntityLibSection :: LibraryStuff
 textEntityLibSection =
     headingBDS
@@ -58,6 +79,10 @@ textEntityLibSection =
                     , valBDS "langOrder" "Order for BCP 47 language tag" langOrder
                     , valBDS "caselessOrder" "Case-insensitive order" $ contramap Data.Text.toLower rootOrder
                     , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism
+                    , valBDS "stripPrefix" "" Data.Text.stripPrefix
+                    , valBDS "stripSuffix" "" Data.Text.stripSuffix
+                    , valBDS "stripFirstInfix" "" stripFirstInfix
+                    , valBDS "stripInfixes" "" stripInfixes
                     ]
                 ]
         ]
