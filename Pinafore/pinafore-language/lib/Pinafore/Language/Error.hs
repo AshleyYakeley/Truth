@@ -185,7 +185,7 @@ instance ShowNamedText QError where
     showNamedText InterpretTypeDeclTypeStorableRecord = "record constructor not allowed in storable datatype"
     showNamedText (InterpretSubtypeInconsistent ta tb) =
         "subtype relation is inconsistent with existing subtype relation " <> ta <> " <: " <> tb
-    showNamedText (ResourceNotFoundError name) = "can't find resourc " <> showNamedText name
+    showNamedText (ResourceNotFoundError name) = "can't find resource " <> showNamedText name
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
