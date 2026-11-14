@@ -147,13 +147,20 @@ langImply n (MkLangExpression b) (MkLangExpression expr) = do
 applyOp :: FixAssoc -> PrecText -> (Text, Word) -> PrecText -> PrecText
 applyOp fa ta (op, prec) tb = applyOpPrecText ta (op, MkFixity fa prec) tb
 
-langGetResource :: Text -> QInterpreter LangExpression
+langGetResource :: Text -> QInterpreter StrictByteString
 langGetResource rname = do
     lm <- paramAsk loadModuleParam
     mblob <- getResourceLoadModule lm rname
     case mblob of
         Nothing -> throw $ ResourceNotFoundError rname
-        Just blob -> return $ MkLangExpression $ qConst $ toStrict blob
+        Just blob -> return $ toStrict blob
+
+langTextResource :: Text -> QInterpreter LangValue
+langTextResource rname = do
+    blob <- langGetResource rname
+    case decode utf8Codec blob of
+        SuccessResult text -> return $ MkLangValue $ qToValue text
+        FailureResult err -> liftIO $ fail $ show err
 
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
@@ -366,6 +373,7 @@ pinaforeLibSection =
                 ]
             , valBDS "bind" "Let-bind a name to a expression." bindInterpreter
             , valBDS "implyIn" "Set the value of an implicit variable for this expression.  \nName should not include the initial '?'." langImply
-            , valBDS "getResource" "`!{getResource.Pinafore \"myresource.jpeg\"}: Blob` gets a resource, typically from a file next to the Pinafore source files" langGetResource
+            , valBDS "getResource" "Gets a resource, typically from a file next to the Pinafore source files" langGetResource
+            , valBDS "textResource" "`!{textResource.Pinafore \"myresource.jpeg\"}: Text` is the `Text` contents of a UTF-8 resource, typically from a file next to the Pinafore source files" langTextResource
             ]
         ]
