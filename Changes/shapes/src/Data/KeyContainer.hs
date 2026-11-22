@@ -11,16 +11,11 @@ class (Monoid t, Semigroup t, MonoFoldable t, GrowingAppend t) => ItemContainer 
     -- but `Item m = (ContainerKey m, MapValue m)`
     type Item t :: Type
 
-    itemElement :: Item t -> Element t
-    type Item t = Element t
-    default itemElement :: Item t ~ Element t => Item t -> Element t
-    itemElement e = e
-
-instance ItemContainer [a]
+instance ItemContainer [a] where
+    type Item [a] = a
 
 instance Ord k => ItemContainer (Map k v) where
     type Item (Map k v) = (k, v)
-    itemElement (_, v) = v
 
 class (ItemContainer t, SetContainer t) => KeyContainer t where
     itemKey :: Item t -> ContainerKey t
@@ -46,17 +41,17 @@ instance Eq key => KeyContainer [(key, value)] where
     insertItem e [] = [e]
     insertItem e@(k, _) ((k', _) : aa)
         | k == k' = e : aa
-    insertItem e (a : aa) = a : (insertItem e aa)
+    insertItem e (a : aa) = a : insertItem e aa
     deleteKey _ [] = []
     deleteKey k ((k', _) : aa)
         | k == k' = aa
-    deleteKey k (a : aa) = a : (deleteKey k aa)
+    deleteKey k (a : aa) = a : deleteKey k aa
     fromItemList = id
 
 instance Ord k => KeyContainer (Map k v)
 
 class KeyContainer t => IONewItemKeyContainer t where
-    newKeyContainerItem :: IO (Element t)
+    newKeyContainerItem :: IO (Item t)
 
 instance (Eq key, Random key, HasNewValue value) => IONewItemKeyContainer [(key, value)] where
     newKeyContainerItem = do

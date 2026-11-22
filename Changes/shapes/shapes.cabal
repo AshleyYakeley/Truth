@@ -135,6 +135,7 @@ library
     , primitive-serial
     , random
     , reflection
+    , semialign
     , stm
     , tasty
     , tasty-expected-failure
@@ -142,6 +143,7 @@ library
     , tasty-hunit
     , tasty-quickcheck
     , text
+    , these
     , thread-trace
     , time
     , type-rig

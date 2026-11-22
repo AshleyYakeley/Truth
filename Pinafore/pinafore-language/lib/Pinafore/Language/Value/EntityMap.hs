@@ -5,13 +5,18 @@ import Import
 newtype EntityMap (v :: Type) = MkEntityMap
     { unEntityMap :: HashMap Entity v
     }
-    deriving newtype (Functor, Semigroup, Monoid, HasVariance)
+    deriving newtype (Functor, Semigroup, Monoid, HasVariance, MonoFoldable, GrowingAppend)
+
+type instance Element (EntityMap v) = v
 
 instance RepresentationalRole EntityMap where
     representationalCoercion MkCoercion = MkCoercion
 
 instance MaybeRepresentational EntityMap where
     maybeRepresentational = Just Dict
+
+instance ItemContainer (EntityMap v) where
+    type Item (EntityMap v) = (Entity, v)
 
 entityMapToList :: EntityMap v -> [(Entity, v)]
 entityMapToList = mapToList . unEntityMap

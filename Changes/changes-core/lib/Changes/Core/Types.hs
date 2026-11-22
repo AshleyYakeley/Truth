@@ -15,6 +15,7 @@ import Changes.Core.Types.Either as I
 import Changes.Core.Types.Key.FiniteSet as I
 import Changes.Core.Types.Key.HasKey as I
 import Changes.Core.Types.Key.Key as I
+import Changes.Core.Types.Key.Map as I
 import Changes.Core.Types.Key.Order as I
 import Changes.Core.Types.Lattice as I
 import Changes.Core.Types.List as I

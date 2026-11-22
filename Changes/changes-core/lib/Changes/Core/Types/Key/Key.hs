@@ -348,7 +348,7 @@ liftKeyElementChangeLens ::
     , FullSubjectReader (UpdateReader updateA)
     , FullSubjectReader (UpdateReader updateB)
     ) =>
-    (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA))) ->
+    (UpdateSubject updateB -> IO (Maybe (UpdateSubject updateA))) ->
     ChangeLens updateA updateB ->
     ChangeLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
 liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
@@ -379,7 +379,7 @@ liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
         m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     clPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
     clPutEdit (KeyEditInsertReplace itemb) _ = do
-        fitema <- bma itemb
+        fitema <- liftIO $ bma itemb
         return $ fmap (\itema -> [KeyEditInsertReplace itema]) fitema
     clPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
     clPutEdit (KeyEditItem key eb) mr = do
@@ -408,7 +408,7 @@ liftKeyElementFloatingChangeLens ::
     , FullSubjectReader (UpdateReader updateA)
     , FullSubjectReader (UpdateReader updateB)
     ) =>
-    (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA))) ->
+    (UpdateSubject updateB -> IO (Maybe (UpdateSubject updateA))) ->
     FloatingChangeLens updateA updateB ->
     FloatingChangeLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
 liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (NoFloatInit r) rlens) =
@@ -479,7 +479,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit finit 
         StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     sPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
     sPutEdit (KeyEditInsertReplace itemb) _ = do
-        fitema <- lift $ bma itemb
+        fitema <- liftIO $ bma itemb
         return $ fmap (\itema -> [KeyEditInsertReplace itema]) fitema
     sPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
     sPutEdit (KeyEditItem key eb) mr = do

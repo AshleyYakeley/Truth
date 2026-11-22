@@ -24,15 +24,13 @@ liftSoupLens ::
     , FullSubjectReader (UpdateReader updateA)
     , FullSubjectReader (UpdateReader updateB)
     ) =>
-    (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA))) ->
+    (UpdateSubject updateB -> IO (Maybe (UpdateSubject updateA))) ->
     ChangeLens updateA updateB ->
     ChangeLens (SoupUpdate updateA) (SoupUpdate updateB)
 liftSoupLens bmfa = let
     conv ::
-        forall m.
-        MonadIO m =>
         (UUID, UpdateSubject updateB) ->
-        m (Maybe (UUID, UpdateSubject updateA))
+        IO (Maybe (UUID, UpdateSubject updateA))
     conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
     in liftKeyElementChangeLens conv . sndLiftChangeLens
 

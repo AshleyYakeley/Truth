@@ -18,6 +18,8 @@ library:
       - mono-traversable
       - comonad
       - invariant
+      - these
+      - semialign
       - lattices
       - hashable
       - unordered-containers

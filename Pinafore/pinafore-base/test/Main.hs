@@ -12,7 +12,7 @@ import Test.Anchor
 import Test.Numeric
 
 tests :: TestTree
-tests = testTree "pinafore-base" [testNumeric, testAnchor, testOverlay]
+tests = testTree "pinafore-base" [testNumeric, testAnchor, testOverlay, testInverseFiniteSet]
 
 testOverlay :: TestTree
 testOverlay = testTree "storage overlay" $ do
@@ -52,6 +52,43 @@ testOverlay = testTree "storage overlay" $ do
         Just [MkTupleUpdateEdit SelectFirst edit] ->
             applyEdit edit (storage []) (qsrGet s) >>= assertEqual "write to first store" (Known a)
         _ -> fail "overlay edits must target only the first store"
+
+-- Inverse-property models expose unit-valued maps, while preimage lookup
+-- remains set-valued. Check reads and incremental updates at that boundary.
+testInverseFiniteSet :: TestTree
+testInverseFiniteSet = testTree "inverse finite sets" $ do
+    let
+        property :: StorageLensProperty Char Char Char Char (NoUpdate ())
+        property = identityStorageLensProperty
+        singleLens = storageLensPropertyInverseChangeLens property
+        singleSource :: Know Char -> Readable IO (ContextUpdateReader (NoUpdate ()) (BiWholeUpdate (Know Char) (Know Char)))
+        singleSource value = subjectToReadable $ MkWithContext () value
+        setLens = storageLensPropertyInverseChangeLensSet property
+        setSource :: String -> Readable IO (ContextUpdateReader (NoUpdate ()) (FiniteSetUpdate Char))
+        setSource values = subjectToReadable $ MkWithContext () $ listSetToMap (const ()) $ setFromList values
+        keysOf :: Readable IO (FiniteSetReader Char) -> IO String
+        keysOf mr = fmap (sort . toList) $ mr MapReadKeys
+    keysOf (clRead singleLens $ singleSource $ Known 'a') >>= assertEqual "single preimage" "a"
+    keysOf (clRead singleLens $ singleSource Unknown) >>= assertEqual "unknown preimage" ""
+    for_ [Known 'b', Unknown] $ \value -> do
+        updates <- clUpdate singleLens (MkTupleUpdate SelectContent $ MkBiWholeUpdate value) $ singleSource value
+        let
+            result :: Readable IO (FiniteSetReader Char)
+            result = applyEdits (fmap updateEdit updates) $ clRead singleLens $ singleSource $ Known 'a'
+        expected <- keysOf $ clRead singleLens $ singleSource value
+        keysOf result >>= assertEqual "single replacement" expected
+    clRead setLens (setSource "a") (MapReadKey 'a') >>= assertEqual "present" (Just 'a')
+    clRead setLens (setSource "a") (MapReadKey 'b') >>= assertEqual "absent" Nothing
+    for_ [(MapUpdateSet 'b' (), "ab"), (MapUpdateDelete 'a', ""), (MapUpdateClear, "")] $ \(update, values) -> do
+        updates <- clUpdate setLens (MkTupleUpdate SelectContent update) $ setSource values
+        let
+            result :: Readable IO (FiniteSetReader Char)
+            result = applyEdits (fmap updateEdit updates) $ clRead setLens $ setSource "a"
+        keysOf result >>= assertEqual "set update" values
+    edits <- clPutEdits setLens [MapEditSet 'b' ()] $ setSource "a"
+    case edits of
+        Just [MkTupleUpdateEdit SelectContent (MapEditSet 'b' ())] -> return ()
+        _ -> fail "inverse insertion must insert a unit-valued map entry"
 
 main :: IO ()
 main = testMain tests

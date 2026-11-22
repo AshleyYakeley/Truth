@@ -85,11 +85,12 @@ applyLangAttributeSet (MkLangAttribute m) (MkLangFiniteSetModel eqv (tr :: Range
         tbsm :: StorageFunctionAttribute update (ListSet t) (ListSet (MeetType Entity b))
         tbsm = fmap (setFromList . mapMaybe knowToMaybe . toList) tbskm
         tsetref :: WROWModel (ListSet t)
-        tsetref = giveConstraint eqv $ eaToReadOnlyWhole ss
+        tsetref = eaMapReadOnlyWhole listMapKeysToSet $ giveConstraint eqv $ eaToReadOnlyWhole ss
         bsetref :: WROWModel (ListSet (MeetType Entity b))
         bsetref = applyStorageFunction model tbsm tsetref
         in MkLangFiniteSetModel eqEquivalence (MkRange id meet2)
-            $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
+            $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens)
+            $ eaMapReadOnlyWhole (listSetToMap $ const ()) bsetref
 
 langLensAttribute :: forall ap aq bp bq. LangLens '(ap, aq) '(bp, bq) -> LangAttribute '(ap, aq) '(bp, bq)
 langLensAttribute (MkLangLens g pb) =

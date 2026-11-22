@@ -80,6 +80,7 @@ library
       Changes.Core.Types.Key.HasKey
       Changes.Core.Types.Key.Key
       Changes.Core.Types.Key.Order
+      Changes.Core.Types.Key.Map
       Changes.Core.Types.Key.FiniteSet
       Changes.Core.Types.Database
       Changes.Core.Types.Database.Show

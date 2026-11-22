@@ -23,8 +23,8 @@ instance SubjectReader (NoReader a) where
     mSubjectToReadable _ = never
     subjectToRead _ = never
 
-instance FullSubjectReader (NoReader ()) where
-    readableToSubject _ = return ()
+instance Singular a => FullSubjectReader (NoReader a) where
+    readableToSubject _ = return single
 
 -- | Can't touch this.
 newtype ConstEdit (reader :: Type -> Type)
@@ -69,3 +69,7 @@ clPutEditsNone ::
     m' (Maybe [edita])
 clPutEditsNone [] _ = return $ Just []
 clPutEditsNone (e : _) _ = never e
+
+type NoEdit t = ConstEdit (NoReader t)
+
+type NoUpdate t = ConstUpdate (NoReader t)

@@ -84,6 +84,13 @@ import Data.Sequences as I hiding (catMaybes, filter, filterM)
 -- comonad
 import Control.Comonad as I
 
+-- these
+import Data.These as I
+import Data.These.Combinators as I
+
+-- semialign
+import Data.Align as I
+
 -- lattices
 import Algebra.Lattice as I
 

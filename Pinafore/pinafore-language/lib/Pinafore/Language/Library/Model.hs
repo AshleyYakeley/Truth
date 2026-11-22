@@ -132,20 +132,20 @@ getFiniteSetModelList order (MkLangFiniteSetModel eqv r (val :: WModel (FiniteSe
         let
             conv :: t -> A
             conv = shimToFunction $ rangeCo r
-            uo :: UpdateOrder (ContextUpdate update (ConstWholeUpdate t))
+            uo :: UpdateOrder (ContextUpdate update (KeyValueUpdate t (NoUpdate ())))
             uo =
                 mapUpdateOrder
-                    (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . conv))
+                    (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . conv . fst))
                     uorder
             rows :: Model (FiniteSetUpdate t)
             rows = unWModel val
             pkSub :: Model (ContextUpdate update (FiniteSetUpdate t))
             pkSub = contextModels model rows
-        colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate t))) <-
+        colSub :: Model (ContextUpdate update (OrderedListUpdate (KeyValueUpdate t (NoUpdate ())))) <-
             viewFloatMapModel (giveConstraint eqv $ contextOrderedSetLens uo) pkSub
         return
             $ OrderedLangListModel
-            $ eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent)
+            $ eaMap (liftOrderedListChangeLens (constWholeChangeLens conv . tupleChangeLens SelectFirst) . tupleChangeLens SelectContent)
             $ MkWModel colSub
 
 debounceUpdates :: forall a. IsModel a => NominalDiffTime -> a -> a

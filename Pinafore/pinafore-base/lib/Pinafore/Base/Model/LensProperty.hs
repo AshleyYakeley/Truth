@@ -262,8 +262,8 @@ runContextReadM ::
 runContextReadM rd rmt = unReadM rmt $ tupleReadFunction SelectContext rd
 
 bpairToFiniteSetUpdate :: forall a. (Bool, a) -> FiniteSetUpdate a
-bpairToFiniteSetUpdate (False, a) = KeyUpdateDelete a
-bpairToFiniteSetUpdate (True, a) = KeyUpdateInsertReplace a
+bpairToFiniteSetUpdate (False, a) = MapUpdateDelete a
+bpairToFiniteSetUpdate (True, a) = MapUpdateSet a ()
 
 putEditAB ::
     forall m baseupdate ap aq bp bq.
@@ -297,10 +297,10 @@ storageLensPropertyInverseChangeLens ::
     ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
 storageLensPropertyInverseChangeLens plm@MkStorageLensProperty{..} = let
     fsetReadFunction ::
-        ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (ListSet a))
+        ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (ListMap a ()))
     fsetReadFunction (mr :: Readable m _) ReadWhole = do
         kb <- mr $ MkTupleUpdateReader SelectContent ReadWhole
-        runContextReadM mr $ slpGetKnowPointPreimage plm kb
+        fmap (listSetToMap $ const ()) $ runContextReadM mr $ slpGetKnowPointPreimage plm kb
     clRead :: ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetReader a)
     clRead mr rt = wholeFiniteSetReadFunction (fsetReadFunction mr) rt
     clUpdate ::
@@ -322,7 +322,7 @@ storageLensPropertyInverseChangeLens plm@MkStorageLensProperty{..} = let
                         return $ fmap bpairToFiniteSetUpdate lba
     clUpdate (MkTupleUpdate SelectContent (MkBiWholeUpdate kb)) mr = do
         aset <- runContextReadM mr $ slpGetKnowPointPreimage plm kb
-        aedits <- getReplaceEditsFromSubject aset
+        aedits <- getReplaceEditsFromSubject $ listSetToMap (const ()) aset
         return $ fmap editUpdate aedits
     putEdit ::
         forall m.
@@ -330,12 +330,12 @@ storageLensPropertyInverseChangeLens plm@MkStorageLensProperty{..} = let
         FiniteSetEdit a ->
         Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) ->
         m (Maybe [UpdateEdit baseupdate])
-    putEdit (KeyEditItem _ update) _ = never update
-    putEdit (KeyEditDelete a) mr = putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
-    putEdit (KeyEditInsertReplace a) mr = do
+    putEdit (MapEditValue _ update) _ = never update
+    putEdit (MapEditDelete a) mr = putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
+    putEdit (MapEditSet a ()) mr = do
         kb <- mr $ MkTupleUpdateReader SelectContent ReadWhole
         putEditAB slpAttribute a kb $ tupleReadFunction SelectContext mr
-    putEdit KeyEditClear mr = do
+    putEdit MapEditClear mr = do
         kb <- mr $ MkTupleUpdateReader SelectContent ReadWhole
         aa <- runContextReadM mr $ slpGetKnowPointPreimage plm kb
         lmpedits <- for (toList aa) $ \a -> putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
@@ -359,14 +359,15 @@ storageLensPropertyInverseChangeLensSet ::
     ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
 storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty{..} = let
     clRead' :: ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
-    clRead' (mr :: Readable m _) KeyReadKeys = do
-        bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+    clRead' _ (MapReadValue _ rt) = never rt
+    clRead' (mr :: Readable m _) MapReadKeys = do
+        bs <- mr $ MkTupleUpdateReader SelectContent MapReadKeys
         runContextReadM mr $ slpGetSetPreimage plm bs
-    clRead' (mr :: Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))) (KeyReadItem a ReadWhole) = do
+    clRead' (mr :: Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))) (MapReadKey a) = do
         kb <- runContextReadM mr $ slaRead slpAttribute a
         case kb of
             Known b -> do
-                mb <- mr $ MkTupleUpdateReader SelectContent $ KeyReadItem b ReadWhole
+                mb <- mr $ MkTupleUpdateReader SelectContent $ MapReadKey b
                 case mb of
                     Just _ -> return $ Just a
                     Nothing -> return Nothing
@@ -382,18 +383,20 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty{..} = let
         case mf of
             Nothing -> return []
             Just brlba -> do
-                bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+                bs <- mr $ MkTupleUpdateReader SelectContent MapReadKeys
                 updatesfs <-
                     for (toList bs) $ \b -> do
                         lba <- runContextReadM mr $ brlba b
                         return $ fmap bpairToFiniteSetUpdate lba
                 return $ mconcat updatesfs
-    clUpdate' (MkTupleUpdate SelectContent (KeyUpdateItem _ update)) _ = never update
-    clUpdate' (MkTupleUpdate SelectContent KeyUpdateClear) _ = return [KeyUpdateClear]
-    clUpdate' (MkTupleUpdate SelectContent (KeyUpdateInsertReplace _)) _ = return []
-    clUpdate' (MkTupleUpdate SelectContent (KeyUpdateDelete b)) mr = do
+    clUpdate' (MkTupleUpdate SelectContent (MapUpdateValue _ update)) _ = never update
+    clUpdate' (MkTupleUpdate SelectContent MapUpdateClear) _ = return [MapUpdateClear]
+    clUpdate' (MkTupleUpdate SelectContent (MapUpdateSet b ())) mr = do
         aset <- runContextReadM mr $ slpGetPointPreimage plm b
-        return $ fmap KeyUpdateDelete $ toList aset
+        return $ fmap (\a -> MapUpdateSet a ()) $ toList aset
+    clUpdate' (MkTupleUpdate SelectContent (MapUpdateDelete b)) mr = do
+        aset <- runContextReadM mr $ slpGetPointPreimage plm b
+        return $ fmap MapUpdateDelete $ toList aset
     applyEdit' ::
         ContextUpdateEdit baseupdate (FiniteSetUpdate b) ->
         ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
@@ -411,18 +414,18 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty{..} = let
         FiniteSetEdit a ->
         Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b)) ->
         m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    clPutEdit' (KeyEditItem _ update) _ = never update
-    clPutEdit' (KeyEditDelete a) mr = do
+    clPutEdit' (MapEditValue _ update) _ = never update
+    clPutEdit' (MapEditDelete a) mr = do
         mpedits <- putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
         return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
-    clPutEdit' (KeyEditInsertReplace a) mr = do
+    clPutEdit' (MapEditSet a ()) mr = do
         kb <- runContextReadM mr $ slaRead slpAttribute a
         return
             $ case kb of
                 Unknown -> Nothing
-                Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
-    clPutEdit' KeyEditClear mr = do
-        bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+                Known b -> Just [MkTupleUpdateEdit SelectContent $ MapEditSet b ()]
+    clPutEdit' MapEditClear mr = do
+        bs <- mr $ MkTupleUpdateReader SelectContent MapReadKeys
         unComposeInner $ do
             lpedits <-
                 for (toList bs) $ \b -> do

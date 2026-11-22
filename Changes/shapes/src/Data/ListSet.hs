@@ -89,7 +89,8 @@ instance Eq a => Lattice (ListSet a) where
 instance Eq a => BoundedJoinSemiLattice (ListSet a) where
     bottom = mempty
 
-instance Eq a => ItemContainer (ListSet a)
+instance Eq a => ItemContainer (ListSet a) where
+    type Item (ListSet a) = a
 
 instance Eq a => KeyContainer (ListSet a) where
     itemKey a = a
@@ -169,6 +170,11 @@ instance Eq i => Semigroup (ListMap i a) where
 
 instance Eq i => Monoid (ListMap i a) where
     mempty = MkListMap []
+
+instance Eq i => ItemContainer (ListMap i a) where
+    type Item (ListMap i a) = (i, a)
+
+instance Eq i => KeyContainer (ListMap i a)
 
 cmpFst ::
     forall i a b.

@@ -35,11 +35,11 @@ instance Contravariant (AReference edit) where
 instance Show (Reference edit) where
     show (MkResource _ _) = "reference"
 
-noneReference :: Reference (ConstEdit (NoReader t))
+noneReference :: Reference (NoEdit t)
 noneReference = let
     refRead :: Readable (ReaderT () IO) (NoReader t)
     refRead = never
-    refEdit :: NonEmpty (ConstEdit (NoReader t)) -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
+    refEdit :: NonEmpty (NoEdit t) -> ReaderT () IO (Maybe (EditSource -> ReaderT () IO ()))
     refEdit = never
     refCommitTask = mempty
     in MkResource (pure ()) MkAReference{..}

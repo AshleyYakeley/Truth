@@ -6,6 +6,7 @@ import Changes.Core.Lens
 import Changes.Core.Read
 import Changes.Core.Types.One.Read
 import Changes.Core.Types.One.Result
+import Changes.Core.Types.Whole
 
 data FullResultOneEdit (f :: Type -> Type) edit where
     SuccessFullResultOneEdit :: edit -> FullResultOneEdit f edit
@@ -69,6 +70,12 @@ instance (MonadInner f, FullSubjectReader (UpdateReader update)) => FullUpdate (
 type MaybeEdit edit = FullResultOneEdit Maybe edit
 
 type MaybeUpdate update = FullResultOneUpdate Maybe update
+
+maybeExistsChangeLens ::
+    forall update.
+    (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update), Singular (UpdateSubject update)) =>
+    ChangeLens (MaybeUpdate update) (WholeUpdate Bool)
+maybeExistsChangeLens = bijectionWholeChangeLens $ MkIsomorphism isJust $ \t -> if t then Just single else Nothing
 
 -- | suitable for Results; trying to put a failure code will be rejected
 liftFullResultOneChangeLens ::
