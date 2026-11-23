@@ -5,7 +5,14 @@ import Import
 newtype EntityMap (v :: Type) = MkEntityMap
     { unEntityMap :: HashMap Entity v
     }
-    deriving newtype (Functor, Semigroup, Monoid, HasVariance, MonoFoldable, GrowingAppend)
+    deriving newtype (Functor, Foldable, Semigroup, Monoid, HasVariance, MonoFoldable, GrowingAppend, IsMap)
+
+instance Traversable EntityMap where
+    traverse afb (MkEntityMap m) = fmap MkEntityMap $ traverse afb m
+
+instance MonoFunctor (EntityMap v)
+
+instance MonoTraversable (EntityMap v)
 
 type instance Element (EntityMap v) = v
 
@@ -18,35 +25,46 @@ instance MaybeRepresentational EntityMap where
 instance ItemContainer (EntityMap v) where
     type Item (EntityMap v) = (Entity, v)
 
+instance SetContainer (EntityMap v) where
+    type ContainerKey (EntityMap v) = Entity
+    member k (MkEntityMap m) = member k m
+    notMember key set = not $ member key set
+    union (MkEntityMap a) (MkEntityMap b) = MkEntityMap $ union a b
+    difference (MkEntityMap a) (MkEntityMap b) = MkEntityMap $ difference a b
+    intersection (MkEntityMap a) (MkEntityMap b) = MkEntityMap $ intersection a b
+    keys m = fmap fst $ entityMapToList m
+
+instance KeyContainer (EntityMap v)
+
 entityMapToList :: EntityMap v -> [(Entity, v)]
-entityMapToList = mapToList . unEntityMap
+entityMapToList = mapToList
 
 entityMapFromList :: [(Entity, v)] -> EntityMap v
-entityMapFromList = MkEntityMap . mapFromList
+entityMapFromList = mapFromList
 
 entityMapListIso :: Bijection [(Entity, t)] (EntityMap t)
-entityMapListIso = MkIsomorphism entityMapFromList entityMapToList
+entityMapListIso = MkIsomorphism mapFromList mapToList
 
 entityMapLookup :: Entity -> EntityMap v -> Maybe v
-entityMapLookup k (MkEntityMap m) = lookup k m
+entityMapLookup = lookup
 
 entityMapInsert :: Entity -> v -> EntityMap v -> EntityMap v
-entityMapInsert k v (MkEntityMap m) = MkEntityMap $ insertMap k v m
+entityMapInsert = insertMap
 
 entityMapDelete :: Entity -> EntityMap v -> EntityMap v
-entityMapDelete k (MkEntityMap m) = MkEntityMap $ deleteMap k m
+entityMapDelete = deleteMap
 
 entityMapSingle :: Entity -> v -> EntityMap v
-entityMapSingle k v = MkEntityMap $ singletonMap k v
+entityMapSingle = singletonMap
 
 entityMapKeys :: EntityMap v -> [Entity]
-entityMapKeys m = fmap fst $ entityMapToList m
+entityMapKeys = keys
 
 entityMapValues :: EntityMap v -> [v]
-entityMapValues m = fmap snd $ entityMapToList m
+entityMapValues m = fmap snd $ mapToList m
 
 entityMapMember :: Entity -> EntityMap v -> Bool
-entityMapMember k (MkEntityMap m) = member k m
+entityMapMember = member
 
 entityMapContains :: EntityMap v -> Entity -> Bool
 entityMapContains em k = entityMapMember k em
